@@ -5,15 +5,24 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "lint": "eslint src --max-warnings 0",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "migrate": "echo migration-not-configured-until-sprint-02",
-    "seed": "echo seed-not-configured-until-sprint-02",
+    "test:rls": "node ./scripts/require-database-url.mjs && vitest run src/rls.test.ts",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed/run.ts",
+    "prisma:generate": "prisma generate",
     "dev": "tsc -p tsconfig.json --watch"
   },
+  "dependencies": {
+    "@prisma/client": "^6.2.1"
+  },
   "devDependencies": {
+    "@types/pg": "^8.11.10",
+    "pg": "^8.13.1",
+    "prisma": "^6.2.1",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

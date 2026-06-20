@@ -1,0 +1,40 @@
+status: PRODUCTION_READY_FOR_CURSOR_BOOTSTRAP
+gates:
+  repository:
+    required: true
+    checks:
+      - root_files_exist
+      - workspace_config_exists
+      - cursor_rules_exist
+      - agent_rules_exist
+      - canon_layers_exist
+  sprint_01:
+    required: true
+    checks:
+      - monorepo_bootstrap_scope_only
+      - no_business_modules
+      - no_real_secrets
+      - docker_baseline
+      - ci_skeleton
+  quality:
+    required: true
+    checks:
+      - lint
+      - typecheck
+      - unit_tests
+      - build
+      - migration_validation_when_database_changes_exist
+  security:
+    required: true
+    checks:
+      - no_cross_tenant_access
+      - no_secret_commits
+      - permission_patterns_defined
+      - audit_patterns_defined
+  cursor:
+    required: true
+    checks:
+      - read_canon_first
+      - small_task_generation
+      - stop_on_failed_gate
+      - no_uncontrolled_full_platform_generation

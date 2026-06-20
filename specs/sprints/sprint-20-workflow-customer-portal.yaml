@@ -1,0 +1,51 @@
+sprint: 20
+name: "Workflow + Customer Portal"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Workflow + Customer Portal as a production-ready CRM OS module slice."
+domain: "Workflow/Portal"
+module: "workflow"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - workflows
+  - workflow_versions
+  - workflow_nodes
+  - workflow_edges
+  - workflow_runs
+  - customer_portal_users
+permissions:
+  - workflow.manage
+  - portal.customer.read
+events:
+  - WorkflowStarted
+  - WorkflowCompleted
+  - WorkflowFailed
+api:
+  - "GET /workflows"
+  - "POST /workflows"
+  - "GET /portal/me"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

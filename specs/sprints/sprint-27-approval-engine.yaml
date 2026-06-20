@@ -1,0 +1,51 @@
+sprint: 27
+name: "Approval Engine"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Approval Engine as a production-ready CRM OS module slice."
+domain: "Workflow"
+module: "approval"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - approval_requests
+  - approval_steps
+  - approval_actions
+  - approval_delegations
+  - approval_logs
+permissions:
+  - approval.read
+  - approval.decide
+  - approval.manage
+events:
+  - ApprovalRequested
+  - ApprovalApproved
+  - ApprovalRejected
+api:
+  - "GET /approvals"
+  - "POST /approvals/{id}/approve"
+  - "POST /approvals/{id}/reject"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

@@ -1,0 +1,9 @@
+gates:
+  - id: small-task
+    rule: "Agents work on small scoped tasks only."
+  - id: no-unrelated-files
+    rule: "Agents must not modify unrelated modules."
+  - id: source-of-truth
+    rule: "Agents read AGENTS.md, Cursor rules and sprint spec before coding."
+  - id: handoff
+    rule: "Agent output includes files changed, tests run and known gaps."

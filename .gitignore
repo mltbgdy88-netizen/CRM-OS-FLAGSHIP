@@ -1,0 +1,18 @@
+node_modules
+dist
+.next
+.turbo/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+coverage
+.DS_Store
+
+# Local archive extraction; not part of active workspace
+_archive/
+
+# Large/binary artifacts
+*.zip
+*.html
+*.log

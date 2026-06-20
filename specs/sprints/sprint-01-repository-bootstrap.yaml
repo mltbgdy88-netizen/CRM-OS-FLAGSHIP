@@ -1,0 +1,70 @@
+id: Sprint-01
+name: Repository Bootstrap
+status: CANON_FIXED_FOR_CURSOR_READY_v1.1
+objective: Create executable monorepo foundation only.
+
+hard_scope:
+  - root package setup
+  - pnpm workspace
+  - turbo config
+  - TypeScript base config
+  - ESLint and Prettier baseline
+  - apps/api NestJS skeleton
+  - apps/web Next.js App Router skeleton
+  - packages/shared skeleton
+  - packages/database skeleton without business schema
+  - Docker Compose for PostgreSQL and Redis
+  - .env.example
+  - GitHub Actions CI skeleton
+  - API health endpoint only
+  - minimal tests proving apps/packages boot
+
+forbidden:
+  - customer module
+  - lead module
+  - contact module
+  - company module
+  - quote module
+  - order module
+  - inventory module
+  - finance module
+  - real auth implementation
+  - user/session business implementation
+  - tenant/workspace business implementation
+  - audit log business implementation
+  - permission matrix implementation
+  - RLS business tables
+  - AI Gateway
+  - Ask CRM
+  - workflow engine
+  - generator runtime execution
+  - production secrets
+  - fake production-ready claims
+
+deferred_to_sprint_02:
+  - tenant/workspace foundation
+  - users
+  - identities/sessions
+  - roles
+  - permissions
+  - audit_logs
+  - tenant context
+  - first PostgreSQL RLS proof
+
+quality_gates:
+  - pnpm install
+  - pnpm lint
+  - pnpm typecheck
+  - pnpm test
+  - pnpm build
+  - pnpm sprint:01:verify
+
+definition_of_done:
+  - Cursor can identify root source order.
+  - Monorepo packages are discoverable by pnpm.
+  - API skeleton starts or builds.
+  - Web skeleton starts or builds.
+  - Shared/database packages build or typecheck.
+  - CI workflow exists.
+  - No business module is implemented.
+  - No Sprint-02 scope is implemented.

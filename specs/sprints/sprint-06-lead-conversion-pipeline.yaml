@@ -1,0 +1,51 @@
+sprint: 6
+name: "Lead Conversion + Pipeline"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Lead Conversion + Pipeline as a production-ready CRM OS module slice."
+domain: "Lead/Sales"
+module: "sales"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - lead_conversion_logs
+  - pipelines
+  - pipeline_stages
+  - opportunities
+  - opportunity_stage_history
+permissions:
+  - lead.convert
+  - opportunity.create
+  - pipeline.manage
+events:
+  - LeadConverted
+  - OpportunityCreated
+  - OpportunityStageChanged
+api:
+  - "POST /leads/{id}/convert"
+  - "GET /pipelines"
+  - "POST /opportunities"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

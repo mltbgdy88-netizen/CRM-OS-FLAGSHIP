@@ -1,0 +1,13 @@
+acceptance:
+  - create works
+  - update works
+  - permission checks pass
+  - tenant isolation pass
+  - OpenAPI updated
+  - tests passing
+  - audit log written
+  - events emitted
+# rules:
+#   - all acceptance items must be verified before merge
+#   - tests must pass
+#   - audit and event requirements must be checked

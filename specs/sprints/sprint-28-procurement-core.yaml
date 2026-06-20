@@ -1,0 +1,52 @@
+sprint: 28
+name: "Procurement Core"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Procurement Core as a production-ready CRM OS module slice."
+domain: "Procurement"
+module: "procurement"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - suppliers
+  - supplier_contacts
+  - supplier_price_lists
+  - purchase_requests
+  - purchase_orders
+  - purchase_receipts
+permissions:
+  - procurement.read
+  - purchase.create
+  - supplier.manage
+events:
+  - PurchaseRequested
+  - PurchaseOrderCreated
+  - PurchaseReceived
+api:
+  - "GET /suppliers"
+  - "POST /purchase-orders"
+  - "GET /purchase-requests"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

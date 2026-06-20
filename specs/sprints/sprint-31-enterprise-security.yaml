@@ -1,0 +1,49 @@
+sprint: 31
+name: "Enterprise Security"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Enterprise Security as a production-ready CRM OS module slice."
+domain: "Security"
+module: "security"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - security_policies
+  - ip_whitelists
+  - audit_logs
+  - user_2fa_methods
+  - sessions
+permissions:
+  - security.manage
+  - audit.read
+events:
+  - SecurityPolicyChanged
+  - UserMFAEnabled
+api:
+  - "GET /security/policies"
+  - "PATCH /security/policies"
+  - "GET /audit-logs"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

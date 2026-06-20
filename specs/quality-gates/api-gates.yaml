@@ -1,0 +1,11 @@
+gates:
+  - id: api-contract-updated
+    rule: "Every endpoint change must update OpenAPI."
+  - id: standard-envelope
+    rule: "Responses must use CRM OS data/meta and error envelopes."
+  - id: pagination
+    rule: "List endpoints must support pagination."
+  - id: validation
+    rule: "DTO validation must be explicit and tested."
+  - id: tenant-header
+    rule: "Authenticated API calls must resolve tenant context."

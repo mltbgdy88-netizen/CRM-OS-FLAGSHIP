@@ -1,0 +1,16371 @@
+# Customer Operating System / Amiral Gemisi CRM Platformu — Uçtan Uca Teknik Blueprint v1
+
+Source: uploaded `Document.pdf` merged into Workspace v7.
+
+```text
+Aşağıdaki doküman Customer Operating System / Amiral Gemisi CRM Platformu —
+Uçtan Uca Teknik Blueprint v1 olarak kullanılabilir.
+
+
+
+
+1. Ürün Hedefi
+Bu sistem klasik CRM değil; aşağıdaki platformların birleşimi olacak:
+
+CRM
++ Sales Pipeline
++ Quote / Order
++ Inventory
++ Finance Lite
++ Omnichannel Inbox
++ Support / Ticket
++ Workflow Engine
++ B2B / Dealer Portal
++ AI Assistant
++ API / Integration Hub
++ SaaS Admin Panel
+
+
+Ana hedef akış:
+
+Lead
+→ Customer
+→ Opportunity
+→ Quote
+→ Order
+→ Shipment
+→ Invoice
+→ Payment
+→ Support
+→ Retention
+
+
+
+
+2. Hedef Mimari
+
+Ana yaklaşım
+Modular Monolith + Event-Driven Architecture
+İlk aşamada mikroservis yapılmayacak. 50 kişilik ekip modül bazlı çalışacak ama
+deployment tek backend olarak başlayacak.
+
+İleride ayrılabilecek servisler:
+
+notification-service
+file-service
+integration-service
+ai-service
+reporting-service
+workflow-service
+
+
+
+
+3. Teknoloji Stack
+
+Backend
+NestJS
+TypeScript
+PostgreSQL
+Prisma veya TypeORM
+Redis
+RabbitMQ
+BullMQ
+
+
+Frontend
+Next.js
+React
+TypeScript
+TanStack Query
+Zustand veya Redux Toolkit
+TailwindCSS
+
+
+Mobil
+Flutter
+
+
+Storage
+MinIO / S3
+Search
+PostgreSQL Full Text Search başlangıç
+OpenSearch / Elasticsearch ileri aşama
+
+
+AI
+AI Gateway
+LLM Provider Adapter
+Vector DB: pgvector başlangıç
+
+
+DevOps
+Docker
+Kubernetes
+Helm
+GitHub Actions / GitLab CI
+Terraform
+Prometheus
+Grafana
+Loki
+Sentry
+
+
+
+
+4. Sistem Katmanları
+Client Layer
+├── Web App
+├── Mobile App
+├── Customer Portal
+├── Dealer Portal
+└── Admin Panel
+
+API Layer
+├── REST API
+├── Webhook API
+├── Public API
+└── Internal API
+
+Application Layer
+├── IAM
+├── CRM
+├── Lead
+├── Sales
+├── Quote
+├── Order
+├── Inventory
+├── Finance
+├── Support
+├── Marketing
+├── Workflow
+├── Communication
+├── AI
+└── Reporting
+
+Data Layer
+├── PostgreSQL
+├── Redis
+├── Object Storage
+├── Search Index
+└── Event Store
+
+Infrastructure Layer
+├── Kubernetes
+├── CI/CD
+├── Monitoring
+├── Logging
+└── Backup / DR
+
+
+
+
+5. Multi-Tenant Model
+Ana karar:
+
+Shared Database + tenant_id + PostgreSQL RLS
+
+
+Tüm iş tablolarında zorunlu alanlar:
+
+id uuid primary key
+tenant_id uuid not null
+created_at timestamptz not null
+created_by uuid
+updated_at timestamptz
+updated_by uuid
+deleted_at timestamptz
+version int default 1
+
+
+RLS standardı:
+
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation_customers
+ON customers
+USING (tenant_id = current_setting('app.tenant_id')::uuid);
+
+
+Backend her request başında:
+
+SET app.tenant_id = '<tenant_uuid>';
+SET app.user_id = '<user_uuid>';
+
+
+
+
+6. Domain Modülleri
+
+CORE
+tenants
+tenant_settings
+plans
+subscriptions
+feature_flags
+usage_quotas
+audit_logs
+system_settings
+
+
+IAM
+users
+roles
+permissions
+role_permissions
+user_roles
+teams
+team_members
+departments
+branches
+dealers
+sessions
+devices
+login_history
+
+
+CRM
+customers
+customer_contacts
+customer_addresses
+customer_segments
+customer_tags
+customer_notes
+customer_files
+customer_timeline
+customer_scores
+customer_risk_scores
+customer_lifetime_values
+
+
+LEAD
+leads
+lead_sources
+lead_tags
+lead_scores
+lead_assignments
+lead_activities
+lead_conversion_logs
+lead_loss_reasons
+
+
+SALES
+pipelines
+pipeline_stages
+opportunities
+opportunity_products
+opportunity_activities
+opportunity_stage_history
+opportunity_loss_reasons
+competitors
+
+
+QUOTE
+quotes
+quote_versions
+quote_items
+quote_discounts
+quote_approvals
+quote_files
+quote_view_logs
+quote_signatures
+quote_status_history
+
+
+ORDER
+orders
+order_items
+order_status_history
+order_reservations
+order_shipments
+order_deliveries
+order_returns
+
+
+INVENTORY
+products
+product_variants
+product_categories
+product_brands
+product_collections
+product_prices
+warehouses
+warehouse_locations
+stocks
+stock_movements
+stock_reservations
+stock_counts
+stock_adjustments
+stock_transfers
+
+
+FINANCE
+accounts
+account_transactions
+payments
+payment_methods
+installments
+credit_limits
+risk_limits
+invoices
+invoice_items
+bank_accounts
+bank_transactions
+
+
+SUPPORT
+tickets
+ticket_categories
+ticket_priorities
+ticket_statuses
+ticket_messages
+ticket_files
+ticket_sla_rules
+ticket_satisfaction_surveys
+knowledge_base_articles
+
+
+COMMUNICATION
+channels
+channel_accounts
+conversations
+conversation_participants
+messages
+message_attachments
+email_logs
+sms_logs
+whatsapp_logs
+call_logs
+meeting_logs
+
+
+WORKFLOW
+workflows
+workflow_versions
+workflow_triggers
+workflow_nodes
+workflow_edges
+workflow_runs
+workflow_logs
+approval_requests
+approval_steps
+approval_actions
+
+
+AI
+ai_agents
+ai_prompts
+ai_conversations
+ai_summaries
+ai_predictions
+ai_embeddings
+ai_documents
+ai_usage_logs
+ai_feedback
+
+
+INTEGRATION
+api_keys
+oauth_clients
+webhooks
+webhook_events
+webhook_logs
+connectors
+connector_accounts
+integration_runs
+integration_errors
+
+
+
+
+7. Ana İş Akışları
+
+Lead → Customer → Opportunity
+LeadCreated
+→ LeadAssigned
+→ LeadQualified
+→ CustomerCreated
+→ OpportunityCreated
+→ LeadConverted
+
+
+Opportunity → Quote
+OpportunityCreated
+→ ProductsAdded
+→ QuoteCreated
+→ QuoteSent
+→ QuoteViewed
+→ QuoteApproved / QuoteRejected
+
+
+Quote → Order
+QuoteApproved
+→ OrderCreated
+→ StockReserved
+→ PaymentPlanCreated
+→ ShipmentPlanned
+
+
+Order → Inventory
+OrderCreated
+→ StockReservationCreated
+→ ShipmentCreated
+→ StockMovementOut
+→ DeliveryCompleted
+
+
+Payment
+InvoiceCreated
+→ PaymentReceived
+→ AccountTransactionCreated
+→ BalanceUpdated
+
+
+
+
+8. Event Catalog v1
+TenantCreated
+UserInvited
+UserLoggedIn
+RoleChanged
+
+CustomerCreated
+CustomerUpdated
+CustomerMerged
+CustomerDeleted
+
+LeadCreated
+LeadAssigned
+LeadQualified
+LeadConverted
+LeadLost
+
+OpportunityCreated
+OpportunityStageChanged
+OpportunityWon
+OpportunityLost
+
+QuoteCreated
+QuoteSent
+QuoteViewed
+QuoteApproved
+QuoteRejected
+QuoteExpired
+
+OrderCreated
+OrderConfirmed
+OrderCancelled
+OrderShipped
+OrderDelivered
+OrderReturned
+
+ProductCreated
+StockChanged
+StockReserved
+StockReleased
+CriticalStockReached
+
+PaymentCreated
+PaymentReceived
+PaymentOverdue
+
+TicketCreated
+TicketAssigned
+TicketResolved
+TicketClosed
+
+MessageReceived
+MessageSent
+ConversationAssigned
+WorkflowStarted
+WorkflowCompleted
+WorkflowFailed
+
+AIActionRequested
+AIActionCompleted
+AIUsageLimitExceeded
+
+
+
+
+9. API Standardı
+Base path:
+
+/api/v1
+
+
+Örnek endpoint yapısı:
+
+GET    /customers
+POST   /customers
+GET    /customers/{id}
+PATCH /customers/{id}
+DELETE /customers/{id}
+
+POST    /leads/{id}/convert
+POST    /quotes/{id}/send
+POST    /quotes/{id}/approve
+POST    /quotes/{id}/convert-to-order
+POST    /orders/{id}/reserve-stock
+POST    /payments
+
+
+Standart response:
+
+{
+    "data": {},
+    "meta": {
+      "requestId": "uuid",
+      "timestamp": "2026-06-19T12:00:00Z"
+    }
+}
+
+
+Hata formatı:
+{
+    "error": {
+      "code": "CUSTOMER_NOT_FOUND",
+      "message": "Customer not found",
+      "details": {}
+    }
+}
+
+
+
+
+10. Yetkilendirme Modeli
+Hibrit model:
+
+RBAC + Permission + Tenant Scope + Branch Scope + Team Scope
+
+
+Hazır roller:
+
+Super Admin
+Tenant Admin
+Sales Manager
+Sales Representative
+Finance User
+Warehouse User
+Support Agent
+Marketing User
+Dealer User
+Customer Portal User
+
+
+Permission örnekleri:
+
+customer.read
+customer.create
+customer.update
+customer.delete
+customer.export
+
+lead.read
+lead.assign
+lead.convert
+
+quote.create
+quote.send
+quote.approve
+quote.discount.approve
+
+order.create
+order.cancel
+
+payment.read
+payment.create
+
+inventory.read
+inventory.adjust
+
+workflow.manage
+ai.use
+admin.manage
+
+
+
+
+11. Ekip Dağılımı — 50 Kişi
+
+Yönetim ve Ürün — 6 kişi
+1 Product Director
+2 Product Manager
+2 Business Analyst
+1 Scrum Master / Delivery Manager
+
+
+Mimari ve Teknik Liderlik — 4 kişi
+1 Solution Architect
+1 Backend Lead
+1 Frontend Lead
+1 DevOps Lead
+
+
+Backend — 14 kişi
+Squad A: CORE + IAM — 3 kişi
+Squad B: CRM + Lead — 3 kişi
+Squad C: Sales + Quote + Order — 3 kişi
+Squad D: Inventory + Finance — 3 kişi
+Squad E: Workflow + Integration — 2 kişi
+Frontend — 10 kişi
+Admin Panel — 2 kişi
+CRM/Sales UI — 3 kişi
+Inventory/Finance UI — 2 kişi
+Portal UI — 1 kişi
+Design System — 2 kişi
+
+
+Mobile — 4 kişi
+Flutter Core — 2 kişi
+Field Sales — 1 kişi
+Offline Sync — 1 kişi
+
+
+QA — 5 kişi
+Manual QA — 2 kişi
+Automation QA — 2 kişi
+Performance/Security QA — 1 kişi
+
+
+DevOps / Platform — 4 kişi
+Infrastructure
+CI/CD
+Observability
+Security/Backup
+
+
+AI / Data — 3 kişi
+AI Engineer
+Data Engineer
+Analytics Engineer
+
+
+
+
+12. Squad Sahipliği
+
+Squad CORE/IAM
+Sorumluluk:
+
+Tenant
+Auth
+Users
+Roles
+Permissions
+Sessions
+Audit
+Feature Flags
+Subscription
+
+
+Squad CRM/Lead
+Sorumluluk:
+
+Customer
+Contact
+Address
+Timeline
+Lead
+Lead Source
+Lead Assignment
+Lead Conversion
+
+
+Squad Sales/Quote/Order
+Sorumluluk:
+
+Pipeline
+Opportunity
+Quote
+Quote PDF
+Approval
+Order
+Order Status
+
+
+Squad Inventory/Finance
+Sorumluluk:
+
+Product
+Variant
+Warehouse
+Stock
+Stock Movement
+Account
+Payment
+Invoice
+Squad Communication/Support
+Sorumluluk:
+
+Inbox
+WhatsApp
+Email
+SMS
+Calls
+Tickets
+SLA
+Knowledge Base
+
+
+Squad Workflow/Integration
+Sorumluluk:
+
+Workflow Builder
+Triggers
+Actions
+Approvals
+Webhooks
+API Keys
+Connectors
+
+
+Squad AI/Data
+Sorumluluk:
+
+AI Gateway
+Summaries
+Lead Scoring
+Quote Assistant
+Search
+Embeddings
+Analytics
+
+
+
+
+13. İlk 90 Gün Teslimat Planı
+
+Hafta 1–2: Foundation
+Çıktılar:
+Repo setup
+Coding standards
+Docker compose
+PostgreSQL
+Redis
+RabbitMQ
+MinIO
+CI pipeline
+Base NestJS app
+Base Next.js app
+Auth skeleton
+Tenant context
+
+
+Hafta 3–4: IAM + Tenant
+Tenant CRUD
+User CRUD
+Role CRUD
+Permission system
+Login / Refresh Token
+Audit Log
+RLS proof of concept
+
+
+Hafta 5–6: CRM Core
+Customer CRUD
+Contact CRUD
+Address CRUD
+Customer Timeline
+Files
+Tags
+Notes
+Customer List UI
+Customer Detail UI
+
+
+Hafta 7–8: Lead
+Lead CRUD
+Lead Source
+Lead Assignment
+Lead Status
+Lead Conversion
+Lead UI
+
+
+Hafta 9–10: Sales
+Pipeline CRUD
+Stage CRUD
+Opportunity CRUD
+Drag-drop pipeline
+Opportunity detail
+Stage history
+
+
+Hafta 11–12: Quote + Dashboard
+Quote CRUD
+Quote Items
+Discount
+Tax
+PDF generation
+Quote send
+Basic dashboard
+Notifications
+
+
+90 gün sonunda çalışacak akış:
+
+Login
+→ Customer Create
+→ Lead Create
+→ Lead Convert
+→ Opportunity Create
+→ Quote Create
+→ PDF Send
+→ Dashboard View
+
+
+
+
+14. İlk 6 Ay Roadmap
+
+Ay 1–3
+IAM
+CRM
+Lead
+Sales
+Quote
+Task
+Dashboard
+
+
+Ay 4
+Order
+Product
+Basic Inventory
+Stock Movement
+
+
+Ay 5
+Finance Lite
+Account Balance
+Payments
+Installments
+Receivables
+
+
+Ay 6
+Workflow v1
+Notification Engine
+Email
+WhatsApp v1
+Customer Portal v1
+
+
+
+
+15. İlk 12 Ay Roadmap
+
+Q1
+MVP CRM + Sales + Quote
+
+
+Q2
+Order + Inventory + Finance Lite + Workflow
+
+
+Q3
+Omnichannel + Support + Dealer Portal + API
+Q4
+AI Assistant + Advanced Reporting + Mobile + Enterprise Security
+
+
+
+
+16. Altyapı Ortamları
+local
+development
+staging
+production
+demo
+sandbox
+
+
+Her ortamda:
+
+PostgreSQL
+Redis
+RabbitMQ
+MinIO
+API
+Web
+Worker
+Scheduler
+Monitoring Agent
+
+
+Production minimum:
+
+3 API pods
+2 Worker pods
+1 Scheduler pod
+PostgreSQL primary + replica
+Redis HA
+RabbitMQ cluster
+Object storage
+Load balancer
+WAF
+17. CI/CD Pipeline
+Her PR için:
+
+lint
+type-check
+unit test
+migration check
+build
+docker image build
+security scan
+
+
+Main branch merge:
+
+deploy dev
+run smoke tests
+
+
+Release branch:
+
+deploy staging
+run integration tests
+run e2e tests
+manual approval
+deploy production
+
+
+Production deploy:
+
+blue/green veya rolling deployment
+automatic rollback
+migration backup
+health check
+
+
+
+
+18. Observability
+Zorunlu metrikler:
+
+request_count
+request_duration
+error_rate
+db_query_duration
+queue_depth
+worker_failures
+login_failures
+tenant_usage
+ai_usage
+storage_usage
+
+
+Log standardı:
+
+{
+    "requestId": "uuid",
+    "tenantId": "uuid",
+    "userId": "uuid",
+    "module": "crm",
+    "action": "customer.create",
+    "level": "info",
+    "message": "Customer created"
+}
+
+
+
+
+19. Güvenlik Blueprint
+Zorunlu:
+
+RLS
+RBAC
+2FA
+JWT rotation
+Refresh token revocation
+Audit log
+IP whitelist
+Rate limit
+Webhook signature
+File upload validation
+Virus scan
+Encryption at rest
+Encryption in transit
+Secret manager
+Backup encryption
+
+
+KVKK/GDPR için:
+
+consent records
+data export request
+data deletion request
+retention policies
+data masking
+audit trail
+
+
+
+
+20. Veritabanı Öncelikli Migration Seti
+
+Migration 001 — Core
+tenants
+tenant_settings
+plans
+subscriptions
+feature_flags
+audit_logs
+
+
+Migration 002 — IAM
+users
+roles
+permissions
+role_permissions
+user_roles
+sessions
+devices
+
+
+Migration 003 — CRM
+customers
+customer_contacts
+customer_addresses
+customer_notes
+customer_tags
+customer_files
+customer_timeline
+
+
+Migration 004 — Lead
+leads
+lead_sources
+lead_activities
+lead_assignments
+lead_conversion_logs
+
+
+Migration 005 — Sales
+pipelines
+pipeline_stages
+opportunities
+opportunity_products
+opportunity_stage_history
+
+
+Migration 006 — Quote
+quotes
+quote_versions
+quote_items
+quote_approvals
+quote_files
+quote_status_history
+
+
+Migration 007 — Task/Notification
+tasks
+notifications
+reminders
+
+
+Migration 008 — Product/Inventory
+products
+product_variants
+categories
+warehouses
+stocks
+stock_movements
+stock_reservations
+
+
+Migration 009 — Finance
+accounts
+account_transactions
+payments
+payment_methods
+installments
+invoices
+invoice_items
+
+
+Migration 010 — Workflow
+workflows
+workflow_versions
+workflow_nodes
+workflow_edges
+workflow_runs
+workflow_logs
+approval_requests
+approval_steps
+
+
+
+
+21. Frontend Ana Ekran Haritası
+/auth/login
+/auth/forgot-password
+
+/app/dashboard
+
+/app/customers
+/app/customers/:id
+/app/customers/new
+
+/app/leads
+/app/leads/:id
+
+/app/pipeline
+/app/opportunities/:id
+
+/app/quotes
+/app/quotes/:id
+/app/quotes/:id/preview
+
+/app/orders
+/app/orders/:id
+
+/app/products
+/app/inventory
+/app/tasks
+/app/calendar
+
+/app/inbox
+/app/tickets
+
+/app/reports
+
+/app/settings/users
+/app/settings/roles
+/app/settings/permissions
+/app/settings/tenant
+/app/settings/integrations
+
+
+
+
+22. Backend Klasör Yapısı
+src/
+├── app.module.ts
+├── main.ts
+│
+├── common/
+│   ├── guards/
+│   ├── decorators/
+│   ├── filters/
+│   ├── interceptors/
+│   ├── pipes/
+│   └── utils/
+│
+├── config/
+│
+├── database/
+│   ├── migrations/
+│   ├── seeds/
+│   └── prisma-or-typeorm/
+│
+├── modules/
+│   ├── core/
+│   ├── iam/
+│   ├── crm/
+│   ├── lead/
+│   ├── sales/
+│   ├── quote/
+│   ├── order/
+│   ├── inventory/
+│   ├── finance/
+│   ├── support/
+│   ├── communication/
+│   ├── workflow/
+│   ├── notification/
+│   ├── integration/
+│   ├── reporting/
+│   └── ai/
+│
+├── workers/
+├── schedulers/
+└── events/
+
+
+
+
+23. Frontend Klasör Yapısı
+src/
+├── app/
+├── components/
+│   ├── ui/
+│   ├── forms/
+│   ├── tables/
+│   ├── layout/
+│   └── charts/
+│
+├── features/
+│   ├── auth/
+│   ├── customers/
+│   ├── leads/
+│   ├── opportunities/
+│   ├── quotes/
+│   ├── orders/
+│   ├── products/
+│   ├── tasks/
+│   ├── dashboard/
+│   └── settings/
+│
+├── hooks/
+├── lib/
+├── services/
+├── stores/
+└── types/
+
+
+
+
+24. Definition of Done
+Her feature için zorunlu:
+
+API tamam
+DB migration tamam
+RLS policy tamam
+Permission kontrolü tamam
+Audit log tamam
+Unit test tamam
+Integration test tamam
+Frontend ekran tamam
+Validation tamam
+Error handling tamam
+Loading/empty/error states tamam
+Log/metric tamam
+Documentation tamam
+
+
+
+
+25. Kritik Riskler
+
+Risk 1: Kapsam patlaması
+Çözüm:
+
+MVP freeze
+Change control board
+Icebox backlog
+
+
+Risk 2: Tenant izolasyonu hatası
+Çözüm:
+
+RLS mandatory
+tenant_id mandatory
+automated tests
+security review
+
+
+Risk 3: 50 kişilik ekipte çakışma
+Çözüm:
+
+module ownership
+API contract
+weekly architecture review
+code ownership
+
+
+Risk 4: Yanlış veri modeli
+Çözüm:
+
+ERD review board
+migration review
+data dictionary approval
+
+
+Risk 5: Performans
+Çözüm:
+
+index strategy
+pagination mandatory
+query review
+read replicas
+partitioning for logs/messages/events
+
+
+
+
+26. İlk Sprint Backlog
+
+Sprint 1
+CORE-001 Repository setup
+CORE-002 Docker compose
+CORE-003 PostgreSQL setup
+CORE-004 Redis setup
+CORE-005 RabbitMQ setup
+CORE-006 MinIO setup
+CORE-007 Base NestJS app
+CORE-008 Base Next.js app
+CORE-009 Auth module skeleton
+CORE-010 Tenant context middleware
+
+
+Sprint 2
+IAM-001 Tenant table
+IAM-002 User table
+IAM-003 Role table
+IAM-004 Permission table
+IAM-005 Login API
+IAM-006 Refresh token API
+IAM-007 User management UI
+IAM-008 Role management UI
+IAM-009 RLS POC
+IAM-010 Audit log base
+
+
+Sprint 3
+CRM-001 Customer table
+CRM-002 Contact table
+CRM-003 Address table
+CRM-004 Customer CRUD API
+CRM-005 Customer list UI
+CRM-006 Customer detail UI
+CRM-007 Customer create/edit UI
+CRM-008 Activity base
+CRM-009 File metadata
+CRM-010 Tags
+
+
+
+
+27. MVP Kabul Kriteri
+MVP şu senaryo çalışınca kabul edilir:
+
+1. Tenant oluşturulur.
+2. Admin kullanıcı giriş yapar.
+3. Kullanıcı ve rol tanımlanır.
+4. Müşteri oluşturulur.
+5. Lead oluşturulur.
+6. Lead fırsata çevrilir.
+7. Pipeline’da fırsat taşınır.
+8. Teklif oluşturulur.
+9. Teklif PDF üretilir.
+10. Teklif gönderildi olarak işaretlenir.
+11. Dashboard’da lead, fırsat ve teklif sayıları görünür.
+12. Tüm işlemler audit log’a düşer.
+13. Tenant A, Tenant B verisini göremez.
+
+
+
+
+28. Nihai Teslimat Sırası
+1. ERD v1
+2. Data Dictionary v1
+3. PostgreSQL Migration v1
+4. OpenAPI v1
+5. Backend Skeleton
+6. Frontend Skeleton
+7. IAM
+8. CRM
+9. Lead
+10. Sales
+11. Quote
+12. Dashboard
+13. Pilot
+14. Order
+15. Inventory
+16. Finance
+17. Workflow
+18. Omnichannel
+19. Support
+20. AI
+
+
+
+
+29. Yönetici Özeti
+Bu proje için doğru başlangıç:
+
+50 kişilik ekip doğrudan kod yazmayacak.
+İlk 2 hafta:
+ERD
+Data Dictionary
+OpenAPI
+Architecture Contracts
+Repository Setup
+CI/CD
+
+
+Sonra ekipler paralel bölünecek:
+
+CORE/IAM
+CRM/Lead
+Sales/Quote
+Inventory/Finance
+Frontend
+Mobile
+DevOps
+QA
+AI/Data
+
+
+İlk büyük hedef:
+
+90 gün içinde çalışan CRM + Lead + Sales + Quote MVP
+
+
+İlk ticari hedef:
+
+6 ay içinde Order + Inventory + Finance Lite ile satılabilir SaaS
+
+
+Uzun vadeli hedef:
+
+12 ay içinde Omnichannel + Workflow + Portal + AI destekli Customer
+Operating System
+
+
+
+
+Aşağıda CRM OS MASTER ERD v1 başlangıç modeli var. Bu, 50 kişilik
+ekibin modül modül bölünebilmesi için ana veri omurgasıdır.
+
+CRM OS MASTER ERD v1
+
+1. CORE / SaaS
+tenants
+├─ tenant_settings
+├─ tenant_domains
+├─ tenant_modules
+├─ tenant_feature_flags
+├─ tenant_usage_quotas
+├─ subscriptions
+├─ subscription_items
+├─ plans
+├─ plan_features
+└─ audit_logs
+
+
+Ana ilişki:
+
+tenants 1 ── N users
+tenants 1 ── N customers
+tenants 1 ── N leads
+tenants 1 ── N products
+tenants 1 ── N workflows
+
+
+
+
+2. IAM / Kullanıcı ve Yetki
+users
+├─ user_profiles
+├─ user_roles
+├─ user_permissions
+├─ user_sessions
+├─ user_devices
+├─ user_login_history
+├─ user_password_history
+├─ user_2fa_methods
+└─ user_api_tokens
+
+roles
+├─ role_permissions
+└─ role_scopes
+
+permissions
+
+
+Organizasyon:
+
+branches
+├─ branch_users
+├─ branch_warehouses
+└─ branch_targets
+
+departments
+├─ department_users
+teams
+├─ team_members
+├─ team_targets
+
+dealers
+├─ dealer_users
+├─ dealer_price_lists
+├─ dealer_targets
+└─ dealer_regions
+
+
+Ana ilişkiler:
+
+users N ── N roles
+roles N ── N permissions
+users N ── N teams
+branches 1 ── N users
+dealers 1 ── N dealer_users
+
+
+
+
+3. CRM / Customer 360
+customers
+├─ customer_contacts
+├─ customer_addresses
+├─ customer_tags
+├─ customer_segments
+├─ customer_notes
+├─ customer_files
+├─ customer_locations
+├─ customer_relationships
+├─ customer_scores
+├─ customer_risk_scores
+├─ customer_lifetime_values
+├─ customer_preferences
+├─ customer_consents
+├─ customer_merge_logs
+└─ customer_timeline_events
+
+
+Ana ilişkiler:
+customers 1 ── N customer_contacts
+customers 1 ── N customer_addresses
+customers 1 ── N opportunities
+customers 1 ── N quotes
+customers 1 ── N orders
+customers 1 ── N tickets
+customers 1 ── N payments
+customers 1 ── N conversations
+
+
+
+
+4. LEAD
+leads
+├─ lead_sources
+├─ lead_tags
+├─ lead_scores
+├─ lead_assignments
+├─ lead_activities
+├─ lead_notes
+├─ lead_files
+├─ lead_conversion_logs
+├─ lead_loss_reasons
+└─ lead_enrichment_data
+
+
+Ana akış:
+
+leads 0..1 ── 1 customers
+leads 0..1 ── 1 opportunities
+
+
+Dönüşüm:
+
+Lead
+→ Customer
+→ Opportunity
+
+
+
+
+5. SALES / Opportunity & Pipeline
+pipelines
+├─ pipeline_stages
+├─ pipeline_stage_rules
+└─ pipeline_stage_automations
+opportunities
+├─ opportunity_products
+├─ opportunity_contacts
+├─ opportunity_activities
+├─ opportunity_notes
+├─ opportunity_files
+├─ opportunity_competitors
+├─ opportunity_stage_history
+├─ opportunity_loss_reasons
+├─ opportunity_quotes
+└─ opportunity_forecasts
+
+
+Ana ilişkiler:
+
+pipelines 1 ── N pipeline_stages
+pipeline_stages 1 ── N opportunities
+customers 1 ── N opportunities
+opportunities 1 ── N quotes
+
+
+
+
+6. QUOTE / Teklif
+quotes
+├─ quote_versions
+├─ quote_items
+├─ quote_item_discounts
+├─ quote_taxes
+├─ quote_approvals
+├─ quote_approval_steps
+├─ quote_files
+├─ quote_view_logs
+├─ quote_signatures
+├─ quote_status_history
+├─ quote_payment_terms
+├─ quote_delivery_terms
+└─ quote_loss_reasons
+
+
+Ana ilişkiler:
+
+customers 1 ── N quotes
+opportunities 1 ── N quotes
+quotes 1 ── N quote_items
+quotes 1 ── N quote_versions
+quotes 0..1 ── 1 orders
+
+
+
+
+7. ORDER / Sipariş
+orders
+├─ order_items
+├─ order_status_history
+├─ order_reservations
+├─ order_shipments
+├─ order_shipment_items
+├─ order_deliveries
+├─ order_delivery_confirmations
+├─ order_returns
+├─ order_return_items
+├─ order_payments
+├─ order_files
+└─ order_notes
+
+
+Ana ilişkiler:
+
+customers 1 ── N orders
+quotes 0..1 ── 1 orders
+orders 1 ── N order_items
+orders 1 ── N shipments
+orders 1 ── N payments
+
+
+
+
+8. PRODUCT / Catalog
+products
+├─ product_variants
+├─ product_categories
+├─ product_brands
+├─ product_collections
+├─ product_images
+├─ product_files
+├─ product_attributes
+├─ product_attribute_values
+├─ product_barcodes
+├─ product_supplier_links
+├─ product_prices
+├─ product_price_lists
+├─ product_related_items
+└─ product_ai_descriptions
+
+
+Ana ilişkiler:
+
+products 1 ── N product_variants
+products N ── 1 product_categories
+products N ── 1 product_brands
+product_variants 1 ── N stocks
+product_variants 1 ── N quote_items
+product_variants 1 ── N order_items
+
+
+
+
+9. INVENTORY / Stok
+warehouses
+├─ warehouse_locations
+├─ warehouse_users
+
+stocks
+├─ stock_movements
+├─ stock_reservations
+├─ stock_counts
+├─ stock_count_items
+├─ stock_adjustments
+├─ stock_transfers
+├─ stock_transfer_items
+├─ stock_alerts
+└─ stock_lots
+
+
+Ana ilişkiler:
+
+warehouses 1 ── N stocks
+product_variants 1 ── N stocks
+stocks 1 ── N stock_movements
+orders 1 ── N stock_reservations
+10. PROCUREMENT / Satın Alma
+suppliers
+├─ supplier_contacts
+├─ supplier_addresses
+├─ supplier_price_lists
+├─ supplier_products
+├─ supplier_performance_scores
+
+purchase_requests
+├─ purchase_request_items
+├─ purchase_request_approvals
+
+purchase_orders
+├─ purchase_order_items
+├─ purchase_order_status_history
+├─ purchase_receipts
+├─ purchase_receipt_items
+└─ purchase_files
+
+
+Ana ilişkiler:
+
+suppliers 1 ── N purchase_orders
+purchase_orders 1 ── N purchase_order_items
+purchase_receipts 1 ── N stock_movements
+
+
+
+
+11. FINANCE / Cari, Tahsilat, Fatura
+accounts
+├─ account_transactions
+├─ account_balances
+├─ credit_limits
+├─ risk_limits
+
+payments
+├─ payment_allocations
+├─ payment_methods
+├─ payment_receipts
+
+installments
+├─ installment_payments
+invoices
+├─ invoice_items
+├─ invoice_taxes
+├─ invoice_files
+
+bank_accounts
+├─ bank_transactions
+├─ bank_reconciliation_logs
+
+
+Ana ilişkiler:
+
+customers 1 ── 1 accounts
+accounts 1 ── N account_transactions
+orders 1 ── N invoices
+invoices 1 ── N payments
+payments N ── N invoices via payment_allocations
+
+
+
+
+12. TASK / Activity
+tasks
+├─ task_assignees
+├─ task_comments
+├─ task_files
+├─ task_checklist_items
+├─ task_reminders
+├─ task_recurrence_rules
+
+activities
+├─ activity_participants
+├─ activity_files
+├─ activity_comments
+
+
+Evrensel bağlantı:
+
+tasks.entity_type + tasks.entity_id
+activities.entity_type + activities.entity_id
+
+
+Bağlanabilir varlıklar:
+
+customer
+lead
+opportunity
+quote
+order
+ticket
+project
+invoice
+
+
+
+
+13. COMMUNICATION / Omnichannel
+channels
+├─ channel_accounts
+├─ channel_settings
+
+conversations
+├─ conversation_participants
+├─ conversation_assignments
+├─ conversation_tags
+├─ conversation_status_history
+
+messages
+├─ message_attachments
+├─ message_delivery_logs
+├─ message_ai_summaries
+
+email_logs
+sms_logs
+whatsapp_logs
+call_logs
+meeting_logs
+
+
+Ana ilişkiler:
+
+customers 1 ── N conversations
+conversations 1 ── N messages
+channels 1 ── N channel_accounts
+channel_accounts 1 ── N conversations
+14. SUPPORT / Ticket
+tickets
+├─ ticket_categories
+├─ ticket_priorities
+├─ ticket_statuses
+├─ ticket_messages
+├─ ticket_files
+├─ ticket_assignments
+├─ ticket_sla_logs
+├─ ticket_satisfaction_surveys
+├─ ticket_root_causes
+└─ ticket_resolution_notes
+
+knowledge_base_articles
+├─ knowledge_base_categories
+├─ knowledge_base_feedback
+
+
+Ana ilişkiler:
+
+customers 1 ── N tickets
+tickets 1 ── N ticket_messages
+tickets 1 ── N ticket_files
+tickets N ── 1 users as assigned_user
+
+
+
+
+15. MARKETING
+campaigns
+├─ campaign_segments
+├─ campaign_channels
+├─ campaign_messages
+├─ campaign_recipients
+├─ campaign_events
+├─ campaign_conversions
+├─ campaign_ab_tests
+
+journeys
+├─ journey_steps
+├─ journey_runs
+├─ journey_run_events
+Ana ilişkiler:
+
+campaigns N ── N customer_segments
+campaigns 1 ── N campaign_recipients
+journeys 1 ── N journey_steps
+customers 1 ── N journey_runs
+
+
+
+
+16. PROJECT / Uygulama ve Montaj
+projects
+├─ project_rooms
+├─ project_measurements
+├─ project_products
+├─ project_tasks
+├─ project_files
+├─ project_photos
+├─ project_costs
+├─ project_payments
+├─ project_installation_teams
+├─ project_checklists
+└─ project_close_reports
+
+
+Ana ilişkiler:
+
+customers 1 ── N projects
+projects 1 ── N project_rooms
+projects 1 ── N project_tasks
+projects 1 ── N project_products
+
+
+
+
+17. DEALER / B2B Portal
+dealer_portal_users
+dealer_catalogs
+dealer_product_visibility
+dealer_price_rules
+dealer_orders
+dealer_order_items
+dealer_campaigns
+dealer_balances
+dealer_targets
+dealer_commissions
+dealer_regions
+
+
+Ana ilişkiler:
+
+dealers 1 ── N dealer_users
+dealers 1 ── N dealer_orders
+dealers 1 ── N dealer_price_rules
+
+
+
+
+18. WORKFLOW / Automation
+workflows
+├─ workflow_versions
+├─ workflow_triggers
+├─ workflow_nodes
+├─ workflow_edges
+├─ workflow_conditions
+├─ workflow_actions
+├─ workflow_runs
+├─ workflow_run_steps
+├─ workflow_logs
+└─ workflow_errors
+
+
+Approval engine:
+
+approval_requests
+├─ approval_steps
+├─ approval_actions
+├─ approval_delegations
+└─ approval_logs
+
+
+Ana ilişkiler:
+
+workflows 1 ── N workflow_versions
+workflow_versions 1 ── N workflow_nodes
+workflow_runs 1 ── N workflow_run_steps
+approval_requests 1 ── N approval_steps
+19. AI Platform
+ai_agents
+├─ ai_agent_tools
+├─ ai_agent_permissions
+├─ ai_agent_runs
+
+ai_prompts
+├─ ai_prompt_versions
+
+ai_conversations
+├─ ai_conversation_messages
+
+ai_documents
+├─ ai_document_chunks
+├─ ai_embeddings
+
+ai_predictions
+ai_summaries
+ai_classifications
+ai_recommendations
+ai_usage_logs
+ai_feedback
+
+
+Ana ilişkiler:
+
+ai_agents 1 ── N ai_agent_runs
+ai_documents 1 ── N ai_document_chunks
+ai_document_chunks 1 ── 1 ai_embeddings
+users 1 ── N ai_conversations
+
+
+
+
+20. REPORTING / Analytics
+dashboards
+├─ dashboard_widgets
+├─ dashboard_filters
+├─ dashboard_permissions
+
+reports
+├─ report_columns
+├─ report_filters
+├─ report_schedules
+├─ report_exports
+
+metrics
+metric_snapshots
+kpi_targets
+
+
+Ana ilişkiler:
+
+dashboards 1 ── N dashboard_widgets
+reports 1 ── N report_filters
+users N ── N dashboards via dashboard_permissions
+
+
+
+
+21. INTEGRATION / API & Marketplace
+api_keys
+oauth_clients
+oauth_tokens
+webhooks
+webhook_events
+webhook_logs
+connectors
+connector_accounts
+connector_mappings
+integration_runs
+integration_errors
+marketplace_apps
+marketplace_app_installs
+
+
+Ana ilişkiler:
+
+tenants 1 ── N api_keys
+tenants 1 ── N connector_accounts
+webhooks 1 ── N webhook_logs
+marketplace_apps 1 ── N marketplace_app_installs
+
+
+
+
+22. NOTIFICATION
+notifications
+├─ notification_recipients
+├─ notification_channels
+├─ notification_templates
+├─ notification_delivery_logs
+├─ notification_preferences
+└─ notification_rules
+
+
+Kanallar:
+
+in_app
+email
+sms
+whatsapp
+push
+webhook
+
+
+
+
+23. LOW-CODE / Customization
+custom_modules
+├─ custom_module_fields
+├─ custom_module_records
+├─ custom_module_record_values
+
+custom_fields
+├─ custom_field_options
+├─ custom_field_values
+
+custom_views
+custom_forms
+custom_pages
+custom_dashboards
+custom_validations
+custom_business_rules
+
+
+Ana ilişkiler:
+
+custom_fields polymorphic entity_type/entity_id
+custom_module_records 1 ── N custom_module_record_values
+Evrensel Platform Tabloları
+Bu tablolar tüm modüllere hizmet eder.
+
+files
+file_versions
+file_permissions
+
+comments
+mentions
+
+tags
+entity_tags
+
+timeline_events
+domain_events
+
+search_index
+saved_searches
+
+import_jobs
+import_job_rows
+export_jobs
+
+data_quality_rules
+data_quality_issues
+
+merge_requests
+merge_logs
+
+
+Polymorphic bağlantı standardı:
+
+entity_type
+entity_id
+
+
+Kullanılacağı tablolar:
+
+files
+comments
+tags
+timeline_events
+activities
+tasks
+approval_requests
+workflow_runs
+ai_summaries
+
+
+
+
+Ana Veri Akış ERD Özeti
+Tenant
+ ├─ Users
+ ├─ Branches
+ ├─ Dealers
+ ├─ Customers
+ │   ├─ Contacts
+ │   ├─ Leads
+ │   ├─ Opportunities
+ │   │   └─ Quotes
+ │   │       └─ Orders
+ │   │           ├─ Shipments
+ │   │           ├─ Invoices
+ │   │           └─ Payments
+ │   ├─ Tickets
+ │   ├─ Conversations
+ │   ├─ Projects
+ │   └─ Account
+ │       └─ AccountTransactions
+ │
+ ├─ Products
+ │   ├─ Variants
+ │   ├─ Prices
+ │   └─ Stocks
+ │       └─ StockMovements
+ │
+ ├─ Workflows
+ ├─ AI Agents
+ ├─ Reports
+ └─ Integrations
+Minimum Ana Tablo Sayısı
+CORE              10
+IAM               25
+CRM               20
+LEAD              10
+SALES             15
+QUOTE             15
+ORDER             15
+PRODUCT           15
+INVENTORY         18
+PROCUREMENT       15
+FINANCE           20
+TASK/ACTIVITY     12
+COMMUNICATION     18
+SUPPORT           15
+MARKETING         15
+PROJECT           12
+DEALER            12
+WORKFLOW          15
+AI                18
+REPORTING         12
+INTEGRATION       14
+NOTIFICATION       8
+LOW-CODE          12
+PLATFORM COMMON   18
+
+TOTAL             ~350 tablo
+
+
+
+
+İlk Geliştirilecek ERD Slice
+50 kişilik ekip için önce çekirdek slice:
+
+CORE
+IAM
+CRM
+LEAD
+SALES
+QUOTE
+TASK
+NOTIFICATION
+AUDIT
+
+
+İlk migration paketi:
+
+001_core
+002_iam
+003_crm
+004_lead
+005_sales
+006_quote
+007_task_activity
+008_notification
+009_audit_event
+
+
+
+
+Kritik Foreign Key Kuralları
+Her tabloda:
+
+tenant_id → tenants.id
+created_by → users.id
+updated_by → users.id
+deleted_by → users.id
+
+
+İş tablolarında:
+
+customer_id → customers.id
+assigned_user_id → users.id
+branch_id → branches.id
+dealer_id → dealers.id
+
+
+Satış zinciri:
+
+lead_id → leads.id
+opportunity_id → opportunities.id
+quote_id → quotes.id
+order_id → orders.id
+invoice_id → invoices.id
+payment_id → payments.id
+
+
+Ürün zinciri:
+product_id → products.id
+product_variant_id → product_variants.id
+warehouse_id → warehouses.id
+stock_id → stocks.id
+
+
+
+
+PostgreSQL Tasarım Standardı
+Her iş tablosu:
+
+id uuid primary key
+tenant_id uuid not null references tenants(id)
+
+created_at timestamptz not null default now()
+created_by uuid references users(id)
+
+updated_at timestamptz
+updated_by uuid references users(id)
+
+deleted_at timestamptz
+deleted_by uuid references users(id)
+
+version integer not null default 1
+
+
+Zorunlu indeks:
+
+CREATE INDEX idx_<table>_tenant_id ON <table>(tenant_id);
+CREATE INDEX idx_<table>_deleted_at ON <table>(deleted_at);
+
+
+Tenant + durum:
+
+CREATE INDEX idx_<table>_tenant_status
+ON <table>(tenant_id, status);
+
+
+
+
+RLS Standardı
+ALTER TABLE <table_name> ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation_<table_name>
+ON <table_name>
+USING (
+  tenant_id = current_setting('app.tenant_id')::uuid
+);
+
+
+Backend her request başında:
+
+SET app.tenant_id = '<tenant_id>';
+SET app.user_id = '<user_id>';
+
+
+
+
+Büyük Tablolar İçin Partition Adayları
+audit_logs
+domain_events
+timeline_events
+messages
+notifications
+activity_logs
+workflow_logs
+ai_usage_logs
+api_logs
+
+
+Partition stratejisi:
+
+tenant_id hash partition
++
+created_at monthly partition
+
+
+
+
+Master ERD v1 Sonucu
+Bu model:
+
+CRM
+ERP Lite
+Omnichannel
+B2B Portal
+Workflow Engine
+AI Platform
+Low-Code Customization
+Enterprise SaaS Admin
+
+
+tamamını taşıyabilecek ana veri omurgasıdır.
+
+Bir sonraki teknik çıktı:
+
+CRM OS Data Dictionary v1
+
+
+olmalı. Bu dokümanda her tablo için:
+
+field_name
+data_type
+nullable
+default
+foreign_key
+index
+description
+business_rule
+
+
+tanımlanır.
+
+
+
+
+Aşağıda CRM OS Data Dictionary v1 veriyorum. Bu sürüm, 50 kişilik
+ekibin aynı veri standardıyla çalışması için çekirdek + enterprise
+omurga sözlüğüdür.
+
+
+
+CRM OS Data Dictionary v1
+
+0. Global Field Standard
+Tüm ana iş tablolarında bulunacak ortak alanlar:
+
+      Alan                 Tip         Zorunlu               Açıklama
+id                             uuid               Evet   Primary key
+tenant_id                      uuid               Evet   Tenant izolasyonu
+created_at              timestamptz               Evet   Oluşturma zamanı
+created_by                     uuid              Hayır   Oluşturan kullanıcı
+                                                         Güncelleme
+updated_at              timestamptz              Hayır
+                                                         zamanı
+                                                    Güncelleyen
+updated_by                  uuid              Hayır
+                                                    kullanıcı
+deleted_at          timestamptz               Hayır Soft delete
+deleted_by                 uuid               Hayır Silen kullanıcı
+version                     int                Evet Optimistic locking
+
+
+
+1. CORE
+
+tenants
+          Alan       Tip            Zorunlu                 Açıklama
+id                          uuid               Evet   Tenant ID
+name                varchar(255)               Evet   Firma adı
+slug                varchar(100)               Evet   URL/tenant kodu
+plan_id                     uuid              Hayır   Paket
+                                                      active, suspended,
+status               varchar(30)              Evet
+                                                      cancelled
+default_currency       varchar(3)             Evet    TRY, USD, EUR
+timezone              varchar(80)             Evet    Europe/Istanbul
+locale                varchar(10)             Evet    tr-TR
+created_at          timestamptz               Evet    Oluşturma
+
+tenant_settings
+          Alan       Tip            Zorunlu               Açıklama
+id                          uuid               Evet   PK
+tenant_id                   uuid               Evet   Tenant
+key                 varchar(150)               Evet   Ayar anahtarı
+value                     jsonb               Hayır   Ayar değeri
+is_encrypted            boolean                Evet   Şifreli mi
+
+plans
+          Alan       Tip            Zorunlu                 Açıklama
+id                          uuid              Evet    Plan ID
+                                                      starter, pro,
+code                 varchar(50)              Evet
+                                                      enterprise
+name                varchar(100)               Evet   Plan adı
+monthly_price      numeric(18,2)              Hayır   Aylık fiyat
+yearly_price       numeric(18,2)              Hayır   Yıllık fiyat
+is_active               boolean                Evet   Aktif mi
+2. IAM
+
+users
+          Alan      Tip            Zorunlu                 Açıklama
+id                         uuid               Evet   User ID
+tenant_id                  uuid               Evet   Tenant
+email              varchar(255)               Evet   E-posta
+phone               varchar(50)              Hayır   Telefon
+password_hash               text             Hayır   Şifre hash
+first_name         varchar(100)               Evet   Ad
+last_name          varchar(100)               Evet   Soyad
+avatar_url                  text             Hayır   Profil resmi
+                                                     invited, active,
+status              varchar(30)              Evet
+                                                     blocked
+last_login_at      timestamptz               Hayır   Son giriş
+branch_id                 uuid               Hayır   Şube
+department_id             uuid               Hayır   Departman
+manager_id                uuid               Hayır   Üst yönetici
+
+roles
+          Alan      Tip            Zorunlu                Açıklama
+id                         uuid              Evet    Role ID
+tenant_id                  uuid              Evet    Tenant
+code                varchar(80)              Evet    sales_manager
+name               varchar(120)              Evet    Rol adı
+is_system              boolean               Evet    Sistem rolü mü
+
+permissions
+          Alan      Tip            Zorunlu                Açıklama
+id                         uuid               Evet   Permission ID
+code               varchar(150)               Evet   customer.read
+module              varchar(80)               Evet   crm, sales, finance
+description                 text             Hayır   Açıklama
+
+user_roles
+          Alan      Tip            Zorunlu             Açıklama
+user_id                    uuid              Evet User FK
+role_id                    uuid              Evet Role FK
+
+role_permissions
+          Alan      Tip            Zorunlu             Açıklama
+role_id                    uuid              Evet Role FK
+permission_id                   uuid              Evet Permission FK
+
+
+
+3. ORGANIZATION
+
+branches
+        Alan             Tip            Zorunlu                Açıklama
+id                              uuid               Evet   Şube ID
+tenant_id                       uuid               Evet   Tenant
+name                    varchar(150)               Evet   Şube adı
+code                     varchar(50)              Hayır   Şube kodu
+address                          text             Hayır   Adres
+city                    varchar(100)              Hayır   Şehir
+status                   varchar(30)               Evet   active/passive
+
+departments
+        Alan             Tip            Zorunlu                Açıklama
+id                              uuid               Evet   Departman ID
+tenant_id                       uuid               Evet   Tenant
+name                    varchar(150)               Evet   Departman adı
+parent_id                       uuid              Hayır   Üst departman
+
+teams
+        Alan             Tip            Zorunlu               Açıklama
+id                              uuid               Evet   Team ID
+tenant_id                       uuid               Evet   Tenant
+name                    varchar(150)               Evet   Takım adı
+leader_id                       uuid              Hayır   Takım lideri
+
+
+
+4. CRM / Customer 360
+
+customers
+        Alan             Tip            Zorunlu                Açıklama
+id                              uuid              Evet    Customer ID
+tenant_id                       uuid              Evet    Tenant
+                                                          individual,
+customer_type            varchar(30)              Evet
+                                                          corporate
+code                     varchar(80)              Hayır   Müşteri kodu
+company_name            varchar(255)              Hayır   Firma adı
+first_name              varchar(100)              Hayır   Bireysel ad
+last_name               varchar(100)              Hayır   Bireysel soyad
+tax_number             varchar(50)              Hayır   Vergi no
+tax_office            varchar(100)              Hayır   Vergi dairesi
+email                 varchar(255)              Hayır   Ana e-posta
+phone                  varchar(50)              Hayır   Ana telefon
+source                varchar(100)              Hayır   Kaynak
+segment_id                    uuid              Hayır   Segment
+                                                        new, active,
+status                 varchar(30)              Evet
+                                                        passive, risk, vip
+assigned_user_id             uuid               Hayır   Müşteri temsilcisi
+branch_id                    uuid               Hayır   Şube
+dealer_id                    uuid               Hayır   Bayi
+credit_limit         numeric(18,2)              Hayır   Kredi limiti
+risk_score            numeric(5,2)              Hayır   Risk skoru
+lifetime_value       numeric(18,2)              Hayır   Yaşam boyu değer
+
+customer_contacts
+         Alan          Tip            Zorunlu                Açıklama
+id                            uuid               Evet   Contact ID
+tenant_id                     uuid               Evet   Tenant
+customer_id                   uuid               Evet   Customer
+full_name             varchar(255)               Evet   Yetkili kişi
+title                 varchar(120)              Hayır   Ünvan
+email                 varchar(255)              Hayır   E-posta
+phone                  varchar(50)              Hayır   Telefon
+mobile                 varchar(50)              Hayır   Cep
+is_primary                boolean                Evet   Ana kişi
+is_decision_maker         boolean                Evet   Karar verici mi
+
+customer_addresses
+         Alan          Tip            Zorunlu                 Açıklama
+id                            uuid              Evet    Address ID
+tenant_id                     uuid              Evet    Tenant
+customer_id                   uuid              Evet    Customer
+                                                        billing, shipping,
+address_type           varchar(30)              Evet
+                                                        office
+country               varchar(100)              Hayır   Ülke
+city                  varchar(100)              Hayır   Şehir
+district              varchar(100)              Hayır   İlçe
+address_line                   text              Evet   Açık adres
+postal_code            varchar(20)              Hayır   Posta kodu
+latitude             numeric(10,7)              Hayır   Enlem
+longitude           numeric(10,7)               Hayır Boylam
+
+customer_segments
+         Alan         Tip             Zorunlu                Açıklama
+id                           uuid                Evet   Segment ID
+tenant_id                    uuid                Evet   Tenant
+name                 varchar(120)                Evet   Segment adı
+description                   text              Hayır   Açıklama
+
+
+
+5. LEAD
+
+leads
+         Alan         Tip             Zorunlu                 Açıklama
+id                           uuid                Evet   Lead ID
+tenant_id                    uuid                Evet   Tenant
+full_name            varchar(255)               Hayır   Kişi adı
+company_name         varchar(255)               Hayır   Firma
+email                varchar(255)               Hayır   E-posta
+phone                 varchar(50)               Hayır   Telefon
+source_id                    uuid               Hayır   Lead kaynağı
+                                                        new, contacted,
+status                varchar(40)               Evet    qualified, lost,
+                                                        converted
+score                          int               Evet   Lead skoru
+temperature            varchar(20)              Hayır   cold, warm, hot
+assigned_user_id             uuid               Hayır   Temsilci
+customer_id                  uuid               Hayır   Dönüşen müşteri
+opportunity_id               uuid               Hayır   Dönüşen fırsat
+converted_at         timestamptz                Hayır   Dönüşüm zamanı
+lost_reason_id               uuid               Hayır   Kayıp nedeni
+
+lead_sources
+         Alan         Tip             Zorunlu                 Açıklama
+id                           uuid               Evet    Source ID
+tenant_id                    uuid               Evet    Tenant
+name                 varchar(120)               Evet    Kaynak adı
+                                                        web, whatsapp,
+channel               varchar(80)               Hayır
+                                                        instagram, fair
+is_active                   boolean             Evet    Aktif mi
+lead_conversion_logs
+       Alan             Tip             Zorunlu                Açıklama
+id                            uuid                 Evet   Log ID
+tenant_id                     uuid                 Evet   Tenant
+lead_id                       uuid                 Evet   Lead
+customer_id                   uuid                Hayır   Oluşan müşteri
+opportunity_id                uuid                Hayır   Oluşan fırsat
+converted_by                  uuid                 Evet   Kullanıcı
+converted_at           timestamptz                 Evet   Tarih
+
+
+
+6. SALES
+
+pipelines
+       Alan             Tip             Zorunlu                Açıklama
+id                             uuid               Evet    Pipeline ID
+tenant_id                      uuid               Evet    Tenant
+name                   varchar(150)               Evet    Pipeline adı
+                                                          sales, project,
+module                  varchar(50)               Hayır
+                                                          dealer
+is_default                    boolean             Evet    Varsayılan mı
+
+pipeline_stages
+       Alan             Tip             Zorunlu                Açıklama
+id                             uuid               Evet    Stage ID
+tenant_id                      uuid               Evet    Tenant
+pipeline_id                    uuid               Evet    Pipeline
+name                   varchar(120)               Evet    Aşama adı
+probability            numeric(5,2)               Evet    Olasılık
+sort_order                      int               Evet    Sıra
+stage_type              varchar(30)               Evet    open, won, lost
+
+opportunities
+         Alan            Tip            Zorunlu                Açıklama
+id                              uuid               Evet   Opportunity ID
+tenant_id                       uuid               Evet   Tenant
+customer_id                     uuid               Evet   Müşteri
+lead_id                         uuid              Hayır   Kaynak lead
+pipeline_id                     uuid               Evet   Pipeline
+stage_id                        uuid               Evet   Aşama
+title                   varchar(255)               Evet   Fırsat adı
+amount                  numeric(18,2)               Evet   Beklenen tutar
+currency                    varchar(3)              Evet   Para birimi
+probability              numeric(5,2)              Hayır   Kazanma olasılığı
+expected_close_date              date              Hayır   Tahmini kapanış
+status                     varchar(30)              Evet   open, won, lost
+assigned_user_id                 uuid              Hayır   Temsilci
+lost_reason_id                   uuid              Hayır   Kayıp nedeni
+won_at                   timestamptz               Hayır   Kazanma zamanı
+lost_at                  timestamptz               Hayır   Kaybetme zamanı
+
+opportunity_products
+         Alan             Tip            Zorunlu                Açıklama
+id                              uuid                Evet   PK
+tenant_id                       uuid                Evet   Tenant
+opportunity_id                  uuid                Evet   Fırsat
+product_id                      uuid               Hayır   Ürün
+product_variant_id              uuid               Hayır   Varyant
+quantity                numeric(18,3)               Evet   Miktar
+estimated_unit_price    numeric(18,2)              Hayır   Tahmini fiyat
+
+
+
+7. QUOTE
+
+quotes
+         Alan            Tip             Zorunlu                 Açıklama
+id                             uuid                 Evet   Quote ID
+tenant_id                      uuid                 Evet   Tenant
+quote_no                 varchar(80)                Evet   Teklif no
+customer_id                    uuid                 Evet   Müşteri
+opportunity_id                 uuid                Hayır   Fırsat
+                                                           draft, sent, viewed,
+status                   varchar(40)               Evet    approved, rejected,
+                                                           expired
+currency                  varchar(3)                Evet   Para birimi
+subtotal_amount        numeric(18,2)                Evet   Ara toplam
+discount_amount        numeric(18,2)                Evet   İndirim
+tax_amount             numeric(18,2)                Evet   Vergi
+total_amount           numeric(18,2)                Evet   Genel toplam
+cost_amount            numeric(18,2)               Hayır   Maliyet
+profit_amount          numeric(18,2)               Hayır   Kâr
+margin_percent          numeric(6,2)               Hayır   Marj
+valid_until                  date                    Hayır    Geçerlilik
+sent_at               timestamptz                    Hayır    Gönderim
+approved_at           timestamptz                    Hayır    Onay
+rejected_at           timestamptz                    Hayır    Red
+
+quote_items
+         Alan          Tip                 Zorunlu                  Açıklama
+id                           uuid                     Evet    Item ID
+tenant_id                    uuid                     Evet    Tenant
+quote_id                     uuid                     Evet    Teklif
+product_id                   uuid                    Hayır    Ürün
+product_variant_id           uuid                    Hayır    Varyant
+description                   text                   Hayır    Açıklama
+quantity             numeric(18,3)                    Evet    Miktar
+unit                   varchar(30)                   Hayır    Birim
+unit_price           numeric(18,2)                    Evet    Birim fiyat
+discount_amount      numeric(18,2)                    Evet    İndirim
+tax_rate              numeric(5,2)                    Evet    KDV oranı
+line_total           numeric(18,2)                    Evet    Satır toplamı
+
+quote_approvals
+         Alan          Tip                 Zorunlu                 Açıklama
+id                                 uuid              Evet     Approval ID
+tenant_id                          uuid              Evet     Tenant
+quote_id                           uuid              Evet     Teklif
+requested_by                       uuid              Evet     Talep eden
+                                                              pending, approved,
+status                 varchar(30)                   Evet
+                                                              rejected
+reason                        text                   Hayır    Onay gerekçesi
+requested_at          timestamptz                     Evet    Talep tarihi
+
+
+
+8. ORDER
+
+orders
+           Alan              Tip            Zorunlu                Açıklama
+id                                 uuid                Evet    Order ID
+tenant_id                          uuid                Evet    Tenant
+order_no                     varchar(80)               Evet    Sipariş no
+customer_id                        uuid                Evet    Müşteri
+quote_id                           uuid               Hayır    Kaynak teklif
+                                                                   draft, confirmed,
+                                                                   preparing,
+status                           varchar(40)               Evet    shipped,
+                                                                   delivered,
+                                                                   cancelled
+currency                       varchar(3)                  Evet    Para birimi
+subtotal_amount            numeric(18,2)                   Evet    Ara toplam
+tax_amount                 numeric(18,2)                   Evet    Vergi
+total_amount               numeric(18,2)                   Evet    Genel toplam
+expected_delivery_date              date                  Hayır    Termin
+confirmed_at                timestamptz                   Hayır    Onay zamanı
+delivered_at                timestamptz                   Hayır    Teslim zamanı
+
+order_items
+         Alan              Tip                 Zorunlu                  Açıklama
+id                               uuid                     Evet    Item ID
+tenant_id                        uuid                     Evet    Tenant
+order_id                         uuid                     Evet    Sipariş
+product_id                       uuid                    Hayır    Ürün
+product_variant_id               uuid                    Hayır    Varyant
+quantity                 numeric(18,3)                    Evet    Miktar
+unit_price               numeric(18,2)                    Evet    Birim fiyat
+tax_rate                  numeric(5,2)                    Evet    KDV
+line_total               numeric(18,2)                    Evet    Satır toplamı
+reserved_quantity        numeric(18,3)                    Evet    Rezerve miktar
+shipped_quantity         numeric(18,3)                    Evet    Sevk edilen
+
+
+
+9. PRODUCT / CATALOG
+
+products
+         Alan              Tip                 Zorunlu                 Açıklama
+id                                uuid                    Evet    Product ID
+tenant_id                         uuid                    Evet    Tenant
+sku                       varchar(100)                    Evet    SKU
+name                      varchar(255)                    Evet    Ürün adı
+description                        text                  Hayır    Açıklama
+category_id                       uuid                   Hayır    Kategori
+brand_id                          uuid                   Hayır    Marka
+collection_id                     uuid                   Hayır    Koleksiyon
+                                                      wallpaper, fabric,
+product_type           varchar(50)               Evet
+                                                      service
+unit                   varchar(30)               Evet pcs, roll, m2
+                                                      Stok takip edilsin
+is_stock_tracked             boolean             Evet
+                                                      mi
+status                 varchar(30)               Evet active, passive
+
+product_variants
+         Alan          Tip             Zorunlu                Açıklama
+id                            uuid                Evet   Variant ID
+tenant_id                     uuid                Evet   Tenant
+product_id                    uuid                Evet   Ürün
+sku                   varchar(100)                Evet   Varyant SKU
+barcode               varchar(100)               Hayır   Barkod
+color                 varchar(100)               Hayır   Renk
+pattern               varchar(100)               Hayır   Desen
+size                  varchar(100)               Hayır   Ölçü
+roll_width           numeric(10,2)               Hayır   Rulo eni
+roll_length          numeric(10,2)               Hayır   Rulo boyu
+status                 varchar(30)                Evet   active/passive
+
+product_prices
+         Alan          Tip             Zorunlu                 Açıklama
+id                           uuid                 Evet   Price ID
+tenant_id                    uuid                 Evet   Tenant
+product_variant_id           uuid                 Evet   Varyant
+price_list_id                uuid                 Evet   Fiyat listesi
+currency                varchar(3)                Evet   Para birimi
+price                numeric(18,2)                Evet   Satış fiyatı
+cost_price           numeric(18,2)               Hayır   Maliyet
+valid_from                   date                Hayır   Başlangıç
+valid_to                     date                Hayır   Bitiş
+
+
+
+10. INVENTORY
+
+warehouses
+         Alan          Tip             Zorunlu             Açıklama
+id                              uuid              Evet Warehouse ID
+tenant_id                       uuid              Evet Tenant
+branch_id                       uuid             Hayır Şube
+name                  varchar(150)              Evet Depo adı
+code                   varchar(50)             Hayır Depo kodu
+status                 varchar(30)              Evet active/passive
+
+stocks
+         Alan          Tip           Zorunlu                 Açıklama
+id                           uuid               Evet   Stock ID
+tenant_id                    uuid               Evet   Tenant
+warehouse_id                 uuid               Evet   Depo
+product_variant_id           uuid               Evet   Varyant
+quantity_on_hand     numeric(18,3)              Evet   Fiziki stok
+quantity_reserved    numeric(18,3)              Evet   Rezerve
+quantity_available   numeric(18,3)              Evet   Satılabilir
+critical_level       numeric(18,3)             Hayır   Kritik seviye
+
+stock_movements
+         Alan          Tip           Zorunlu                  Açıklama
+id                           uuid              Evet    Movement ID
+tenant_id                    uuid              Evet    Tenant
+warehouse_id                 uuid              Evet    Depo
+product_variant_id           uuid              Evet    Varyant
+                                                       in, out, transfer,
+movement_type          varchar(30)             Evet    reserve, release,
+                                                       adjust
+quantity             numeric(18,3)             Evet    Miktar
+                                                       order, purchase,
+reference_type         varchar(50)             Hayır
+                                                       count
+reference_id                 uuid              Hayır   İlgili kayıt
+movement_at           timestamptz               Evet   Hareket zamanı
+
+
+
+11. FINANCE
+
+accounts
+         Alan          Tip           Zorunlu                Açıklama
+id                           uuid               Evet   Account ID
+tenant_id                    uuid               Evet   Tenant
+customer_id                  uuid              Hayır   Müşteri cari
+supplier_id                  uuid              Hayır   Tedarikçi cari
+account_code           varchar(80)              Evet   Cari kod
+                                                          customer, supplier,
+account_type             varchar(30)              Evet
+                                                          dealer
+currency                  varchar(3)               Evet   Para birimi
+balance                numeric(18,2)               Evet   Güncel bakiye
+credit_limit           numeric(18,2)              Hayır   Kredi limiti
+status                   varchar(30)               Evet   active/passive
+
+account_transactions
+         Alan            Tip            Zorunlu                  Açıklama
+id                              uuid              Evet    Transaction ID
+tenant_id                       uuid              Evet    Tenant
+account_id                      uuid              Evet    Cari hesap
+                                                          debit, credit,
+transaction_type         varchar(40)              Evet    payment, invoice,
+                                                          refund
+debit_amount           numeric(18,2)              Evet    Borç
+credit_amount          numeric(18,2)              Evet    Alacak
+currency                  varchar(3)              Evet    Para birimi
+                                                          invoice, payment,
+reference_type           varchar(50)              Hayır
+                                                          order
+reference_id                    uuid              Hayır   İlgili kayıt
+transaction_date                date               Evet   İşlem tarihi
+
+payments
+         Alan             Tip           Zorunlu                Açıklama
+id                             uuid                Evet   Payment ID
+tenant_id                      uuid                Evet   Tenant
+account_id                     uuid                Evet   Cari
+customer_id                    uuid               Hayır   Müşteri
+payment_method_id              uuid                Evet   Ödeme yöntemi
+amount                 numeric(18,2)               Evet   Tutar
+currency                  varchar(3)               Evet   Para birimi
+payment_date                   date                Evet   Ödeme tarihi
+                                                          pending,
+status                    varchar(30)              Evet   completed,
+                                                          cancelled
+12. TASK / ACTIVITY
+
+tasks
+           Alan        Tip            Zorunlu                  Açıklama
+id                            uuid               Evet   Task ID
+tenant_id                     uuid               Evet   Tenant
+title                 varchar(255)               Evet   Başlık
+description                    text             Hayır   Açıklama
+                                                        customer, lead,
+entity_type            varchar(50)              Hayır
+                                                        quote
+entity_id                     uuid              Hayır   İlgili kayıt
+assigned_user_id              uuid              Hayır   Atanan kişi
+                                                        low, normal, high,
+priority               varchar(20)              Evet
+                                                        urgent
+                                                        action_item, doing, done,
+status                 varchar(30)              Evet
+                                                        cancelled
+due_at                timestamptz               Hayır   Son tarih
+completed_at          timestamptz               Hayır   Tamamlanma
+
+activities
+           Alan        Tip            Zorunlu                  Açıklama
+id                            uuid              Evet    Activity ID
+tenant_id                     uuid              Evet    Tenant
+                                                        customer, lead,
+entity_type            varchar(50)              Evet
+                                                        opportunity
+entity_id                     uuid              Evet    İlgili kayıt
+                                                        call, meeting,
+activity_type          varchar(50)              Evet    email, whatsapp,
+                                                        note
+subject               varchar(255)              Hayır   Konu
+content                        text             Hayır   İçerik
+activity_at           timestamptz                Evet   Aktivite zamanı
+created_by                    uuid              Hayır   Oluşturan
+
+
+
+13. COMMUNICATION
+
+conversations
+           Alan        Tip            Zorunlu             Açıklama
+id                            uuid               Evet Conversation ID
+tenant_id                     uuid               Evet Tenant
+customer_id                   uuid              Hayır Müşteri
+channel_id                   uuid               Evet Kanal
+channel_account_id           uuid               Evet Bağlı hesap
+subject              varchar(255)              Hayır Konu
+                                                     open, pending,
+status                varchar(30)               Evet
+                                                     resolved
+assigned_user_id            uuid               Hayır Atanan temsilci
+last_message_at      timestamptz               Hayır Son mesaj zamanı
+
+messages
+           Alan       Tip            Zorunlu                 Açıklama
+id                           uuid              Evet    Message ID
+tenant_id                    uuid              Evet    Tenant
+conversation_id              uuid              Evet    Konuşma
+                                                       customer, user,
+sender_type           varchar(30)              Evet
+                                                       system, ai
+sender_id                    uuid              Hayır   Gönderen
+                                                       text, image, file,
+message_type          varchar(30)              Evet
+                                                       audio
+body                         text              Hayır   Mesaj içeriği
+direction             varchar(20)               Evet   inbound, outbound
+                                                       sent, delivered,
+status                varchar(30)              Evet
+                                                       read, failed
+sent_at              timestamptz               Hayır   Gönderim
+
+
+
+14. SUPPORT
+
+tickets
+           Alan       Tip            Zorunlu                Açıklama
+id                           uuid               Evet   Ticket ID
+tenant_id                    uuid               Evet   Tenant
+ticket_no             varchar(80)               Evet   Ticket no
+customer_id                  uuid              Hayır   Müşteri
+subject              varchar(255)               Evet   Konu
+description                   text             Hayır   Açıklama
+category_id                  uuid              Hayır   Kategori
+                                                       low, normal, high,
+priority              varchar(20)              Evet
+                                                       urgent
+                                                       open, pending,
+status                varchar(30)              Evet
+                                                       resolved, closed
+assigned_user_id             uuid              Hayır   Temsilci
+sla_due_at       timestamptz               Hayır SLA son tarihi
+resolved_at      timestamptz               Hayır Çözüm
+
+
+
+15. WORKFLOW
+
+workflows
+         Alan     Tip            Zorunlu                Açıklama
+id                       uuid              Evet    Workflow ID
+tenant_id                uuid              Evet    Tenant
+name             varchar(150)              Evet    Workflow adı
+module            varchar(80)              Evet    crm, sales, finance
+                                                   draft, active,
+status            varchar(30)              Evet
+                                                   paused
+                                                   event, schedule,
+trigger_type      varchar(80)              Hayır
+                                                   manual
+
+workflow_nodes
+         Alan     Tip            Zorunlu                Açıklama
+id                       uuid              Evet    Node ID
+tenant_id                uuid              Evet    Tenant
+workflow_id              uuid              Evet    Workflow
+                                                   trigger, condition,
+node_type         varchar(50)              Evet
+                                                   action, delay
+config                  jsonb               Evet   Node ayarları
+position_x                 int             Hayır   Canvas X
+position_y                 int             Hayır   Canvas Y
+
+workflow_runs
+         Alan     Tip            Zorunlu                 Açıklama
+id                       uuid              Evet    Run ID
+tenant_id                uuid              Evet    Tenant
+workflow_id              uuid              Evet    Workflow
+                                                   running,
+status            varchar(30)              Evet
+                                                   completed, failed
+entity_type        varchar(50)             Hayır   Tetikleyen varlık
+entity_id                uuid              Hayır   Kayıt
+started_at       timestamptz                Evet   Başlangıç
+finished_at      timestamptz               Hayır   Bitiş
+16. AI
+
+ai_agents
+         Alan         Tip           Zorunlu                Açıklama
+id                           uuid             Evet    Agent ID
+tenant_id                    uuid             Evet    Tenant
+name                 varchar(150)             Evet    Agent adı
+                                                      sales, support,
+agent_type            varchar(80)             Evet
+                                                      finance
+instructions                 text             Hayır   Sistem talimatı
+status                varchar(30)              Evet   active, inactive
+
+ai_usage_logs
+         Alan         Tip           Zorunlu                 Açıklama
+id                          uuid               Evet   Usage ID
+tenant_id                   uuid               Evet   Tenant
+user_id                     uuid              Hayır   Kullanıcı
+agent_id                    uuid              Hayır   Agent
+                                                      summarize,
+action_type           varchar(80)             Evet
+                                                      classify, generate
+input_tokens                  int             Hayır   Girdi token
+output_tokens                 int             Hayır   Çıktı token
+cost_amount         numeric(18,6)             Hayır   Maliyet
+created_at           timestamptz               Evet   Zaman
+
+
+
+17. REPORTING
+
+dashboards
+         Alan         Tip           Zorunlu                Açıklama
+id                           uuid              Evet   Dashboard ID
+tenant_id                    uuid              Evet   Tenant
+name                 varchar(150)              Evet   Dashboard adı
+owner_id                     uuid             Hayır   Sahip
+                                                      private, team,
+visibility            varchar(30)             Evet
+                                                      tenant
+layout_config               jsonb             Hayır   Yerleşim
+
+dashboard_widgets
+         Alan         Tip           Zorunlu            Açıklama
+id                          uuid              Evet Widget ID
+tenant_id                   uuid              Evet Tenant
+dashboard_id                  uuid               Evet    Dashboard
+widget_type            varchar(80)               Evet    chart, metric, table
+title                 varchar(150)               Evet    Başlık
+query_config                jsonb                Evet    Veri sorgusu
+layout                      jsonb                Evet    Pozisyon
+
+
+
+18. INTEGRATION
+
+api_keys
+        Alan           Tip             Zorunlu                Açıklama
+id                             uuid               Evet   API Key ID
+tenant_id                      uuid               Evet   Tenant
+name                  varchar(150)                Evet   Anahtar adı
+key_hash                        text              Evet   Hashlenmiş key
+scopes                        text[]              Evet   Yetki kapsamı
+status                  varchar(30)               Evet   active, revoked
+last_used_at          timestamptz                Hayır   Son kullanım
+
+webhooks
+        Alan           Tip             Zorunlu                Açıklama
+id                            uuid               Evet    Webhook ID
+tenant_id                     uuid               Evet    Tenant
+name                  varchar(150)               Evet    Webhook adı
+url                            text              Evet    Hedef URL
+events                       text[]              Evet    Dinlenen eventler
+secret                         text              Evet    İmza secret
+status                 varchar(30)               Evet    active, inactive
+
+
+
+19. COMMON PLATFORM
+
+files
+        Alan           Tip             Zorunlu                 Açıklama
+id                            uuid                Evet   File ID
+tenant_id                     uuid                Evet   Tenant
+entity_type            varchar(50)               Hayır   Bağlı varlık tipi
+entity_id                     uuid               Hayır   Bağlı kayıt
+file_name             varchar(255)                Evet   Dosya adı
+mime_type             varchar(120)               Hayır   MIME
+size_bytes                  bigint               Hayır   Boyut
+storage_provider    varchar(50)              Evet s3, minio
+storage_path               text              Evet Dosya yolu
+uploaded_by               uuid              Hayır Yükleyen
+
+comments
+       Alan         Tip           Zorunlu                Açıklama
+id                        uuid              Evet    Comment ID
+tenant_id                 uuid              Evet    Tenant
+entity_type         varchar(50)             Evet    Varlık tipi
+entity_id                 uuid              Evet    Varlık ID
+body                       text             Evet    Yorum
+created_by                uuid              Evet    Kullanıcı
+
+tags
+       Alan         Tip           Zorunlu                Açıklama
+id                        uuid               Evet   Tag ID
+tenant_id                 uuid               Evet   Tenant
+name                varchar(80)              Evet   Etiket
+color               varchar(20)             Hayır   Renk
+module              varchar(80)             Hayır   Modül
+
+entity_tags
+        Alan        Tip           Zorunlu                Açıklama
+tenant_id                 uuid              Evet    Tenant
+tag_id                    uuid              Evet    Tag
+entity_type         varchar(50)             Evet    Varlık tipi
+entity_id                 uuid              Evet    Kayıt ID
+
+timeline_events
+       Alan         Tip           Zorunlu                 Açıklama
+id                        uuid              Evet    Event ID
+tenant_id                 uuid              Evet    Tenant
+                                                    customer, lead,
+entity_type         varchar(50)             Evet
+                                                    quote
+entity_id                 uuid              Evet    Kayıt
+                                                    QuoteSent,
+event_type         varchar(100)             Evet
+                                                    PaymentReceived
+title              varchar(255)              Evet   Görünen başlık
+payload                   jsonb             Hayır   Detay veri
+occurred_at        timestamptz               Evet   Olay zamanı
+domain_events
+         Alan              Tip            Zorunlu                Açıklama
+id                                uuid               Evet   Event ID
+tenant_id                         uuid               Evet   Tenant
+event_type                varchar(100)               Evet   LeadCreated
+aggregate_type              varchar(80)              Evet   lead, quote, order
+aggregate_id                      uuid               Evet   Kayıt ID
+payload                          jsonb               Evet   Event verisi
+published_at              timestamptz               Hayır   Yayın zamanı
+created_at                timestamptz                Evet   Oluşturma
+
+audit_logs
+         Alan              Tip            Zorunlu                 Açıklama
+id                               uuid                Evet   Audit ID
+tenant_id                        uuid                Evet   Tenant
+user_id                          uuid               Hayır   Kullanıcı
+entity_type                varchar(80)               Evet   Tablo/varlık
+entity_id                        uuid               Hayır   Kayıt
+                                                            create, update,
+action                     varchar(50)              Evet
+                                                            delete, login
+old_data                         jsonb              Hayır   Eski veri
+new_data                         jsonb              Hayır   Yeni veri
+ip_address                         inet             Hayır   IP
+user_agent                         text             Hayır   Cihaz
+created_at                timestamptz                Evet   Zaman
+
+
+
+20. Index Standardı
+Her tenant tablosunda:
+
+CREATE INDEX idx_<table>_tenant_id ON <table>(tenant_id);
+CREATE INDEX idx_<table>_tenant_deleted ON <table>(tenant_id,
+deleted_at);
+
+
+Durum bazlı tablolarda:
+
+CREATE INDEX idx_<table>_tenant_status ON <table>(tenant_id,
+status);
+
+
+Sahip/temsilci bazlı tablolarda:
+CREATE INDEX idx_<table>_assigned_user ON <table>(tenant_id,
+assigned_user_id);
+
+
+Zaman bazlı büyük tablolarda:
+
+CREATE INDEX idx_<table>_tenant_created_at ON <table>(tenant_id,
+created_at DESC);
+
+
+
+
+21. Naming Standard
+Tablo: snake_case plural
+Alan: snake_case
+PK: id
+FK: <entity>_id
+Status: varchar(30/40)
+Amount: numeric(18,2)
+Quantity: numeric(18,3)
+DateTime: timestamptz
+Date: date
+JSON: jsonb
+
+
+
+
+22. Data Dictionary v1 Sonucu
+Bu sözlük:
+
+CORE
+IAM
+CRM
+LEAD
+SALES
+QUOTE
+ORDER
+PRODUCT
+INVENTORY
+FINANCE
+TASK
+COMMUNICATION
+SUPPORT
+WORKFLOW
+AI
+REPORTING
+INTEGRATION
+COMMON
+
+
+modülleri için başlangıç veri standardını tanımlar.
+
+Sonraki çıktı doğrudan:
+
+CRM OS PostgreSQL Schema v1
+
+
+olmalı.
+
+
+
+
+Aşağıda CRM OS OpenAPI Contract v1 çekirdek API sözleşmesi var.
+
+openapi: 3.1.0
+info:
+  title: CRM OS API
+  version: 1.0.0
+  description: Multi-tenant SaaS CRM OS API
+
+servers:
+  - url: https://api.crm-os.com/api/v1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Tenants
+  - name: Users
+  - name: Roles
+  - name: Customers
+  - name: Leads
+  - name: Pipelines
+  - name: Opportunities
+  - name: Quotes
+  - name: Tasks
+  - name: Activities
+  - name: Files
+ - name: Notifications
+ - name: Audit
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+ parameters:
+   TenantId:
+     name: X-Tenant-Id
+     in: header
+     required: true
+     schema:
+       type: string
+       format: uuid
+
+   Page:
+     name: page
+     in: query
+     schema:
+       type: integer
+       default: 1
+
+   PageSize:
+     name: pageSize
+     in: query
+     schema:
+       type: integer
+       default: 25
+
+ schemas:
+   ApiResponse:
+     type: object
+     properties:
+       data:
+         type: object
+       meta:
+         type: object
+ErrorResponse:
+  type: object
+  properties:
+    error:
+      type: object
+      properties:
+        code:
+           type: string
+        message:
+           type: string
+        details:
+           type: object
+
+LoginRequest:
+  type: object
+  required: [email, password]
+  properties:
+    email:
+      type: string
+    password:
+      type: string
+
+LoginResponse:
+  type: object
+  properties:
+    accessToken:
+      type: string
+    refreshToken:
+      type: string
+    user:
+      $ref: "#/components/schemas/User"
+
+User:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    tenantId:
+      type: string
+      format: uuid
+    email:
+      type: string
+    firstName:
+      type: string
+    lastName:
+      type: string
+    status:
+      type: string
+
+Customer:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    customerType:
+      type: string
+      enum: [individual, corporate]
+    companyName:
+      type: string
+    firstName:
+      type: string
+    lastName:
+      type: string
+    email:
+      type: string
+    phone:
+      type: string
+    status:
+      type: string
+    assignedUserId:
+      type: string
+      format: uuid
+
+CreateCustomerRequest:
+  type: object
+  required: [customerType]
+  properties:
+    customerType:
+      type: string
+      enum: [individual, corporate]
+    companyName:
+      type: string
+    firstName:
+      type: string
+    lastName:
+      type: string
+    email:
+      type: string
+    phone:
+      type: string
+    assignedUserId:
+      type: string
+      format: uuid
+
+Lead:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    fullName:
+      type: string
+    companyName:
+      type: string
+    email:
+      type: string
+    phone:
+      type: string
+    status:
+      type: string
+    score:
+      type: integer
+    assignedUserId:
+      type: string
+      format: uuid
+
+CreateLeadRequest:
+  type: object
+  properties:
+    fullName:
+      type: string
+    companyName:
+      type: string
+    email:
+      type: string
+    phone:
+      type: string
+    sourceId:
+      type: string
+      format: uuid
+
+ConvertLeadRequest:
+  type: object
+  properties:
+    createCustomer:
+      type: boolean
+    customerId:
+      type: string
+      format: uuid
+    createOpportunity:
+      type: boolean
+    opportunityTitle:
+      type: string
+    amount:
+      type: number
+
+Opportunity:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    customerId:
+      type: string
+      format: uuid
+    pipelineId:
+      type: string
+      format: uuid
+    stageId:
+      type: string
+      format: uuid
+    title:
+      type: string
+    amount:
+      type: number
+    status:
+          type: string
+
+    Quote:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quoteNo:
+          type: string
+        customerId:
+          type: string
+          format: uuid
+        opportunityId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        totalAmount:
+          type: number
+
+paths:
+  /auth/login:
+    post:
+       tags: [Auth]
+       summary: Login
+       security: []
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema:
+                $ref: "#/components/schemas/LoginRequest"
+       responses:
+         "200":
+           description: Login success
+           content:
+             application/json:
+                schema:
+                  $ref: "#/components/schemas/LoginResponse"
+
+  /auth/refresh:
+  post:
+    tags: [Auth]
+    summary: Refresh access token
+    responses:
+      "200":
+        description: Token refreshed
+
+/auth/logout:
+  post:
+    tags: [Auth]
+    summary: Logout
+    responses:
+      "204":
+        description: Logged out
+
+/users:
+  get:
+    tags: [Users]
+    summary: List users
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - $ref: "#/components/parameters/Page"
+       - $ref: "#/components/parameters/PageSize"
+    responses:
+       "200":
+         description: Users list
+
+  post:
+    tags: [Users]
+    summary: Create user
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    responses:
+      "201":
+        description: User created
+
+/users/{id}:
+  get:
+    tags: [Users]
+    summary: Get user
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: User detail
+
+  patch:
+    tags: [Users]
+    summary: Update user
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: User updated
+
+  delete:
+    tags: [Users]
+    summary: Soft delete user
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "204":
+        description: Deleted
+
+/customers:
+  get:
+    tags: [Customers]
+    summary: List customers
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - $ref: "#/components/parameters/Page"
+      - $ref: "#/components/parameters/PageSize"
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: q
+        in: query
+        schema:
+          type: string
+    responses:
+      "200":
+        description: Customer list
+
+  post:
+    tags: [Customers]
+    summary: Create customer
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+             $ref: "#/components/schemas/CreateCustomerRequest"
+    responses:
+      "201":
+        description: Customer created
+
+/customers/{id}:
+  get:
+    tags: [Customers]
+    summary: Get customer detail
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - name: id
+         in: path
+         required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Customer detail
+
+  patch:
+    tags: [Customers]
+    summary: Update customer
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Customer updated
+
+  delete:
+    tags: [Customers]
+    summary: Soft delete customer
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "204":
+        description: Deleted
+
+/customers/{id}/timeline:
+  get:
+    tags: [Customers]
+    summary: Get customer timeline
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Customer timeline
+
+/customers/{id}/contacts:
+  get:
+    tags: [Customers]
+    summary: List customer contacts
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: string
+           format: uuid
+    responses:
+       "200":
+         description: Contact list
+
+  post:
+    tags: [Customers]
+    summary: Create customer contact
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "201":
+        description: Contact created
+/leads:
+  get:
+    tags: [Leads]
+    summary: List leads
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - $ref: "#/components/parameters/Page"
+       - $ref: "#/components/parameters/PageSize"
+    responses:
+       "200":
+         description: Lead list
+
+  post:
+    tags: [Leads]
+    summary: Create lead
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+             $ref: "#/components/schemas/CreateLeadRequest"
+    responses:
+      "201":
+        description: Lead created
+
+/leads/{id}:
+  get:
+    tags: [Leads]
+    summary: Get lead
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: string
+           format: uuid
+    responses:
+       "200":
+         description: Lead detail
+  patch:
+    tags: [Leads]
+    summary: Update lead
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Lead updated
+
+/leads/{id}/convert:
+  post:
+    tags: [Leads]
+    summary: Convert lead to customer and opportunity
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+             $ref: "#/components/schemas/ConvertLeadRequest"
+    responses:
+      "200":
+        description: Lead converted
+
+/pipelines:
+  get:
+    tags: [Pipelines]
+    summary: List pipelines
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    responses:
+      "200":
+        description: Pipeline list
+
+  post:
+    tags: [Pipelines]
+    summary: Create pipeline
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    responses:
+      "201":
+        description: Pipeline created
+
+/pipelines/{id}/stages:
+  get:
+    tags: [Pipelines]
+    summary: List pipeline stages
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: string
+           format: uuid
+    responses:
+       "200":
+         description: Stage list
+
+  post:
+    tags: [Pipelines]
+    summary: Create pipeline stage
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "201":
+        description: Stage created
+
+/opportunities:
+  get:
+    tags: [Opportunities]
+    summary: List opportunities
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - $ref: "#/components/parameters/Page"
+       - $ref: "#/components/parameters/PageSize"
+    responses:
+       "200":
+         description: Opportunity list
+
+  post:
+    tags: [Opportunities]
+    summary: Create opportunity
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    responses:
+      "201":
+        description: Opportunity created
+
+/opportunities/{id}:
+  get:
+    tags: [Opportunities]
+    summary: Get opportunity
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: string
+           format: uuid
+    responses:
+       "200":
+         description: Opportunity detail
+
+  patch:
+    tags: [Opportunities]
+    summary: Update opportunity
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Opportunity updated
+
+/opportunities/{id}/move-stage:
+  post:
+    tags: [Opportunities]
+    summary: Move opportunity to another stage
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Stage changed
+
+/opportunities/{id}/win:
+  post:
+    tags: [Opportunities]
+    summary: Mark opportunity as won
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Opportunity won
+
+/opportunities/{id}/lose:
+  post:
+    tags: [Opportunities]
+    summary: Mark opportunity as lost
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Opportunity lost
+
+/quotes:
+  get:
+    tags: [Quotes]
+    summary: List quotes
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - $ref: "#/components/parameters/Page"
+       - $ref: "#/components/parameters/PageSize"
+    responses:
+       "200":
+         description: Quote list
+
+  post:
+    tags: [Quotes]
+    summary: Create quote
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    responses:
+      "201":
+        description: Quote created
+
+/quotes/{id}:
+  get:
+    tags: [Quotes]
+    summary: Get quote
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: string
+           format: uuid
+    responses:
+       "200":
+         description: Quote detail
+
+  patch:
+    tags: [Quotes]
+    summary: Update quote
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Quote updated
+
+/quotes/{id}/items:
+  post:
+    tags: [Quotes]
+    summary: Add quote item
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "201":
+        description: Quote item added
+
+/quotes/{id}/send:
+  post:
+    tags: [Quotes]
+    summary: Send quote
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Quote sent
+
+/quotes/{id}/approve:
+  post:
+    tags: [Quotes]
+    summary: Approve quote
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Quote approved
+
+/quotes/{id}/reject:
+  post:
+    tags: [Quotes]
+    summary: Reject quote
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Quote rejected
+
+/quotes/{id}/pdf:
+  get:
+    tags: [Quotes]
+    summary: Generate or download quote PDF
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - name: id
+         in: path
+         required: true
+         schema:
+           type: string
+           format: uuid
+    responses:
+       "200":
+         description: Quote PDF
+
+/tasks:
+  get:
+    tags: [Tasks]
+    summary: List tasks
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - $ref: "#/components/parameters/Page"
+       - $ref: "#/components/parameters/PageSize"
+    responses:
+       "200":
+         description: Task list
+
+  post:
+    tags: [Tasks]
+    summary: Create task
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    responses:
+      "201":
+        description: Task created
+
+/tasks/{id}/complete:
+  post:
+    tags: [Tasks]
+    summary: Complete task
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Task completed
+
+/activities:
+  get:
+    tags: [Activities]
+    summary: List activities
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+       - name: entityType
+         in: query
+         schema:
+           type: string
+       - name: entityId
+         in: query
+         schema:
+           type: string
+           format: uuid
+    responses:
+       "200":
+         description: Activity list
+
+  post:
+    tags: [Activities]
+    summary: Create activity
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    responses:
+      "201":
+        description: Activity created
+
+/files:
+  post:
+    tags: [Files]
+    summary: Upload file metadata
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+    responses:
+      "201":
+        description: File registered
+
+/notifications:
+  get:
+    tags: [Notifications]
+    summary: List notifications
+    parameters:
+       - $ref: "#/components/parameters/TenantId"
+    responses:
+       "200":
+         description: Notification list
+
+/notifications/{id}/read:
+  post:
+    tags: [Notifications]
+    summary: Mark notification as read
+    parameters:
+      - $ref: "#/components/parameters/TenantId"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      "200":
+        description: Notification read
+ /audit-logs:
+   get:
+     tags: [Audit]
+     summary: List audit logs
+     parameters:
+        - $ref: "#/components/parameters/TenantId"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+     responses:
+        "200":
+          description: Audit logs
+
+
+Bu v1 sözleşmesi ilk MVP akışını kapsar:
+
+Login
+→ Customer
+→ Lead
+→ Lead Convert
+→ Opportunity
+→ Pipeline Stage Move
+→ Quote
+→ Quote PDF
+→ Task
+→ Activity
+→ Notification
+→ Audit
+
+
+Sonraki çıktı: CRM OS NestJS Architecture v1.
+
+
+
+
+CRM OS NestJS Architecture v1
+
+1. Mimari Karar
+İlk sürüm için doğru yaklaşım:
+
+Modular Monolith
++
+Domain-Based Modules
++
+Event-Driven Internal Architecture
++
+PostgreSQL RLS
++
+Queue Workers
+
+
+İlk gün mikroservis yok. Ama modüller ileride ayrılabilecek şekilde
+tasarlanacak.
+
+
+
+2. Ana Repository Yapısı
+crm-os-backend/
+├── apps/
+│   ├── api/
+│   ├── worker/
+│   └── scheduler/
+│
+├── libs/
+│   ├── common/
+│   ├── config/
+│   ├── database/
+│   ├── auth/
+│   ├── events/
+│   ├── logger/
+│   ├── queue/
+│   ├── storage/
+│   └── security/
+│
+├── modules/
+│   ├── core/
+│   ├── iam/
+│   ├── crm/
+│   ├── lead/
+│   ├── sales/
+│   ├── quote/
+│   ├── order/
+│   ├── product/
+│   ├── inventory/
+│   ├── finance/
+│   ├── task/
+│   ├── communication/
+│   ├── support/
+│   ├── workflow/
+│   ├── notification/
+│   ├── reporting/
+│   ├── integration/
+│   └── ai/
+│
+├── prisma/
+│   ├── schema.prisma
+│   ├── migrations/
+│   └── seed.ts
+│
+├── docker/
+├── helm/
+├── scripts/
+├── test/
+├── package.json
+├── tsconfig.json
+└── docker-compose.yml
+
+
+
+
+3. App Ayrımı
+
+apps/api
+REST API burada çalışır.
+
+apps/api/
+├── src/
+│   ├── main.ts
+│   ├── app.module.ts
+│   ├── swagger.ts
+│   └── health.controller.ts
+
+
+apps/worker
+Queue işleri.
+
+apps/worker/
+├── src/
+│   ├── main.ts
+│   ├── worker.module.ts
+│   └── processors/
+İşler:
+
+email gönderimi
+pdf üretimi
+webhook dispatch
+ai job
+workflow run
+notification delivery
+import/export
+
+
+apps/scheduler
+Cron / zamanlı işler.
+
+apps/scheduler/
+├── src/
+│   ├── main.ts
+│   ├── scheduler.module.ts
+│   └── jobs/
+
+
+İşler:
+
+expired quotes
+overdue tasks
+payment reminders
+subscription checks
+stock alerts
+
+
+
+
+4. Lib Yapısı
+
+libs/common
+libs/common/
+├── dto/
+├── enums/
+├── exceptions/
+├── filters/
+├── guards/
+├── interceptors/
+├── decorators/
+├── pipes/
+├── pagination/
+└── utils/
+
+
+libs/config
+libs/config/
+├── app.config.ts
+├── database.config.ts
+├── redis.config.ts
+├── jwt.config.ts
+├── storage.config.ts
+├── queue.config.ts
+└── ai.config.ts
+
+
+libs/database
+libs/database/
+├── database.module.ts
+├── prisma.service.ts
+├── transaction.service.ts
+├── tenant-context.service.ts
+├── rls.service.ts
+└── repositories/
+
+
+libs/auth
+libs/auth/
+├── auth.module.ts
+├── auth.service.ts
+├── jwt.strategy.ts
+├── refresh-token.strategy.ts
+├── guards/
+│   ├── jwt-auth.guard.ts
+│   ├── permission.guard.ts
+│   └── tenant.guard.ts
+└── decorators/
+    ├── current-user.decorator.ts
+    ├── tenant-id.decorator.ts
+    └── require-permission.decorator.ts
+5. Modül Standardı
+Her domain modülü aynı formatta olacak.
+
+Örnek: CRM modülü
+
+modules/crm/
+├── crm.module.ts
+├── customers/
+│   ├── customers.controller.ts
+│   ├── customers.service.ts
+│   ├── customers.repository.ts
+│   ├── dto/
+│   │   ├── create-customer.dto.ts
+│   │   ├── update-customer.dto.ts
+│   │   ├── customer-filter.dto.ts
+│   │   └── customer-response.dto.ts
+│   ├── mappers/
+│   │   └── customer.mapper.ts
+│   ├── policies/
+│   │   └── customer.policy.ts
+│   └── events/
+│       ├── customer-created.event.ts
+│       └── customer-updated.event.ts
+│
+├── contacts/
+├── addresses/
+├── timeline/
+└── segments/
+
+
+
+
+6. Ana Modüller
+
+core
+tenants
+tenant_settings
+plans
+subscriptions
+feature_flags
+audit_logs
+iam
+users
+roles
+permissions
+sessions
+teams
+branches
+departments
+
+
+crm
+customers
+contacts
+addresses
+segments
+customer_360
+timeline
+tags
+files
+comments
+
+
+lead
+leads
+lead_sources
+lead_assignment
+lead_conversion
+lead_scoring
+
+
+sales
+pipelines
+pipeline_stages
+opportunities
+stage_history
+forecast
+
+
+quote
+quotes
+quote_items
+quote_pdf
+quote_approval
+quote_status
+
+
+task
+tasks
+activities
+reminders
+calendar
+
+
+notification
+notifications
+templates
+delivery
+preferences
+
+
+
+
+7. Request Lifecycle
+Her API request şu sıradan geçer:
+
+HTTP Request
+↓
+CorrelationId Middleware
+↓
+Tenant Resolver
+↓
+JWT Auth Guard
+↓
+Permission Guard
+↓
+Validation Pipe
+↓
+Controller
+↓
+Service
+↓
+Repository
+↓
+Prisma Transaction
+↓
+PostgreSQL RLS Context
+↓
+Response Interceptor
+
+
+
+
+8. Tenant Context
+Her request'te header:
+
+X-Tenant-Id: uuid
+Authorization: Bearer token
+
+
+Backend içinde:
+
+export interface RequestContext {
+  tenantId: string;
+  userId: string;
+  requestId: string;
+  permissions: string[];
+}
+
+
+RLS için transaction başında:
+
+SET LOCAL app.tenant_id = '<tenant_id>';
+SET LOCAL app.user_id = '<user_id>';
+
+
+
+
+9. Controller Standardı
+@Controller('customers')
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionGuard)
+export class CustomersController {
+  constructor(private readonly service: CustomersService) {}
+
+ @Get()
+ @RequirePermission('customer.read')
+ list(@Query() query: CustomerFilterDto) {
+   return this.service.list(query);
+ }
+
+ @Post()
+ @RequirePermission('customer.create')
+ create(@Body() dto: CreateCustomerDto) {
+        return this.service.create(dto);
+    }
+
+    @Get(':id')
+    @RequirePermission('customer.read')
+    get(@Param('id') id: string) {
+      return this.service.getById(id);
+    }
+
+    @Patch(':id')
+    @RequirePermission('customer.update')
+    update(@Param('id') id: string, @Body() dto: UpdateCustomerDto) {
+      return this.service.update(id, dto);
+    }
+
+    @Delete(':id')
+    @RequirePermission('customer.delete')
+    delete(@Param('id') id: string) {
+      return this.service.softDelete(id);
+    }
+}
+
+
+
+
+10. Service Standardı
+@Injectable()
+export class CustomersService {
+  constructor(
+    private readonly repo: CustomersRepository,
+    private readonly events: DomainEventBus,
+    private readonly audit: AuditService,
+  ) {}
+
+    async create(dto: CreateCustomerDto) {
+      const customer = await this.repo.create(dto);
+
+        await this.events.publish({
+          type: 'CustomerCreated',
+          aggregateType: 'customer',
+          aggregateId: customer.id,
+          payload: customer,
+        });
+
+        return customer;
+    }
+}
+
+
+
+
+11. Repository Standardı
+@Injectable()
+export class CustomersRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+    async findMany(filter: CustomerFilterDto) {
+      return this.prisma.customer.findMany({
+        where: {
+           deletedAt: null,
+           status: filter.status,
+        },
+        orderBy: {
+           createdAt: 'desc',
+        },
+        take: filter.pageSize,
+        skip: (filter.page - 1) * filter.pageSize,
+      });
+    }
+}
+
+
+Not: tenant_id kodda filtrelenmez; PostgreSQL RLS zorunlu uygular.
+
+
+
+12. Event Bus
+Internal event yapısı:
+
+domain_events tablosu
++
+RabbitMQ
++
+NestJS EventEmitter
+Event publish akışı:
+
+Service
+↓
+domain_events insert
+↓
+transaction commit
+↓
+outbox worker
+↓
+RabbitMQ publish
+↓
+handlers
+
+
+
+
+13. Outbox Pattern
+Tablo:
+
+domain_events
+
+
+Worker:
+
+Unpublished events çekilir
+RabbitMQ'ya publish edilir
+published_at güncellenir
+
+
+Bu sayede event kaybı önlenir.
+
+
+
+14. Event Handler Örneği
+@EventsHandler(CustomerCreatedEvent)
+export class CustomerCreatedHandler {
+  constructor(
+    private readonly timeline: TimelineService,
+    private readonly notification: NotificationService,
+  ) {}
+
+ async handle(event: CustomerCreatedEvent) {
+   await this.timeline.create({
+     entityType: 'customer',
+          entityId: event.customerId,
+          eventType: 'CustomerCreated',
+          title: 'Customer created',
+          payload: event.payload,
+        });
+    }
+}
+
+
+
+
+15. Queue Yapısı
+Queue isimleri:
+
+email.queue
+sms.queue
+whatsapp.queue
+pdf.queue
+webhook.queue
+workflow.queue
+ai.queue
+import.queue
+export.queue
+notification.queue
+
+
+Processor örnekleri:
+
+QuotePdfProcessor
+EmailDeliveryProcessor
+WebhookDispatchProcessor
+WorkflowRunProcessor
+AiSummaryProcessor
+
+
+
+
+16. Permission Guard
+Permission decorator:
+
+@RequirePermission('quote.approve')
+
+
+Guard çalışma mantığı:
+JWT içindeki user id
+↓
+Redis permission cache
+↓
+yoksa DB
+↓
+permission doğrulama
+
+
+Cache key:
+
+permissions:{tenantId}:{userId}
+
+
+
+
+17. Audit Standardı
+Her kritik işlemde:
+
+create
+update
+delete
+approve
+reject
+login
+export
+permission_change
+
+
+audit yazılır.
+
+Audit interceptor opsiyonel:
+
+@AuditAction('customer.create')
+
+
+
+
+18. DTO Standardı
+export class CreateCustomerDto {
+  @IsEnum(['individual', 'corporate'])
+  customerType: 'individual' | 'corporate';
+
+ @IsOptional()
+ @IsString()
+ companyName?: string;
+    @IsOptional()
+    @IsEmail()
+    email?: string;
+
+    @IsOptional()
+    @IsString()
+    phone?: string;
+}
+
+
+
+
+19. Response Standardı
+Başarılı response:
+
+{
+    "data": {},
+    "meta": {
+      "requestId": "uuid",
+      "timestamp": "2026-06-20T12:00:00Z"
+    }
+}
+
+
+Liste response:
+
+{
+    "data": [],
+    "pagination": {
+      "page": 1,
+      "pageSize": 25,
+      "total": 240
+    },
+    "meta": {
+      "requestId": "uuid"
+    }
+}
+
+
+Hata response:
+
+{
+    "error": {
+      "code": "CUSTOMER_NOT_FOUND",
+      "message": "Customer not found",
+      "details": {}
+    },
+    "meta": {
+      "requestId": "uuid"
+    }
+}
+
+
+
+
+20. Error Code Standardı
+AUTH_INVALID_CREDENTIALS
+AUTH_TOKEN_EXPIRED
+TENANT_NOT_FOUND
+PERMISSION_DENIED
+CUSTOMER_NOT_FOUND
+LEAD_ALREADY_CONVERTED
+OPPORTUNITY_NOT_FOUND
+QUOTE_NOT_FOUND
+QUOTE_ALREADY_APPROVED
+VALIDATION_ERROR
+RATE_LIMIT_EXCEEDED
+
+
+
+
+21. Logging Standardı
+{
+    "level": "info",
+    "requestId": "uuid",
+    "tenantId": "uuid",
+    "userId": "uuid",
+    "module": "crm",
+    "action": "customer.create",
+    "message": "Customer created",
+    "durationMs": 42
+}
+22. Security Middleware
+Zorunlu:
+
+helmet
+cors allowlist
+rate limit
+request size limit
+file upload validation
+JWT verification
+tenant verification
+permission guard
+
+
+
+
+23. API Versioning
+/api/v1
+/api/v2
+
+
+NestJS:
+
+app.enableVersioning({
+  type: VersioningType.URI,
+});
+
+
+
+
+24. Swagger
+Swagger build:
+
+/api/docs
+
+
+Sadece staging/dev açık.
+
+Production’da ya kapalı ya da IP whitelist.
+
+
+
+25. Test Yapısı
+unit tests
+integration tests
+e2e tests
+contract tests
+security tests
+
+
+Klasör:
+
+test/
+├── unit/
+├── integration/
+├── e2e/
+├── fixtures/
+└── factories/
+
+
+
+
+26. Module Ownership
+50 kişilik ekip için sahiplik:
+
+core/iam           Squad Core
+crm/lead           Squad CRM
+sales/quote        Squad Sales
+order/inventory    Squad Ops
+finance            Squad Finance
+communication      Squad Communication
+workflow           Squad Automation
+ai/reporting       Squad AI/Data
+integration        Squad Platform
+
+
+
+
+27. İlk Sprint Teknik Çıktısı
+Repo oluştur
+Docker Compose
+NestJS app
+PostgreSQL bağlantısı
+Prisma setup
+RLS context proof
+Auth skeleton
+Tenant middleware
+Permission guard
+Customer CRUD vertical slice
+28. Vertical Slice v1
+İlk gerçek uçtan uca kesit:
+
+Login
+↓
+Tenant Context
+↓
+Customer Create API
+↓
+RLS ile DB insert
+↓
+Audit Log
+↓
+Domain Event
+↓
+Timeline Event
+↓
+Notification
+↓
+Customer List UI
+
+
+Bu çalışıyorsa mimari doğru kurulmuş demektir.
+
+
+
+29. Gelecekte Mikroservise Ayrılacak Modüller
+notification-service
+file-service
+ai-service
+workflow-service
+integration-service
+reporting-service
+communication-service
+
+
+Ama ilk 12 ay:
+
+Modular Monolith
+
+
+kalmalı.
+30. Sonraki Çıktı
+Bundan sonra sıradaki doküman:
+
+CRM OS Frontend Architecture v1
+
+
+olmalı.
+
+
+
+
+CRM OS Design System v1
+
+1. Tasarım Yönü
+Dark Titanium Enterprise
+
+
+Referans hissiyat:
+
+Linear
++ Attio
++ Stripe Dashboard
++ Salesforce Lightning
++ Bloomberg Terminal
+
+
+Amaç:
+
+Premium
+Kompakt
+Kurumsal
+Veri yoğun
+Hızlı kullanılabilir
+
+
+
+
+2. Ana Tema
+
+Dark Theme Default
+:root {
+  --bg: #0A0D14;
+  --bg-soft: #0F1420;
+
+ --surface: #111827;
+    --surface-2: #161F31;
+    --surface-3: #1D2638;
+
+    --border: #273246;
+    --border-soft: #1E293B;
+
+    --text: #F9FAFB;
+    --text-soft: #CBD5E1;
+    --text-muted: #94A3B8;
+    --text-disabled: #64748B;
+
+    --primary: #4F8CFF;
+    --primary-hover: #6EA2FF;
+    --primary-muted: rgba(79, 140, 255, 0.14);
+
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #38BDF8;
+}
+
+
+
+
+3. Renk Kullanımı
+
+Kullanım kuralı
+%80 nötr koyu ton
+%15 gri/mavi yüzey
+%5 accent renk
+
+
+Yanlış:
+
+Her kart neon
+Her buton gradient
+Her panel cam
+
+
+Doğru:
+
+Accent sadece aksiyon, durum ve vurgu için
+4. Typography
+Font:
+
+Inter
+
+
+Alternatif:
+
+SF Pro
+
+
+Font Scale
+         Kullanım        Boyut          Weight
+Caption                          11px            500
+Table Text                       13px            500
+Body                             14px            400
+Section Title                    15px            600
+Page Title                       22px            700
+Hero Metric                      32px            700
+
+
+
+5. Spacing
+Base grid:
+
+4px
+
+
+Primary spacing:
+
+8px grid
+
+
+Standartlar:
+
+Page padding: 24px
+Card padding: 16px
+Table row height: 44px
+Form row height: 40px
+Sidebar width: 240px
+Topbar height: 64px
+6. Radius
+Input: 8px
+Button: 8px
+Card: 12px
+Modal: 16px
+Drawer: 16px
+
+
+Yasak:
+
+30px+
+aşırı yuvarlak SaaS oyuncak görünümü
+
+
+
+
+7. Shadow / Glow
+Varsayılan:
+
+--shadow-sm: 0 1px 2px rgba(0,0,0,0.24);
+--shadow-md: 0 8px 24px rgba(0,0,0,0.28);
+--shadow-lg: 0 20px 60px rgba(0,0,0,0.36);
+
+
+Glow sadece:
+
+Aktif menü
+Primary CTA
+AI panel
+Canlı durum
+
+
+için kullanılacak.
+
+
+
+8. Layout
+
+App Shell
+┌──────────────┬──────────────────────────────┐
+│ Sidebar      │ Topbar                       │
+│ 240px        ├──────────────────────────────┤
+│              │ Content                      │
+└──────────────┴──────────────────────────────┘
+Content
+Max width: 1600px
+Page padding: 24px
+Grid gap: 16px
+
+
+
+
+9. Sidebar
+Genişlik:
+
+240px
+
+
+Bölümler:
+
+HOME
+CRM
+SALES
+OPERATIONS
+FINANCE
+COMMUNICATION
+SUPPORT
+AUTOMATION
+ANALYTICS
+ADMIN
+
+
+Aktif item:
+
+background: rgba(79, 140, 255, 0.12);
+border: 1px solid rgba(79, 140, 255, 0.28);
+color: #F9FAFB;
+
+
+
+
+10. Topbar
+İçerik:
+
+Page title
+Breadcrumb
+Global search
+Notifications
+AI Ask
+User menu
+
+
+Yükseklik:
+
+64px
+
+
+
+
+11. Button Sistemi
+
+Primary
+background: #4F8CFF;
+color: #FFFFFF;
+height: 36px;
+border-radius: 8px;
+
+
+Secondary
+background: #161F31;
+border: 1px solid #273246;
+color: #F9FAFB;
+
+
+Ghost
+background: transparent;
+color: #94A3B8;
+
+
+Danger
+background: rgba(239,68,68,0.14);
+color: #EF4444;
+
+
+
+
+12. Form Elements
+
+Input
+height: 40px;
+background: #0F1420;
+border: 1px solid #273246;
+border-radius: 8px;
+color: #F9FAFB;
+
+
+States:
+
+default
+hover
+focus
+error
+disabled
+
+
+Focus:
+
+border-color: #4F8CFF;
+box-shadow: 0 0 0 3px rgba(79,140,255,0.16);
+
+
+
+
+13. Card
+background: #111827;
+border: 1px solid #273246;
+border-radius: 12px;
+padding: 16px;
+
+
+Kart türleri:
+
+MetricCard
+TableCard
+ChartCard
+AIInsightCard
+TimelineCard
+SummaryCard
+
+
+
+
+14. Table / DataGrid
+CRM’in en kritik bileşeni.
+
+Row height
+44px compact
+52px comfortable
+Özellikler
+Server pagination
+Sorting
+Filtering
+Column visibility
+Saved views
+Bulk select
+Inline status
+Sticky header
+Resizable columns
+
+
+Status Cell
+Badge kullanılır
+Renk az kullanılır
+
+
+
+
+15. Badge
+Boyut:
+
+height: 22px
+padding: 0 8px
+font-size: 11px
+radius: 999px
+
+
+Tipler:
+
+neutral
+success
+warning
+danger
+info
+primary
+
+
+
+
+16. Kanban
+Kullanım:
+
+Pipeline
+Tasks
+Tickets
+Projects
+Approvals
+
+
+Column
+background: #0F1420;
+border: 1px solid #273246;
+border-radius: 12px;
+padding: 12px;
+
+
+Card
+background: #111827;
+border: 1px solid #273246;
+border-radius: 10px;
+padding: 12px;
+
+
+
+
+17. Timeline
+Event tipleri:
+
+call
+email
+whatsapp
+meeting
+quote
+order
+payment
+ticket
+system
+ai
+
+
+Timeline kompakt olmalı:
+
+Saat
+Icon
+Başlık
+Açıklama
+Kullanıcı
+18. Drawer
+Detay ekranlarında modal yerine drawer kullanılacak.
+
+Kullanım:
+
+Opportunity Inspector
+Customer Quick View
+Quote Preview
+Task Detail
+
+
+Genişlik:
+
+480px compact
+640px detail
+840px large
+
+
+
+
+19. Modal
+Sadece kısa işlemler için:
+
+Confirm delete
+Approve quote
+Convert lead
+Assign user
+
+
+
+
+20. Toast
+Konum:
+
+top-right
+
+
+Tipler:
+
+success
+error
+warning
+info
+21. Command Menu
+Kısayol:
+
+Cmd/Ctrl + K
+
+
+Aksiyonlar:
+
+Müşteri ara
+Lead oluştur
+Teklif oluştur
+Görev ekle
+Sayfaya git
+AI’a sor
+
+
+
+
+22. AI UI Pattern
+AI panel farklı ama abartısız görünmeli.
+
+background: linear-gradient(
+  180deg,
+  rgba(79,140,255,0.12),
+  rgba(17,24,39,1)
+);
+border: 1px solid rgba(79,140,255,0.28);
+
+
+AI bileşenleri:
+
+AI Copilot Panel
+AI Suggestion Card
+AI Summary Box
+AI Confidence Indicator
+Ask CRM Input
+23. Dashboard Components
+
+MetricCard
+Label
+Value
+Delta
+Mini trend
+
+
+ChartCard
+Title
+Filter
+Chart
+Legend
+
+
+InsightCard
+AI insight
+Risk
+Recommended action
+CTA
+
+
+
+
+24. Customer 360 Components
+CustomerHeader
+CustomerKpiStrip
+SmartActionBar
+CustomerTabs
+CustomerTimeline
+CustomerContactCard
+CustomerRiskPanel
+CustomerFinanceSummary
+
+
+
+
+25. Quote Builder Components
+QuoteHeader
+ProductSelector
+QuoteItemTable
+PricingPanel
+MarginPanel
+ApprovalStatus
+PdfPreview
+
+
+
+
+26. Pipeline Components
+PipelineToolbar
+PipelineColumn
+DealCard
+DealInspectorDrawer
+StageSummary
+WinProbabilityBadge
+NextActionPanel
+
+
+
+
+27. Inbox Components
+ConversationList
+ChatThread
+MessageBubble
+Composer
+CustomerContextPanel
+AISuggestedReply
+SLAIndicator
+
+
+
+
+28. Responsive Rules
+
+Desktop first
+Ana hedef:
+
+1440px+
+
+
+Breakpoints:
+
+sm: 640
+md: 768
+lg: 1024
+xl: 1280
+2xl: 1536
+
+
+Mobile:
+
+Saha satış için ayrı mobil deneyim
+Web app mobile’da sadece temel responsive
+
+
+
+
+29. Accessibility
+Zorunlu:
+
+AA contrast
+Keyboard navigation
+Focus ring
+ARIA labels
+Modal focus trap
+Screen reader labels
+
+
+
+
+30. Design Tokens Dosyası
+export const colors = {
+  background: "#0A0D14",
+  surface: "#111827",
+  surface2: "#161F31",
+  border: "#273246",
+  text: "#F9FAFB",
+  muted: "#94A3B8",
+  primary: "#4F8CFF",
+  success: "#22C55E",
+  warning: "#F59E0B",
+  danger: "#EF4444",
+};
+
+export const radii = {
+  input: "8px",
+  button: "8px",
+  card: "12px",
+  modal: "16px",
+};
+export const spacing = {
+  xs: "4px",
+  sm: "8px",
+  md: "16px",
+  lg: "24px",
+  xl: "32px",
+};
+
+
+
+
+31. Tailwind Token Örneği
+theme: {
+  extend: {
+    colors: {
+       bg: "#0A0D14",
+       surface: "#111827",
+       surface2: "#161F31",
+       border: "#273246",
+       muted: "#94A3B8",
+       primary: "#4F8CFF",
+       success: "#22C55E",
+       warning: "#F59E0B",
+       danger: "#EF4444",
+    },
+    borderRadius: {
+       sm: "8px",
+       md: "12px",
+       lg: "16px",
+    }
+  }
+}
+
+
+
+
+32. UI Kalite Kriteri
+Bir ekran kabul edilmeden önce:
+
+Grid hizalı mı?
+Tablo kompakt mı?
+Primary action net mi?
+Boşluklar dengeli mi?
+Renk fazla mı?
+Klavye ile kullanılabiliyor mu?
+Loading/empty/error var mı?
+Permission state var mı?
+Mobil kırılım bozuluyor mu?
+
+
+
+
+33. Design System Sonucu
+Bu sistemin UI dili:
+
+Kurumsal
+Karanlık
+Kompakt
+Hızlı
+Az efektli
+Yüksek veri yoğunluklu
+Premium SaaS
+
+
+olmalı.
+
+Sonraki çıktı:
+
+CRM OS DevOps & Infrastructure Blueprint v1
+
+
+
+
+CRM OS DevOps & Infrastructure Blueprint v1
+
+1. Hedef Mimari
+CRM OS için altyapı hedefi:
+
+Multi-tenant SaaS
+High availability
+Zero-downtime deployment
+Observable system
+Secure by default
+Backup / disaster recovery ready
+Scalable modular monolith
+
+
+İlk mimari:
+Kubernetes
++ PostgreSQL
++ Redis
++ RabbitMQ
++ MinIO / S3
++ Next.js Web
++ NestJS API
++ Worker
++ Scheduler
++ Monitoring Stack
+
+
+
+
+2. Ortamlar
+local
+development
+staging
+production
+demo
+sandbox
+
+
+Ortam Amaçları
+                 Ortam                          Amaç
+local                         Geliştirici makinesi
+development                   Sürekli entegrasyon
+staging                       Production öncesi test
+production                    Canlı sistem
+demo                          Satış/pilot demo
+sandbox                       Kurumsal müşteri test tenantları
+
+
+
+3. Local Development
+services:
+  api:
+    image: crm-os-api:local
+  web:
+    image: crm-os-web:local
+  postgres:
+    image: postgres:16
+  redis:
+   image: redis:7
+ rabbitmq:
+   image: rabbitmq:3-management
+ minio:
+   image: minio/minio
+
+
+Local servisler:
+
+api           : http://localhost:3000
+web           : http://localhost:3001
+postgres      : localhost:5432
+redis         : localhost:6379
+rabbitmq ui   : http://localhost:15672
+minio ui      : http://localhost:9001
+
+
+
+
+4. Production Kubernetes Bileşenleri
+namespace: crm-os-prod
+
+
+Deploymentlar:
+
+api
+web
+worker
+scheduler
+notification-worker
+integration-worker
+ai-worker
+
+
+Stateful servisler:
+
+postgres
+redis
+rabbitmq
+minio
+
+
+Platform servisleri:
+
+ingress-nginx
+cert-manager
+external-dns
+sealed-secrets / external-secrets
+prometheus
+grafana
+loki
+tempo
+sentry
+
+
+
+
+5. Kubernetes Namespace Yapısı
+crm-os-dev
+crm-os-staging
+crm-os-prod
+crm-os-demo
+monitoring
+ingress
+security
+
+
+Her namespace için:
+
+ResourceQuota
+LimitRange
+NetworkPolicy
+ServiceAccount
+Secrets
+ConfigMaps
+
+
+
+
+6. Deployment Topolojisi
+Internet
+↓
+WAF / CDN
+↓
+Load Balancer
+↓
+Ingress Controller
+↓
+Web / API
+↓
+API
+├─ PostgreSQL
+├─ Redis
+├─ RabbitMQ
+├─ MinIO/S3
+└─ Workers
+
+
+
+
+7. Production Minimum Pod Planı
+
+API
+replicas: 3
+cpu request: 500m
+memory request: 1Gi
+cpu limit: 2
+memory limit: 2Gi
+
+
+Web
+replicas: 2
+cpu request: 300m
+memory request: 512Mi
+cpu limit: 1
+memory limit: 1Gi
+
+
+Worker
+replicas: 2
+cpu request: 500m
+memory request: 1Gi
+cpu limit: 2
+memory limit: 2Gi
+
+
+Scheduler
+replicas: 1
+leader election: true
+8. Database Architecture
+
+Başlangıç
+PostgreSQL Primary
++
+Daily backup
++
+Point-in-time recovery
+
+
+Production
+PostgreSQL Primary
++
+Read Replica
++
+WAL archiving
++
+PITR
++
+Automated backup
+
+
+Ölçekleme
+PgBouncer
+Read replicas
+Partitioning
+Materialized views
+
+
+Partition adayları:
+
+audit_logs
+domain_events
+timeline_events
+messages
+notifications
+ai_usage_logs
+workflow_logs
+api_logs
+9. PostgreSQL Standardı
+PostgreSQL 16
+UTF-8
+timezone UTC
+uuid primary keys
+RLS enabled
+pgcrypto
+pg_stat_statements
+
+
+Zorunlu ayarlar:
+
+statement_timeout
+idle_in_transaction_session_timeout
+log_min_duration_statement
+shared_preload_libraries = pg_stat_statements
+
+
+
+
+10. PgBouncer
+Kullanım:
+
+API → PgBouncer → PostgreSQL
+Worker → PgBouncer → PostgreSQL
+
+
+Pool mode:
+
+transaction
+
+
+Dikkat:
+
+PostgreSQL RLS için SET LOCAL app.tenant_id transaction içinde
+çalışmalı
+
+
+
+
+11. Redis
+Kullanım alanları:
+
+session cache
+permission cache
+rate limit
+temporary locks
+dashboard cache
+query cache
+
+
+Key standardı:
+
+tenant:{tenantId}:permissions:{userId}
+tenant:{tenantId}:rate-limit:{key}
+tenant:{tenantId}:dashboard:{dashboardId}
+tenant:{tenantId}:lock:{resource}
+
+
+TTL zorunlu.
+
+
+
+12. RabbitMQ
+Queue yapısı:
+
+email.queue
+sms.queue
+whatsapp.queue
+notification.queue
+pdf.queue
+webhook.queue
+workflow.queue
+ai.queue
+import.queue
+export.queue
+audit.queue
+
+
+Dead letter queue:
+
+email.dlq
+webhook.dlq
+workflow.dlq
+ai.dlq
+
+
+Retry standardı:
+
+1. deneme: hemen
+2. deneme: 1 dakika
+3. deneme: 5 dakika
+4. deneme: 30 dakika
+5. deneme: DLQ
+
+
+
+
+13. Object Storage
+Başlangıç:
+
+MinIO
+
+
+Production alternatif:
+
+AWS S3
+Azure Blob
+GCP Cloud Storage
+
+
+Bucket yapısı:
+
+crm-os-files
+crm-os-public
+crm-os-backups
+crm-os-exports
+
+
+Path standardı:
+
+tenant/{tenantId}/{module}/{entityId}/{fileId}/{filename}
+
+
+Örnek:
+
+tenant/uuid/customer/uuid/file/contract.pdf
+
+
+
+
+14. Secrets Management
+Local:
+
+.env
+
+
+Development/Staging:
+
+Kubernetes Secret
+Production:
+
+External Secrets
++ AWS Secrets Manager / Vault / Doppler
+
+
+Secret türleri:
+
+DATABASE_URL
+REDIS_URL
+RABBITMQ_URL
+JWT_SECRET
+REFRESH_TOKEN_SECRET
+S3_SECRET_KEY
+SMTP_PASSWORD
+WHATSAPP_API_TOKEN
+AI_PROVIDER_KEY
+
+
+
+
+15. CI/CD Pipeline
+
+Pull Request
+install
+lint
+type-check
+unit-test
+build
+docker-build
+security-scan
+migration-check
+
+
+Merge to develop
+deploy development
+run smoke tests
+
+
+Release branch
+deploy staging
+run integration tests
+run e2e tests
+run load smoke
+manual approval
+
+
+Production
+backup database
+run migration
+deploy rolling/blue-green
+health check
+run smoke tests
+monitor error rate
+auto rollback if unhealthy
+
+
+
+
+16. Git Branching
+main
+develop
+release/*
+hotfix/*
+feature/*
+bugfix/*
+
+
+Kural:
+
+main = production
+develop = development
+release/* = staging
+
+
+
+
+17. Container Strategy
+Image isimleri:
+
+registry/crm-os-api:<git_sha>
+registry/crm-os-web:<git_sha>
+registry/crm-os-worker:<git_sha>
+registry/crm-os-scheduler:<git_sha>
+
+
+Dockerfile kuralları:
+multi-stage build
+non-root user
+small base image
+healthcheck
+no secrets in image
+
+
+
+
+18. Helm Chart Yapısı
+helm/
+├── crm-os/
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   ├── values-dev.yaml
+│   ├── values-staging.yaml
+│   ├── values-prod.yaml
+│   └── templates/
+│       ├── api-deployment.yaml
+│       ├── web-deployment.yaml
+│       ├── worker-deployment.yaml
+│       ├── scheduler-deployment.yaml
+│       ├── service.yaml
+│       ├── ingress.yaml
+│       ├── configmap.yaml
+│       ├── hpa.yaml
+│       └── pdb.yaml
+
+
+
+
+19. Ingress
+Örnek domainler:
+
+app.crm-os.com
+api.crm-os.com
+admin.crm-os.com
+portal.crm-os.com
+dealer.crm-os.com
+
+
+TLS:
+cert-manager
+Let's Encrypt
+
+
+Ingress özellikleri:
+
+rate limit
+body size limit
+timeout config
+CORS
+security headers
+
+
+
+
+20. Horizontal Pod Autoscaler
+API için:
+
+minReplicas: 3
+maxReplicas: 20
+targetCPUUtilization: 65
+targetMemoryUtilization: 75
+
+
+Worker için:
+
+queue depth bazlı autoscaling
+KEDA önerilir
+
+
+
+
+21. Observability Stack
+
+Metrics
+Prometheus
+Grafana
+
+
+Logs
+Loki
+Promtail / Fluent Bit
+Tracing
+OpenTelemetry
+Tempo
+
+
+Errors
+Sentry
+
+
+
+
+22. Temel Metrikler
+API:
+
+http_requests_total
+http_request_duration_seconds
+http_error_rate
+active_users
+tenant_request_count
+
+
+Database:
+
+db_query_duration
+db_connections
+slow_queries
+deadlocks
+replication_lag
+
+
+Queue:
+
+queue_depth
+queue_processing_duration
+queue_failed_jobs
+dlq_count
+
+
+Business:
+
+lead_created_count
+quote_sent_count
+order_created_count
+payment_received_count
+workflow_run_count
+ai_usage_count
+
+
+
+
+23. Logging Standardı
+JSON log:
+
+{
+    "timestamp": "2026-06-20T12:00:00Z",
+    "level": "info",
+    "requestId": "uuid",
+    "tenantId": "uuid",
+    "userId": "uuid",
+    "module": "crm",
+    "action": "customer.create",
+    "message": "Customer created",
+    "durationMs": 42
+}
+
+
+Yasak:
+
+password
+token
+credit card
+secret
+personal sensitive data
+
+
+
+
+24. Alerting
+Kritik alarmlar:
+
+API error rate > 2%
+P95 latency > 800ms
+DB CPU > 80%
+DB connection saturation
+Queue DLQ > 0
+Redis unavailable
+RabbitMQ unavailable
+Disk usage > 80%
+Backup failed
+Certificate expiring < 14 days
+
+
+
+
+25. Backup Strategy
+
+PostgreSQL
+daily full backup
+continuous WAL archiving
+PITR enabled
+retention 30 days
+monthly archive 12 months
+
+
+Object Storage
+versioning enabled
+lifecycle rules
+cross-region replication optional
+
+
+Config / Secrets
+encrypted backup
+restricted access
+
+
+
+
+26. Disaster Recovery
+
+RPO
+15 minutes
+
+
+RTO
+4 hours
+
+
+Recovery test:
+
+monthly restore test
+quarterly DR drill
+27. Security Baseline
+Zorunlu:
+
+TLS everywhere
+WAF
+rate limiting
+RBAC
+RLS
+2FA
+secret rotation
+image scanning
+dependency scanning
+SAST
+DAST
+audit logs
+network policies
+least privilege IAM
+
+
+
+
+28. Network Policy
+Varsayılan:
+
+deny all
+
+
+İzinler:
+
+web → api
+api → postgres
+api → redis
+api → rabbitmq
+api → minio
+worker → postgres
+worker → rabbitmq
+worker → minio
+
+
+
+
+29. Rate Limiting
+Global:
+1000 req / minute / tenant
+
+
+Auth:
+
+5 login attempts / 5 minutes / IP
+
+
+Public API:
+
+plan-based quota
+
+
+Webhook:
+
+signature verification mandatory
+
+
+
+
+30. Migration Strategy
+Kurallar:
+
+migration backward compatible olmalı
+long lock yaratmamalı
+production deploy öncesi staging test edilmeli
+rollback planı olmalı
+data migration ayrı job olmalı
+
+
+Sıra:
+
+1. add nullable column
+2. deploy code
+3. backfill
+4. set not null
+5. remove old field later
+
+
+
+
+31. Feature Flags
+Kullanım:
+
+new module rollout
+tenant-based enablement
+beta customer access
+dark launch
+kill switch
+
+
+Feature flag örneği:
+
+tenant:{tenantId}:feature:ai_copilot
+tenant:{tenantId}:feature:workflow_builder
+tenant:{tenantId}:feature:dealer_portal
+
+
+
+
+32. Tenant Provisioning
+Yeni tenant oluşturma akışı:
+
+tenant kaydı
+default settings
+default roles
+default permissions
+default pipeline
+default statuses
+default dashboard
+default feature flags
+demo data optional
+welcome email
+
+
+Provision job idempotent olmalı.
+
+
+
+33. Release Strategy
+
+MVP
+weekly release
+
+
+Production stable
+bi-weekly release
+
+
+Enterprise customers
+scheduled maintenance window
+34. Deployment Strategy
+İlk aşama:
+
+Rolling update
+
+
+İleri aşama:
+
+Blue/Green
+Canary
+
+
+Canary ölçümleri:
+
+error rate
+latency
+business transaction success
+queue failures
+
+
+
+
+35. Monitoring Dashboardları
+Grafana dashboardları:
+
+API Overview
+Database Overview
+Queue Overview
+Tenant Usage
+Worker Jobs
+Error Tracking
+Business KPIs
+AI Usage
+Storage Usage
+Security Events
+
+
+
+
+36. Compliance / KVKK
+Gerekli teknik imkanlar:
+
+data export
+data deletion
+consent records
+audit trail
+data masking
+retention policies
+access logs
+encryption
+
+
+
+
+37. Infrastructure as Code
+Terraform modülleri:
+
+network
+kubernetes
+postgres
+redis
+rabbitmq
+object_storage
+dns
+cdn
+waf
+monitoring
+secrets
+
+
+Klasör:
+
+infra/
+├── environments/
+│   ├── dev/
+│   ├── staging/
+│   └── prod/
+├── modules/
+│   ├── network/
+│   ├── kubernetes/
+│   ├── postgres/
+│   ├── redis/
+│   ├── rabbitmq/
+│   ├── object-storage/
+│   └── monitoring/
+└── global/
+38. İlk 30 Gün DevOps Planı
+
+Hafta 1
+repo setup
+docker compose
+base Dockerfile
+CI lint/test/build
+dev environment
+
+
+Hafta 2
+Kubernetes dev cluster
+Helm chart
+Ingress
+TLS
+PostgreSQL
+Redis
+RabbitMQ
+MinIO
+
+
+Hafta 3
+staging cluster
+CI/CD deployment
+migration pipeline
+basic monitoring
+central logging
+
+
+Hafta 4
+production baseline
+backup
+alerting
+security scan
+release process
+rollback process
+
+
+
+
+39. Minimum Production Go-Live Checklist
+TLS active
+WAF active
+DB backup active
+PITR tested
+RLS tested
+Secrets externalized
+Monitoring active
+Alerts configured
+Logs centralized
+Error tracking active
+Rate limit active
+Health checks active
+Rollback tested
+Smoke tests passing
+Security scan clean
+
+
+
+
+40. Sonraki Çıktı
+Bundan sonra teknik olarak sıradaki belge:
+
+CRM OS Jira Backlog & Squad Plan v1
+
+
+olmalı.
+
+
+
+CRM OS Jira Backlog & Squad Plan v1
+
+1. Jira Proje Yapısı
+Project Key: CRMOS
+Project Name: CRM OS Platform
+Method: Scrum
+Sprint Length: 2 weeks
+Release Cadence: 2 weeks
+Planning Horizon: 12 months
+
+
+Issue hierarchy:
+
+Initiative
+└─ Epic
+   └─ Story
+      └─ Sub-task
+2. Squad Yapısı
+
+Squad 1 — Platform / Core
+Sorumluluk:
+
+Tenant
+Plan
+Subscription
+Feature Flag
+Audit
+System Settings
+
+
+Jira prefix:
+
+CORE
+
+
+Squad 2 — IAM
+Auth
+Users
+Roles
+Permissions
+Sessions
+Branches
+Teams
+Departments
+
+
+Prefix:
+
+IAM
+
+
+Squad 3 — CRM / Customer 360
+Customers
+Contacts
+Addresses
+Segments
+Timeline
+Files
+Tags
+Comments
+Customer 360
+Prefix:
+
+CRM
+
+
+Squad 4 — Lead
+Lead Capture
+Lead Assignment
+Lead Scoring
+Lead Conversion
+Lead Sources
+
+
+Prefix:
+
+LEAD
+
+
+Squad 5 — Sales
+Pipeline
+Stages
+Opportunities
+Stage History
+Forecast
+
+
+Prefix:
+
+SALES
+
+
+Squad 6 — Quote
+Quotes
+Quote Items
+Pricing
+Discount
+Approval
+PDF
+Send
+
+
+Prefix:
+
+QUOTE
+Squad 7 — Product / Inventory
+Products
+Variants
+Warehouses
+Stocks
+Stock Movements
+Reservations
+
+
+Prefix:
+
+INV
+
+
+Squad 8 — Finance
+Accounts
+Transactions
+Payments
+Invoices
+Collections
+Credit Limits
+
+
+Prefix:
+
+FIN
+
+
+Squad 9 — Communication / Support
+Inbox
+WhatsApp
+Email
+SMS
+Calls
+Tickets
+SLA
+
+
+Prefix:
+
+COMM
+
+
+Squad 10 — Workflow / Integration / AI
+Workflows
+Approvals
+Webhooks
+API Keys
+Connectors
+AI Gateway
+AI Assistant
+
+
+Prefix:
+
+AUTO
+
+
+Shared Squads
+Frontend Platform
+DevOps
+QA Automation
+UX/UI
+Data/Analytics
+
+
+
+
+3. Release Plan
+
+Release 0 — Foundation
+Süre:
+
+Sprint 1–2
+
+
+Amaç:
+
+Repo, altyapı, auth, tenant, RLS proof
+
+
+Release 1 — CRM MVP
+Süre:
+
+Sprint 3–6
+
+
+Amaç:
+
+Customer
+Lead
+Pipeline
+Quote
+Task
+Dashboard
+
+
+Release 2 — Commercial MVP
+Süre:
+
+Sprint 7–12
+
+
+Amaç:
+
+Order
+Product
+Inventory
+Finance Lite
+Notification
+
+
+Release 3 — Enterprise CRM
+Süre:
+
+Sprint 13–20
+
+
+Amaç:
+
+Omnichannel
+Support
+Workflow
+Portal
+API
+
+
+Release 4 — AI + Scale
+Süre:
+
+Sprint 21–26
+
+
+Amaç:
+
+AI Assistant
+Advanced Reporting
+Mobile
+Marketplace basics
+4. Initiative Listesi
+CRMOS-I1 SaaS Foundation
+CRMOS-I2 Identity & Access Management
+CRMOS-I3 Customer 360
+CRMOS-I4 Lead Management
+CRMOS-I5 Sales Pipeline
+CRMOS-I6 Quote Management
+CRMOS-I7 Product & Inventory
+CRMOS-I8 Finance Lite
+CRMOS-I9 Communication & Support
+CRMOS-I10 Workflow & Automation
+CRMOS-I11 AI Platform
+CRMOS-I12 Reporting & Analytics
+CRMOS-I13 DevOps & Observability
+CRMOS-I14 Frontend Design System
+CRMOS-I15 Mobile CRM
+
+
+
+
+5. Epics
+
+CRMOS-I1 — SaaS Foundation
+CORE-E1 Tenant Management
+CORE-E2 Plan & Subscription
+CORE-E3 Feature Flags
+CORE-E4 Audit Log
+CORE-E5 Domain Events
+CORE-E6 System Settings
+
+
+CRMOS-I2 — IAM
+IAM-E1 Authentication
+IAM-E2 User Management
+IAM-E3 Role Management
+IAM-E4 Permission Management
+IAM-E5 Organization Hierarchy
+IAM-E6 Session & Device Security
+
+
+CRMOS-I3 — Customer 360
+CRM-E1 Customer Management
+CRM-E2 Contact Management
+CRM-E3 Address Management
+CRM-E4 Customer Timeline
+CRM-E5 Tags & Segments
+CRM-E6 Customer 360 Dashboard
+CRM-E7 Files & Comments
+
+
+CRMOS-I4 — Lead Management
+LEAD-E1 Lead CRUD
+LEAD-E2 Lead Sources
+LEAD-E3 Lead Assignment
+LEAD-E4 Lead Conversion
+LEAD-E5 Lead Scoring
+LEAD-E6 Lead Loss Reasons
+
+
+CRMOS-I5 — Sales Pipeline
+SALES-E1 Pipeline Management
+SALES-E2 Pipeline Stages
+SALES-E3 Opportunity Management
+SALES-E4 Kanban Pipeline
+SALES-E5 Stage History
+SALES-E6 Win/Loss Flow
+
+
+CRMOS-I6 — Quote Management
+QUOTE-E1 Quote CRUD
+QUOTE-E2 Quote Items
+QUOTE-E3 Pricing & Discount
+QUOTE-E4 Quote Approval
+QUOTE-E5 Quote PDF
+QUOTE-E6 Quote Send & View Tracking
+
+
+CRMOS-I7 — Product & Inventory
+INV-E1 Product Catalog
+INV-E2 Product Variants
+INV-E3 Warehouses
+INV-E4 Stock Ledger
+INV-E5 Stock Reservation
+INV-E6 Stock Alerts
+CRMOS-I8 — Finance Lite
+FIN-E1 Customer Accounts
+FIN-E2 Account Transactions
+FIN-E3 Payments
+FIN-E4 Installments
+FIN-E5 Receivables
+FIN-E6 Invoice Integration Reference slot
+
+
+CRMOS-I9 — Communication & Support
+COMM-E1 Omnichannel Inbox
+COMM-E2 Messages
+COMM-E3 WhatsApp Integration
+COMM-E4 Email Integration
+COMM-E5 Ticket Management
+COMM-E6 SLA Management
+
+
+CRMOS-I10 — Workflow & Automation
+AUTO-E1 Workflow Builder
+AUTO-E2 Workflow Triggers
+AUTO-E3 Workflow Actions
+AUTO-E4 Approval Engine
+AUTO-E5 Webhooks
+AUTO-E6 API Keys
+
+
+CRMOS-I11 — AI Platform
+AI-E1 AI Gateway
+AI-E2 AI Assistant
+AI-E3 AI Summaries
+AI-E4 Quote Assistant
+AI-E5 Lead Scoring AI
+AI-E6 Usage Quotas
+
+
+CRMOS-I12 — Reporting
+REP-E1 Dashboard Framework
+REP-E2 Sales Dashboard
+REP-E3 Customer Reports
+REP-E4 Finance Reports
+REP-E5 Custom Report Builder
+CRMOS-I13 — DevOps
+DEVOPS-E1 Local Dev Environment
+DEVOPS-E2 CI/CD
+DEVOPS-E3 Kubernetes
+DEVOPS-E4 Monitoring
+DEVOPS-E5 Logging
+DEVOPS-E6 Backup & DR
+
+
+CRMOS-I14 — Frontend Platform
+UI-E1 Design System
+UI-E2 App Shell
+UI-E3 DataGrid
+UI-E4 Kanban
+UI-E5 Timeline
+UI-E6 Command Menu
+
+
+
+
+6. Sprint Plan — İlk 12 Sprint
+
+Sprint 1 — Foundation Setup
+
+CORE
+CORE-001 Create monorepo structure
+CORE-002 Setup NestJS API app
+CORE-003 Setup Next.js web app
+CORE-004 Setup Docker Compose
+CORE-005 Setup PostgreSQL
+CORE-006 Setup Redis
+CORE-007 Setup RabbitMQ
+CORE-008 Setup MinIO
+
+
+DEVOPS
+DEVOPS-001 Create CI pipeline
+DEVOPS-002 Add lint/typecheck/test pipeline
+DEVOPS-003 Create base Dockerfiles
+DEVOPS-004 Setup dev environment variables
+UI
+UI-001 Setup design tokens
+UI-002 Build App Shell skeleton
+UI-003 Build Sidebar component
+UI-004 Build Topbar component
+
+
+
+
+Sprint 2 — Auth + Tenant + RLS
+
+CORE
+CORE-009 Create tenants table migration
+CORE-010 Implement tenant context middleware
+CORE-011 Implement tenant provisioning service
+CORE-012 Implement audit log base service
+
+
+IAM
+IAM-001 Implement login API
+IAM-002 Implement refresh token API
+IAM-003 Implement logout API
+IAM-004 Implement users table migration
+IAM-005 Implement roles and permissions migration
+IAM-006 Implement permission guard
+IAM-007 Implement default roles seed
+
+
+DEVOPS
+DEVOPS-005 Add migration pipeline
+DEVOPS-006 Add RLS test job
+
+
+UI
+UI-005 Login screen
+UI-006 Auth store
+UI-007 Tenant switcher shell
+Sprint 3 — Customer Core
+
+CRM
+CRM-001 Create customers migration
+CRM-002 Create customer_contacts migration
+CRM-003 Create customer_addresses migration
+CRM-004 Implement customer create API
+CRM-005 Implement customer list API
+CRM-006 Implement customer detail API
+CRM-007 Implement customer update API
+CRM-008 Implement customer soft delete API
+
+
+UI
+UI-008 Build DataGrid base
+UI-009 Customer list page
+UI-010 Customer create form
+UI-011 Customer detail shell
+
+
+QA
+QA-001 Customer CRUD API tests
+QA-002 Customer UI smoke test
+
+
+
+
+Sprint 4 — Customer 360
+
+CRM
+CRM-009 Implement contacts API
+CRM-010 Implement addresses API
+CRM-011 Implement tags API
+CRM-012 Implement files metadata API
+CRM-013 Implement comments API
+CRM-014 Implement timeline service
+CRM-015 CustomerCreated timeline event
+CRM-016 CustomerUpdated timeline event
+
+
+UI
+UI-012 Customer header
+UI-013 Customer KPI strip
+UI-014 Customer timeline
+UI-015 Customer contacts tab
+UI-016 Customer files tab
+
+
+
+
+Sprint 5 — Lead Management
+
+LEAD
+LEAD-001 Create leads migration
+LEAD-002 Create lead_sources migration
+LEAD-003 Implement lead create API
+LEAD-004 Implement lead list API
+LEAD-005 Implement lead detail API
+LEAD-006 Implement lead update API
+LEAD-007 Implement lead assignment API
+
+
+UI
+UI-017 Lead list page
+UI-018 Lead detail page
+UI-019 Lead create form
+UI-020 Lead assignment component
+
+
+QA
+QA-003 Lead CRUD tests
+
+
+
+
+Sprint 6 — Lead Conversion + Pipeline Setup
+
+LEAD
+LEAD-008 Implement lead convert API
+LEAD-009 Create lead_conversion_logs migration
+LEAD-010 Emit LeadConverted event
+
+
+SALES
+SALES-001 Create pipelines migration
+SALES-002 Create pipeline_stages migration
+SALES-003 Seed default pipeline
+SALES-004 Implement pipeline CRUD API
+SALES-005 Implement stage CRUD API
+UI
+UI-021 Lead convert modal
+UI-022 Pipeline settings screen
+
+
+
+
+Sprint 7 — Opportunity Management
+
+SALES
+SALES-006 Create opportunities migration
+SALES-007 Create opportunity_products migration
+SALES-008 Implement opportunity create API
+SALES-009 Implement opportunity list API
+SALES-010 Implement opportunity detail API
+SALES-011 Implement opportunity update API
+
+
+UI
+UI-023 Opportunity detail drawer
+UI-024 Opportunity create form
+UI-025 Opportunity product list
+
+
+
+
+Sprint 8 — Visual Pipeline
+
+SALES
+SALES-012 Implement stage move API
+SALES-013 Implement stage history
+SALES-014 Implement win opportunity API
+SALES-015 Implement lose opportunity API
+
+
+UI
+UI-026 Pipeline kanban board
+UI-027 Deal card component
+UI-028 Drag-drop stage move
+UI-029 Deal inspector drawer
+
+
+QA
+QA-004 Pipeline drag-drop e2e
+Sprint 9 — Quote Core
+
+QUOTE
+QUOTE-001 Create quotes migration
+QUOTE-002 Create quote_items migration
+QUOTE-003 Implement quote create API
+QUOTE-004 Implement quote list API
+QUOTE-005 Implement quote detail API
+QUOTE-006 Implement quote update API
+QUOTE-007 Implement quote item add API
+QUOTE-008 Implement quote item update API
+
+
+UI
+UI-030 Quote list page
+UI-031 Quote builder shell
+UI-032 Quote item table
+UI-033 Pricing summary panel
+
+
+
+
+Sprint 10 — Quote PDF + Approval
+
+QUOTE
+QUOTE-009 Implement pricing calculation service
+QUOTE-010 Implement quote approval request
+QUOTE-011 Implement quote approve API
+QUOTE-012 Implement quote reject API
+QUOTE-013 Implement PDF generation job
+QUOTE-014 Implement quote send API
+
+
+UI
+UI-034 Quote preview panel
+UI-035 Quote approval modal
+UI-036 Quote PDF preview
+
+
+WORKER
+WORKER-001 PDF queue processor
+WORKER-002 Email queue processor reference slot
+Sprint 11 — Tasks + Activities
+
+TASK
+TASK-001 Create tasks migration
+TASK-002 Create activities migration
+TASK-003 Implement task create API
+TASK-004 Implement task list API
+TASK-005 Implement task complete API
+TASK-006 Implement activity create API
+TASK-007 Implement activity list API
+
+
+UI
+UI-037 My Work page
+UI-038 Task list
+UI-039 Task create modal
+UI-040 Activity composer
+
+
+
+
+Sprint 12 — Dashboard + Notifications + MVP Hardening
+
+NOTIFICATION
+NOTIF-001 Create notifications migration
+NOTIF-002 Implement notification create service
+NOTIF-003 Implement notification list API
+NOTIF-004 Implement mark as read API
+
+
+REPORTING
+REP-001 Implement MVP dashboard metrics API
+REP-002 Lead count metric
+REP-003 Opportunity value metric
+REP-004 Quote count metric
+REP-005 Activity count metric
+
+
+UI
+UI-041 Dashboard shell
+UI-042 Metric cards
+UI-043 Recent activity widget
+UI-044 Notification center
+UI-045 Command menu v1
+
+
+QA
+QA-005 MVP happy path e2e
+QA-006 Tenant isolation test
+QA-007 Permission test suite
+
+
+
+
+7. Story Template
+As a [role],
+I want to [action],
+so that [business value].
+
+
+Acceptance Criteria Template
+Given
+When
+Then
+
+
+Definition of Ready
+Business rule clear
+API contract available
+Data model available
+Design available
+Permission defined
+Test scenario defined
+
+
+Definition of Done
+Backend implemented
+Frontend implemented
+DB migration done
+Permission check done
+Audit log done
+Events emitted
+Tests passing
+Docs updated
+Reviewed
+Deployed to staging
+8. Epic Detayları
+
+CORE-E1 Tenant Management
+Stories:
+
+CORE-101 Create tenant entity
+CORE-102 Create tenant settings
+CORE-103 Tenant provisioning job
+CORE-104 Default roles seed per tenant
+CORE-105 Default pipeline seed per tenant
+CORE-106 Tenant status management
+CORE-107 Tenant usage quotas
+
+
+IAM-E1 Authentication
+Stories:
+
+IAM-101 Login
+IAM-102 Logout
+IAM-103 Refresh token
+IAM-104 Forgot password
+IAM-105 Reset password
+IAM-106 2FA setup
+IAM-107 Login history
+IAM-108 Session revoke
+
+
+IAM-E2 User Management
+IAM-201 Create user
+IAM-202 Invite user
+IAM-203 Update user
+IAM-204 Deactivate user
+IAM-205 Assign role
+IAM-206 Assign branch
+IAM-207 Assign manager
+
+
+CRM-E1 Customer Management
+CRM-101 Create customer
+CRM-102 List customers
+CRM-103 Search customers
+CRM-104 View customer detail
+CRM-105 Update customer
+CRM-106 Soft delete customer
+CRM-107 Restore customer
+CRM-108 Customer duplicate detection reference slot
+
+
+CRM-E4 Customer Timeline
+CRM-401 Create timeline event
+CRM-402 List timeline
+CRM-403 Filter timeline by type
+CRM-404 Timeline from domain events
+CRM-405 AI summary reference slot
+
+
+LEAD-E4 Lead Conversion
+LEAD-401 Convert lead to customer
+LEAD-402 Convert lead to opportunity
+LEAD-403 Link existing customer
+LEAD-404 Create conversion log
+LEAD-405 Prevent double conversion
+
+
+SALES-E4 Kanban Pipeline
+SALES-401 Load pipeline board
+SALES-402 Drag opportunity to stage
+SALES-403 Validate stage permission
+SALES-404 Update stage history
+SALES-405 Show stage totals
+SALES-406 Open deal inspector
+
+
+QUOTE-E5 Quote PDF
+QUOTE-501 Generate PDF
+QUOTE-502 Store PDF file
+QUOTE-503 Download PDF
+QUOTE-504 Regenerate PDF
+QUOTE-505 PDF template v1
+9. Cross-Cutting Backlog
+
+Security
+SEC-001 Tenant isolation automated test
+SEC-002 Permission matrix test
+SEC-003 Rate limiting
+SEC-004 Audit sensitive actions
+SEC-005 File upload validation
+SEC-006 JWT rotation
+
+
+Observability
+OBS-001 Structured logging
+OBS-002 Request ID middleware
+OBS-003 API metrics
+OBS-004 DB slow query logging
+OBS-005 Queue metrics
+OBS-006 Grafana dashboard
+
+
+Performance
+PERF-001 Pagination standard
+PERF-002 DataGrid virtualization
+PERF-003 Query index review
+PERF-004 Dashboard cache
+PERF-005 Load test MVP flow
+
+
+Data
+DATA-001 Seed demo tenant
+DATA-002 Seed default permissions
+DATA-003 Seed default statuses
+DATA-004 Seed sample products
+DATA-005 Import customers from CSV
+
+
+
+
+10. Squad Capacity Önerisi
+2 haftalık sprint için ortalama:
+
+           Squad                   Kişi       Story Point
+Core/IAM                                  6                 60–75
+CRM/Lead                                  7                 70–85
+Sales/Quote             7   70–85
+Inventory/Finance       6   55–70
+Communication/Support   5   45–60
+Workflow/AI             5   45–60
+Frontend Platform       5   45–60
+DevOps                  4   35–45
+QA Automation           5   40–55
+
+
+
+11. Dependency Map
+DevOps Foundation
+↓
+Backend Foundation
+↓
+Auth + Tenant
+↓
+IAM
+↓
+CRM
+↓
+Lead
+↓
+Sales
+↓
+Quote
+↓
+Order
+↓
+Inventory
+↓
+Finance
+↓
+Workflow
+↓
+AI
+
+
+UI bağımlılığı:
+
+Design System
+↓
+App Shell
+↓
+DataGrid / Form / Drawer
+↓
+Customer
+↓
+Lead
+↓
+Pipeline
+↓
+Quote
+
+
+
+
+12. MVP Acceptance
+MVP kabul senaryosu:
+
+1. Tenant oluşturulur.
+2. Admin giriş yapar.
+3. Kullanıcı ve rol oluşturur.
+4. Müşteri oluşturur.
+5. Lead oluşturur.
+6. Lead fırsata çevrilir.
+7. Pipeline’da fırsat taşınır.
+8. Teklif oluşturulur.
+9. Teklif PDF üretilir.
+10. Teklif gönderildi yapılır.
+11. Görev oluşturulur.
+12. Dashboard metrikleri görünür.
+13. Audit log kayıtları oluşur.
+14. Tenant izolasyonu testten geçer.
+
+
+
+
+13. Jira Board Kolonları
+Backlog
+Ready
+In Progress
+Code Review
+QA
+UAT
+Done
+Blocked
+
+
+
+
+14. Jira Etiketleri
+backend
+frontend
+db
+api
+security
+devops
+qa
+design
+mobile
+ai
+integration
+mvp
+enterprise
+
+
+
+
+15. Öncelik Skalası
+P0 Production blocker
+P1 MVP blocker
+P2 Important
+P3 Normal
+P4 Nice to have
+
+
+
+
+16. Sonraki Çıktı
+Bundan sonra sıradaki belge:
+
+CRM OS Testing & QA Strategy v1
+
+
+
+
+CRM OS Testing & QA Strategy v1
+1. QA Hedefi
+CRM OS için test stratejisinin hedefi:
+
+Multi-tenant veri izolasyonunu garanti etmek
+Yetki hatalarını engellemek
+Satış akışlarının kırılmamasını sağlamak
+Regresyonu azaltmak
+50 kişilik ekipte kalite standardını korumak
+Production hatalarını erken yakalamak
+
+
+Ana kalite ilkesi:
+
+Her feature test edilmeden Done değildir.
+
+
+
+
+2. Test Katmanları
+Unit Test
+↓
+Integration Test
+↓
+API Contract Test
+↓
+E2E Test
+↓
+Security Test
+↓
+Performance Test
+↓
+UAT
+↓
+Production Smoke Test
+
+
+
+
+3. Test Piramidi
+%50 Unit Test
+%25 Integration Test
+%15 API / Contract Test
+%7 E2E Test
+%3 Manual Exploratory Test
+
+
+E2E az ama kritik olmalı. Her şeyi E2E ile test etmek yavaşlatır.
+
+
+
+4. Test Teknolojileri
+
+Backend
+Jest
+Supertest
+Testcontainers
+Prisma test DB
+PostgreSQL disposable database
+
+
+Frontend
+Vitest
+React Testing Library
+Playwright
+Storybook
+Chromatic
+
+
+API Contract
+OpenAPI validation
+Schemathesis
+Dredd alternatif
+
+
+Load Test
+k6
+Artillery alternatif
+
+
+Security
+OWASP ZAP
+Snyk / Trivy
+npm audit
+Semgrep
+Monitoring Validation
+Grafana dashboards
+Synthetic checks
+Health probes
+
+
+
+
+5. Test Ortamları
+local-test
+ci-test
+development
+staging
+uat
+production-smoke
+
+
+Ortam Kullanımı
+                 Ortam                              Amaç
+local-test                         Geliştirici testi
+ci-test                            PR pipeline
+development                        Entegrasyon
+staging                            Release testi
+uat                                Kullanıcı kabul
+production-smoke                   Canlı sonrası temel kontrol
+
+
+
+6. Test Data Strategy
+Her test tenant bazlı çalışmalı.
+
+tenant_a
+tenant_b
+tenant_enterprise
+tenant_demo
+
+
+Zorunlu test verileri:
+
+admin user
+sales manager
+sales rep
+finance user
+warehouse user
+support agent
+dealer user
+customer portal user
+
+
+Test müşterileri:
+
+corporate customer
+individual customer
+VIP customer
+risk customer
+deleted customer
+
+
+Test satış akışı:
+
+lead
+customer
+opportunity
+quote
+order
+payment
+ticket
+
+
+
+
+7. Multi-Tenant Testleri
+En kritik test sınıfı.
+
+Tenant Isolation Test
+Senaryo:
+
+Tenant A customer oluşturur.
+Tenant B login olur.
+Tenant B aynı customer id ile sorgu atar.
+Sonuç 404 veya 403 olmalıdır.
+
+
+Backend test:
+
+customer list
+customer detail
+lead detail
+opportunity detail
+quote detail
+file access
+timeline access
+audit log access
+
+
+Zorunlu:
+
+Her yeni tablo için tenant isolation testi yazılacak.
+
+
+
+
+8. RLS Testleri
+PostgreSQL seviyesinde test edilir.
+
+Test:
+
+SET app.tenant_id = 'tenant-a';
+SELECT * FROM customers;
+
+SET app.tenant_id = 'tenant-b';
+SELECT * FROM customers;
+
+
+Beklenen:
+
+Tenant A verisi Tenant B’de görünmez.
+
+
+RLS test kapsamı:
+
+customers
+leads
+opportunities
+quotes
+orders
+payments
+files
+messages
+tickets
+audit_logs
+timeline_events
+9. Permission / RBAC Testleri
+Her endpoint için:
+
+Authorized Role
+Unauthorized Role
+No Permission
+No Token
+Wrong Tenant
+
+
+Örnek:
+
+quote.approve
+
+
+Test matrix:
+
+                 Rol                        Beklenen
+Admin                                 200
+Sales Manager                         200
+Sales Rep                             403
+Finance                               403
+Anonymous                             401
+
+
+
+10. Kritik İş Akışı Testleri
+
+MVP Happy Path
+Login
+Create Customer
+Create Lead
+Convert Lead
+Create Opportunity
+Move Stage
+Create Quote
+Add Quote Item
+Generate PDF
+Send Quote
+Create Task
+Dashboard Metrics
+Audit Log Check
+
+
+Bu test her release öncesi zorunlu.
+11. Lead Conversion Testleri
+Senaryolar:
+
+Yeni lead → yeni customer + opportunity
+Lead → mevcut customer + opportunity
+Lead zaten converted ise tekrar convert edilemez
+Eksik veri ile convert hata verir
+Convert sonrası timeline oluşur
+Convert sonrası domain event oluşur
+
+
+
+
+12. Quote Testleri
+Senaryolar:
+
+Quote create
+Quote item add
+Tax calculation
+Discount calculation
+Margin calculation
+Approval required
+Approve quote
+Reject quote
+PDF generate
+Send quote
+Quote expired
+
+
+Kritik kural:
+
+Toplam tutar backend tarafından hesaplanır.
+Frontend toplamına güvenilmez.
+
+
+
+
+13. Pipeline Testleri
+Senaryolar:
+
+Opportunity create
+Stage move
+Invalid stage move
+Permission denied stage move
+Won
+Lost
+Stage history created
+Pipeline totals updated
+
+
+
+
+14. Customer 360 Testleri
+Senaryolar:
+
+Customer detail loads
+Contacts loads
+Timeline loads
+Quotes loads
+Orders loads
+Payments loads
+Files loads
+Activities loads
+Permission based tab visibility
+
+
+
+
+15. File Upload Testleri
+Senaryolar:
+
+Allowed file upload
+Blocked file type
+Max size exceeded
+Tenant path isolation
+File metadata created
+File download authorized
+Unauthorized file blocked
+
+
+Güvenlik:
+
+Virus scan entegrasyonu ileri faz
+MIME sniffing kontrolü
+Path traversal engeli
+16. API Contract Testleri
+OpenAPI ile:
+
+Request schema validation
+Response schema validation
+Required field validation
+Error response validation
+Status code validation
+
+
+Her endpoint OpenAPI ile uyumlu olmalı.
+
+
+
+17. Frontend Component Testleri
+Test edilecek temel bileşenler:
+
+Button
+Input
+Select
+DataGrid
+Kanban
+Timeline
+Drawer
+Modal
+Toast
+CommandMenu
+QuoteItemTable
+CustomerHeader
+
+
+Örnek testler:
+
+renders correctly
+handles loading
+handles empty state
+handles error state
+permission hidden action
+
+
+
+
+18. Frontend E2E Testleri
+Playwright senaryoları:
+login.spec.ts
+customer-crud.spec.ts
+lead-conversion.spec.ts
+pipeline-drag-drop.spec.ts
+quote-builder.spec.ts
+permission.spec.ts
+tenant-isolation.spec.ts
+
+
+
+
+19. Visual Regression
+Storybook + Chromatic.
+
+Kapsam:
+
+Design System components
+Customer 360
+Pipeline
+Quote Builder
+Dashboard
+Inbox
+
+
+Amaç:
+
+UI kırılmalarını yakalamak
+Dark theme tutarlılığını korumak
+
+
+
+
+20. Performance Testing
+
+API Hedefleri
+                 İşlem             Hedef
+Customer list                              < 300ms p95
+Customer detail                            < 400ms p95
+Pipeline board                             < 500ms p95
+Quote detail                               < 400ms p95
+Dashboard metrics                          < 800ms p95
+
+k6 Senaryoları
+100 concurrent users
+500 concurrent users
+1000 concurrent users
+
+
+Akışlar:
+
+login
+list customers
+open customer
+create lead
+convert lead
+move opportunity
+create quote
+
+
+
+
+21. Load Test Data
+Minimum staging load dataset:
+
+10 tenants
+1,000 users
+100,000 customers
+250,000 leads
+100,000 opportunities
+50,000 quotes
+1,000,000 timeline events
+500,000 activities
+
+
+Enterprise test dataset:
+
+100 tenants
+10,000 users
+1,000,000 customers
+5,000,000 timeline events
+10,000,000 messages
+
+
+
+
+22. Security Testing
+Zorunlu kontroller:
+
+SQL injection
+XSS
+CSRF
+JWT tampering
+Broken access control
+IDOR
+File upload abuse
+Rate limit bypass
+Tenant escape
+Privilege escalation
+
+
+Özellikle IDOR:
+
+Tenant A quote id
+Tenant B token
+GET /quotes/{id}
+
+
+Beklenen:
+
+403/404
+
+
+
+
+23. Regression Suite
+Her release öncesi:
+
+Auth
+Tenant
+RBAC
+Customer CRUD
+Lead Conversion
+Pipeline
+Quote
+Task
+Notification
+Audit
+
+
+Çalışmalı.
+
+
+
+24. Smoke Test
+Deployment sonrası:
+Health check
+Login
+Tenant context
+Customer list
+Create customer
+Create lead
+Create quote
+Notification list
+Audit log
+
+
+Süre hedefi:
+
+< 5 dakika
+
+
+
+
+25. UAT Planı
+Pilot kullanıcı rolleri:
+
+Sales Rep
+Sales Manager
+Finance User
+Admin
+
+
+UAT senaryoları:
+
+Müşteri oluştur
+Lead ekle
+Fırsata çevir
+Pipeline’da ilerlet
+Teklif oluştur
+PDF al
+Görev ata
+Dashboard kontrol et
+
+
+UAT kabul:
+
+Kritik hata: 0
+Major hata: maksimum 3
+Minor hata: kabul edilebilir
+26. Bug Severity
+
+Critical
+Tenant isolation broken
+Login impossible
+Data loss
+Payment/financial wrong calculation
+Production unavailable
+
+
+High
+Quote cannot be created
+Lead conversion broken
+Pipeline broken
+Permission bypass
+
+
+Medium
+UI issue with workaround
+Slow page
+Incorrect non-financial display
+
+
+Low
+Text typo
+Minor alignment
+Non-blocking UI issue
+
+
+
+
+27. Bug Lifecycle
+New
+Triaged
+In Progress
+Ready for QA
+Verified
+Closed
+Reopened
+28. Test Ownership
+
+Backend Developer
+unit test
+integration test
+repository test
+service test
+
+
+Frontend Developer
+component test
+form validation test
+UI state test
+
+
+QA Engineer
+e2e
+exploratory
+regression
+test plan
+bug triage
+
+
+DevOps
+pipeline
+deployment smoke
+monitoring validation
+backup restore test
+
+
+Security Owner
+SAST
+DAST
+tenant isolation review
+permission review
+
+
+
+
+29. CI Quality Gates
+PR geçmeden:
+
+lint pass
+typecheck pass
+unit tests pass
+integration tests pass
+OpenAPI validation pass
+security scan pass
+migration check pass
+
+
+Release öncesi:
+
+e2e pass
+regression pass
+performance smoke pass
+staging smoke pass
+
+
+Production sonrası:
+
+production smoke pass
+error rate normal
+latency normal
+queue normal
+
+
+
+
+30. Test Coverage Hedefleri
+                 Katman       Hedef
+Core services                          %85
+Auth/IAM                               %90
+CRM/Lead/Sales                         %80
+Quote/Finance                          %90
+UI components                          %70
+E2E critical flows                    %100
+
+
+
+31. QA Automation Roadmap
+
+Ay 1
+unit test standard
+integration test standard
+customer CRUD tests
+auth tests
+tenant isolation tests
+Ay 2
+lead conversion
+pipeline
+quote
+frontend e2e
+visual regression
+
+
+Ay 3
+performance smoke
+security baseline
+regression suite
+contract tests
+
+
+
+
+32. Release Test Checklist
+Migrations tested
+Rollback tested
+API tests passed
+E2E passed
+Tenant isolation passed
+Permission tests passed
+Performance smoke passed
+Security scan passed
+UAT approved
+Production smoke plan ready
+
+
+
+
+33. QA Dashboard
+Metrikler:
+
+open bugs by severity
+test pass rate
+automation coverage
+flaky tests
+release readiness
+production defects
+mean time to detect
+mean time to resolve
+
+
+
+
+34. Flaky Test Policy
+Flaky test ignored edilmez.
+3 kez flaky olan test karantinaya alınır.
+Sorumlu squad 48 saat içinde düzeltir.
+
+
+
+
+35. Final QA Kuralı
+Bu sistemde en kritik kalite kuralı:
+
+Tenant isolation, permission ve finansal hesaplama testleri
+kırmızıysa release yapılamaz.
+
+
+Sonraki çıktı: CRM OS Security & Compliance Blueprint v1.
+
+
+
+
+CRM OS Security & Compliance Blueprint v1
+
+1. Güvenlik Hedefi
+CRM OS için güvenlik yaklaşımı:
+
+Secure by Design
+Privacy by Design
+Tenant Isolation First
+Zero Trust Internal Access
+Least Privilege
+Full Auditability
+
+
+GDPR tarafında “data protection by design and by default” ilkesi;
+sistem tasarımı sırasında veri minimizasyonu, pseudonymization ve
+varsayılan gizlilik kontrollerinin gömülü olmasını gerektirir. KVKK
+tarafında da kişisel verilerin işlenmesi, aktarılması, silinmesi/yok
+edilmesi/anonim hale getirilmesi gibi süreçlerin yönetilmesi
+gerekir. (gdpr-info.eu)
+2. En Kritik Güvenlik İlkesi
+Tenant A hiçbir koşulda Tenant B verisini göremez.
+
+
+Bu kural:
+
+API
+Database
+Search
+Cache
+File Storage
+Logs
+AI
+Exports
+Backups
+Webhooks
+
+
+tüm katmanlarda zorunludur.
+
+
+
+3. Security Architecture
+User
+↓
+WAF / CDN
+↓
+Ingress / Rate Limit
+↓
+API Gateway
+↓
+JWT Auth
+↓
+Tenant Guard
+↓
+Permission Guard
+↓
+Service Layer
+↓
+PostgreSQL RLS
+↓
+Audit Log
+4. Kimlik Doğrulama
+Zorunlu:
+
+Email/password
+Refresh token rotation
+Session revocation
+Password reset
+2FA
+Login history
+Device history
+Failed login protection
+
+
+Enterprise:
+
+SSO
+SAML
+OIDC
+LDAP
+SCIM
+IP whitelist
+Device trust
+
+
+Token standardı:
+
+Access token: 15 dakika
+Refresh token: 7-30 gün
+Rotation: zorunlu
+Revocation list: Redis + DB
+
+
+
+
+5. Yetkilendirme
+Model:
+
+RBAC
++
+Permission
++
+Tenant Scope
++
+Branch Scope
++
+Team Scope
++
+Record Ownership
+
+
+Örnek izinler:
+
+customer.read
+customer.create
+customer.update
+customer.delete
+quote.approve
+payment.read
+inventory.adjust
+admin.manage
+
+
+Kritik kural:
+
+Frontend yetki sadece görünürlük içindir.
+Asıl kontrol backend tarafındadır.
+
+
+
+
+6. Row Level Security
+PostgreSQL RLS zorunlu.
+
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation_customers
+ON customers
+USING (
+  tenant_id = current_setting('app.tenant_id')::uuid
+);
+
+
+Her request transaction içinde:
+
+SET LOCAL app.tenant_id = '<tenant_id>';
+SET LOCAL app.user_id = '<user_id>';
+
+
+RLS testleri release blocker olmalı.
+7. Veri Sınıflandırma
+
+Public
+Ürün adı
+Genel katalog bilgisi
+Kamuya açık kampanya
+
+
+Internal
+Pipeline
+Görevler
+Stok bilgisi
+Raporlar
+
+
+Confidential
+Müşteri bilgileri
+Cari hesap
+Teklif
+Sipariş
+Ticket
+Mesajlar
+
+
+Restricted
+Şifre hash
+API key
+OAuth token
+Banka hareketleri
+Kimlik/vergi bilgileri
+AI konuşmaları
+Audit log
+
+
+
+
+8. Şifreleme
+
+Transit
+TLS 1.2+
+TLS 1.3 tercih
+HSTS
+Secure cookies
+
+
+At Rest
+PostgreSQL disk encryption
+Object storage encryption
+Backup encryption
+Secret encryption
+
+
+Field Level Encryption
+Aday alanlar:
+
+api_keys
+oauth_tokens
+bank_account_no
+tax_number
+integration_secrets
+ai_provider_keys
+webhook_secrets
+
+
+
+
+9. Secret Management
+Production’da .env kullanılmaz.
+
+Vault
+AWS Secrets Manager
+Azure Key Vault
+GCP Secret Manager
+Doppler
+
+
+Kurallar:
+
+Secret kodda olmaz
+Secret loglanmaz
+Secret image içine girmez
+Secret rotation yapılır
+Least privilege uygulanır
+10. Password Policy
+Minimum 12 karakter
+Common password engeli
+Password reuse engeli
+Bcrypt/Argon2
+Failed login lockout
+2FA opsiyonu
+Enterprise için 2FA zorunlu
+
+
+Öneri:
+
+Argon2id
+
+
+
+
+11. Session Security
+Refresh token DB’de hashlenmiş tutulur
+Device ID tutulur
+IP/user-agent kaydı tutulur
+Logout refresh token revoke eder
+Admin tüm oturumları kapatabilir
+Riskli girişte uyarı gider
+
+
+
+
+12. API Security
+Zorunlu:
+
+JWT validation
+Tenant header validation
+Permission guard
+Rate limiting
+Request size limit
+Input validation
+Output filtering
+Idempotency key
+Replay protection for webhooks
+
+
+Error response:
+Fazla bilgi sızdırmaz
+Stack trace production’da dönmez
+Tenant var/yok bilgisi sızdırılmaz
+
+
+
+
+13. Rate Limiting
+Login: 5 deneme / 5 dakika / IP
+Password reset: 3 istek / saat / email
+Public API: plana göre
+Webhook: signature + timestamp
+AI API: kota bazlı
+Export: throttled
+
+
+
+
+14. Dosya Güvenliği
+Zorunlu:
+
+MIME validation
+Extension validation
+File size limit
+Virus scan
+Object storage private bucket
+Signed URL
+Tenant path isolation
+No direct public upload
+
+
+Path standardı:
+
+tenant/{tenantId}/{module}/{entityId}/{fileId}/{filename}
+
+
+
+
+15. Webhook Güvenliği
+Her webhook:
+
+HMAC signature
+Timestamp
+Replay window
+Secret rotation
+Delivery log
+Retry policy
+DLQ
+
+
+Header:
+
+X-CRMOS-Signature
+X-CRMOS-Timestamp
+X-CRMOS-Event
+
+
+
+
+16. Audit Log
+Audit zorunlu işlemler:
+
+login
+logout
+failed_login
+password_change
+role_change
+permission_change
+customer_export
+customer_delete
+quote_approve
+payment_create
+stock_adjust
+api_key_create
+integration_connect
+data_export
+data_delete
+
+
+Audit log değiştirilemez olmalı.
+
+İleri seviye:
+
+append-only audit table
+WORM storage
+hash chain
+17. Logging Güvenliği
+Loglanmayacak veriler:
+
+password
+token
+refresh token
+api key
+secret
+credit card
+full bank account
+sensitive personal data
+AI raw confidential prompts
+
+
+Log formatı:
+
+{
+    "requestId": "uuid",
+    "tenantId": "uuid",
+    "userId": "uuid",
+    "module": "crm",
+    "action": "customer.update",
+    "status": "success"
+}
+
+
+
+
+18. KVKK / GDPR Veri Hakları
+Platform şu talepleri desteklemeli:
+
+Aydınlatma metni kaydı
+Açık rıza kaydı
+Veri erişim talebi
+Veri dışa aktarım talebi
+Veri düzeltme talebi
+Veri silme talebi
+İşleme kısıtlama
+Saklama süresi takibi
+İmha politikası
+
+
+Varsayılan olarak sadece gerekli kişisel veri işlenmeli ve erişim
+sınırlı tutulmalıdır; Avrupa Komisyonu’nun “privacy by default”
+açıklaması da yalnızca gerekli verinin işlenmesi, kısa saklama
+süresi ve sınırlı erişim örneklerini verir. (European Commission)
+
+
+
+
+19. Consent Management
+Tablolar:
+
+consent_records
+consent_versions
+consent_sources
+consent_withdrawals
+
+
+Alanlar:
+
+customer_id
+consent_type
+channel
+text_version
+given_at
+withdrawn_at
+source
+ip_address
+
+
+Consent tipleri:
+
+marketing_email
+marketing_sms
+marketing_whatsapp
+data_processing
+data_sharing
+profiling
+
+
+
+
+20. Data Retention
+Her modül için saklama politikası:
+
+customers
+leads
+messages
+tickets
+audit_logs
+files
+ai_logs
+exports
+backups
+
+
+Örnek:
+
+Export dosyaları: 7 gün
+Geçici import dosyaları: 30 gün
+Audit logs: 5-10 yıl
+AI raw prompts: mümkünse kısa süre
+
+
+KVKK tarafında kişisel verilerin silinmesi, yok edilmesi veya anonim
+hale getirilmesi süreçlerinin politika ve prosedürlerle yönetilmesi
+gerekir. (KVKK)
+
+
+
+
+21. Data Deletion
+Silme türleri:
+
+Soft delete
+Hard delete
+Anonymization
+Pseudonymization
+Crypto-shredding
+
+
+Kritik karar:
+
+Finansal kayıtlar doğrudan silinmez.
+Yasal saklama gerekiyorsa maskeleme/anonymization uygulanır.
+
+
+
+
+22. Data Export
+Müşteri export formatları:
+
+JSON
+CSV
+XLSX
+PDF
+Export güvenliği:
+
+Permission required
+Audit log
+Async job
+Signed URL
+Expire after 7 days
+Watermark optional
+
+
+
+
+23. Data Masking
+UI masking:
+
+Telefon: +90 532 *** ** 12
+E-posta: a***@domain.com
+Vergi no: ******1234
+Banka: TR** **** **** 1234
+
+
+Kim görebilir?
+
+Role
+Permission
+Field-level permission
+
+
+
+
+24. Field-Level Security
+Özellikle:
+
+customer.tax_number
+customer.credit_limit
+account.balance
+payment.amount
+bank_transaction
+ai_conversation
+audit_logs
+
+
+Permission örnekleri:
+
+customer.tax_number.read
+finance.balance.read
+payment.export
+audit.read
+
+
+
+
+25. IP Whitelist
+Enterprise tenant için:
+
+allowed_ip_ranges
+deny_unknown_ip
+admin_bypass_policy
+temporary_access_window
+
+
+Tablo:
+
+tenant_ip_rules
+
+
+
+
+26. Device Security
+trusted devices
+device fingerprint
+device revoke
+new device alert
+suspicious login alert
+
+
+
+
+27. Admin Security
+Admin işlemleri:
+
+MFA zorunlu
+Audit zorunlu
+Session timeout kısa
+Sensitive action re-auth
+IP whitelist opsiyonel
+
+
+Sensitive action:
+
+role permission update
+api key create
+export
+delete
+integration secret change
+billing change
+
+
+
+
+28. API Key Security
+API key sadece bir kez gösterilir
+DB’de hash tutulur
+Scope zorunlu
+Expiration opsiyonel
+Last used tracking
+IP restriction opsiyonel
+Rotation
+Revoke
+
+
+
+
+29. Integration Security
+OAuth token encryption
+Refresh token encryption
+Connector permission scope
+Webhook signature
+Rate limit
+Integration audit log
+
+
+
+
+30. AI Security
+AI katmanı için kurallar:
+
+Tenant izolasyonu
+Prompt log masking
+PII redaction
+Provider bazlı data retention kontrolü
+AI action permission
+AI usage quota
+Human approval for risky actions
+AI şunları doğrudan yapmamalı:
+
+payment delete
+stock adjust
+quote approve
+customer delete
+permission change
+
+
+Bunlar için approval gerekir.
+
+
+
+31. AI Data Boundary
+Tenant A verisi Tenant B prompt context’ine giremez.
+
+
+Vector DB’de:
+
+tenant_id
+entity_type
+entity_id
+permission_scope
+
+
+zorunlu metadata olmalı.
+
+
+
+32. Frontend Security
+CSP
+XSS protection
+No token in localStorage tercihen
+HttpOnly refresh cookie
+Sanitize rich text
+Escape user content
+Secure file preview
+Permission-aware UI
+
+
+CSP örnek:
+
+default-src 'self';
+script-src 'self';
+img-src 'self' data: https:;
+connect-src 'self' api.crm-os.com;
+
+
+
+
+33. Backend Security
+Input validation
+DTO whitelist
+SQL injection protection
+Parameterized queries
+Mass assignment protection
+Output DTO filtering
+CORS allowlist
+Helmet
+Request body limit
+
+
+
+
+34. Database Security
+RLS
+Least privilege DB user
+No superuser for app
+Read replica permissions
+Encrypted backups
+Slow query monitoring
+Audit tables protected
+
+
+DB role ayrımı:
+
+app_user
+migration_user
+readonly_user
+backup_user
+
+
+
+
+35. Cache Security
+Redis key’leri tenant bazlı.
+
+tenant:{tenantId}:...
+Cache’e konmayacak:
+
+password
+secret
+full token
+sensitive financial data
+raw AI confidential context
+
+
+
+
+36. Backup Security
+Encrypted backups
+Access limited
+Restore audit
+Backup integrity check
+PITR
+Cross-region copy optional
+
+
+Backup test:
+
+Monthly restore test
+Quarterly DR drill
+
+
+
+
+37. Incident Response
+Seviyeler:
+
+SEV1: Veri sızıntısı / tenant escape / sistem down
+SEV2: Yetki bypass / kritik modül down
+SEV3: Performans / kısmi hata
+SEV4: minor issue
+
+
+Akış:
+
+Detect
+Triage
+Contain
+Eradicate
+Recover
+Notify
+Postmortem
+
+
+
+
+38. Security Monitoring
+Alarm örnekleri:
+
+failed_login_spike
+permission_denied_spike
+tenant_cross_access_attempt
+mass_export
+api_key_abuse
+suspicious_admin_action
+unusual_ai_usage
+large_file_download
+stock_adjustment_anomaly
+
+
+
+
+39. Compliance Artifacts
+Hazırlanacak dokümanlar:
+
+KVKK aydınlatma metni
+Açık rıza metni
+Veri saklama ve imha politikası
+Çerez politikası
+Gizlilik politikası
+Veri işleyen sözleşmesi
+Alt işleyen listesi
+Bilgi güvenliği politikası
+Yetki matrisi
+Veri envanteri
+Risk analizi
+İhlal müdahale planı
+
+
+
+
+40. Minimum Security Go-Live Checklist
+RLS testleri geçti
+RBAC testleri geçti
+Tenant isolation geçti
+Audit log aktif
+2FA hazır
+Rate limit aktif
+TLS aktif
+Secrets dışarıda
+Backup aktif
+Restore test edildi
+File upload kontrol edildi
+Webhook signature aktif
+Security scan temiz
+Admin işlemleri audit’li
+Export audit’li
+KVKK/GDPR veri talepleri için süreç var
+
+
+
+
+41. Sonraki Çıktı
+CRM OS Event Storming & Domain Events v1
+
+
+
+
+CRM OS Event Storming & Domain Events v1
+
+1. Amaç
+Bu doküman CRM OS içindeki tüm kritik iş olaylarını, event
+akışlarını, bounded context’leri ve event-driven mimariyi tanımlar.
+
+Ana hedef:
+
+Her önemli iş aksiyonu event üretir.
+Workflow, notification, AI, reporting ve integration katmanları bu
+eventleri dinler.
+
+
+
+
+2. Bounded Context Haritası
+CORE
+IAM
+CRM
+LEAD
+SALES
+QUOTE
+ORDER
+PRODUCT
+INVENTORY
+FINANCE
+TASK
+COMMUNICATION
+SUPPORT
+WORKFLOW
+NOTIFICATION
+AI
+REPORTING
+INTEGRATION
+
+
+
+
+3. Event Naming Standard
+Format:
+
+<Entity><ActionPastTense>
+
+
+Örnek:
+
+CustomerCreated
+LeadConverted
+QuoteSent
+OrderDelivered
+PaymentReceived
+TicketResolved
+WorkflowFailed
+
+
+Event payload standardı:
+
+{
+    "eventId": "uuid",
+    "tenantId": "uuid",
+    "eventType": "CustomerCreated",
+    "aggregateType": "customer",
+    "aggregateId": "uuid",
+    "occurredAt": "2026-06-20T12:00:00Z",
+    "actor": {
+      "userId": "uuid"
+    },
+    "payload": {}
+}
+
+
+
+
+4. Event Store / Outbox Standardı
+Tablo:
+
+domain_events
+
+
+Alanlar:
+
+id
+tenant_id
+event_type
+aggregate_type
+aggregate_id
+payload
+published_at
+created_at
+
+
+Akış:
+
+Service transaction
+↓
+Business data write
+↓
+domain_events insert
+↓
+commit
+↓
+outbox worker
+↓
+RabbitMQ publish
+↓
+handlers
+
+
+Kritik kural:
+
+Event, transaction commit edilmeden dış sisteme publish edilmez.
+5. CORE Events
+TenantCreated
+TenantActivated
+TenantSuspended
+TenantCancelled
+TenantSettingsUpdated
+TenantPlanChanged
+TenantQuotaExceeded
+FeatureEnabled
+FeatureDisabled
+SubscriptionCreated
+SubscriptionRenewed
+SubscriptionExpired
+
+
+TenantCreated
+Tetikleyen:
+
+Yeni firma/workspace oluşturma
+
+
+Dinleyenler:
+
+IAM
+Workflow
+Notification
+Reporting
+
+
+Sonuç:
+
+Default roles oluşturulur
+Default permissions bağlanır
+Default pipeline oluşturulur
+Welcome notification gönderilir
+
+
+
+
+6. IAM Events
+UserInvited
+UserActivated
+UserDeactivated
+UserLoggedIn
+UserLoginFailed
+UserLoggedOut
+PasswordChanged
+PasswordResetRequested
+PasswordResetCompleted
+TwoFactorEnabled
+TwoFactorDisabled
+RoleCreated
+RoleUpdated
+RoleDeleted
+PermissionAssignedToRole
+PermissionRevokedFromRole
+UserAssignedToRole
+UserRemovedFromRole
+SessionRevoked
+DeviceTrusted
+DeviceRevoked
+
+
+UserAssignedToRole
+Dinleyenler:
+
+Audit
+Notification
+Security
+
+
+Kritik etki:
+
+Permission cache invalidated
+Audit log created
+
+
+
+
+7. CRM Events
+CustomerCreated
+CustomerUpdated
+CustomerDeleted
+CustomerRestored
+CustomerAssigned
+CustomerSegmentChanged
+CustomerTagged
+CustomerUntagged
+CustomerMerged
+CustomerRiskScoreUpdated
+CustomerLifetimeValueUpdated
+CustomerConsentGiven
+CustomerConsentWithdrawn
+CustomerFileUploaded
+CustomerNoteAdded
+CustomerTimelineEventCreated
+ContactCreated
+ContactUpdated
+ContactDeleted
+AddressCreated
+AddressUpdated
+AddressDeleted
+
+
+CustomerCreated
+Dinleyenler:
+
+Timeline
+Audit
+Notification
+Workflow
+Reporting
+AI
+
+
+Yan etkiler:
+
+Customer timeline event
+Default account reference slot
+AI duplicate check
+
+
+
+
+8. LEAD Events
+LeadCreated
+LeadUpdated
+LeadAssigned
+LeadContacted
+LeadQualified
+LeadDisqualified
+LeadScored
+LeadTemperatureChanged
+LeadLost
+LeadConverted
+LeadSourceCreated
+LeadEnriched
+LeadFileUploaded
+LeadNoteAdded
+
+
+LeadCreated
+Dinleyenler:
+
+Workflow
+Notification
+AI
+Reporting
+
+
+Olası otomasyon:
+
+Lead skoru hesapla
+Satışçı ata
+WhatsApp karşılama gönder
+Takip görevi oluştur
+
+
+LeadConverted
+Payload:
+
+{
+    "leadId": "uuid",
+    "customerId": "uuid",
+    "opportunityId": "uuid"
+}
+
+
+Dinleyenler:
+
+CRM
+SALES
+Timeline
+Audit
+Reporting
+Workflow
+9. SALES Events
+PipelineCreated
+PipelineUpdated
+PipelineStageCreated
+PipelineStageUpdated
+PipelineStageDeleted
+OpportunityCreated
+OpportunityUpdated
+OpportunityAssigned
+OpportunityStageChanged
+OpportunityValueChanged
+OpportunityProductAdded
+OpportunityProductRemoved
+OpportunityWon
+OpportunityLost
+OpportunityReopened
+OpportunityForecastUpdated
+OpportunityCompetitorAdded
+OpportunityActivityAdded
+
+
+OpportunityStageChanged
+Payload:
+
+{
+    "opportunityId": "uuid",
+    "fromStageId": "uuid",
+    "toStageId": "uuid",
+    "fromStageName": "Discovery",
+    "toStageName": "Proposal"
+}
+
+
+Dinleyenler:
+
+Timeline
+Workflow
+Reporting
+AI
+Notification
+Otomasyon örneği:
+
+Proposal aşamasına geçince teklif oluşturma görevi aç
+Negotiation aşamasında yöneticiye bildirim gönder
+
+
+
+
+10. QUOTE Events
+QuoteCreated
+QuoteUpdated
+QuoteItemAdded
+QuoteItemUpdated
+QuoteItemRemoved
+QuoteCalculated
+QuoteDiscountApplied
+QuoteApprovalRequested
+QuoteApproved
+QuoteRejected
+QuoteSent
+QuoteViewed
+QuoteExpired
+QuoteAcceptedByCustomer
+QuoteRejectedByCustomer
+QuotePdfGenerated
+QuoteConvertedToOrder
+QuoteFileUploaded
+QuoteVersionCreated
+
+
+QuoteSent
+Dinleyenler:
+
+Timeline
+Notification
+Workflow
+Reporting
+AI
+
+
+Yan etkiler:
+
+Customer timeline update
+Quote reminder workflow scheduled
+Sales rep notification
+
+
+QuoteApproved
+Kritik:
+
+Margin kontrolü yapılmış olmalı
+Audit zorunlu
+
+
+Dinleyenler:
+
+Workflow
+Notification
+Order
+Reporting
+
+
+
+
+11. ORDER Events
+OrderCreated
+OrderUpdated
+OrderConfirmed
+OrderCancelled
+OrderItemAdded
+OrderItemUpdated
+OrderStatusChanged
+OrderReservationRequested
+OrderReserved
+OrderPartiallyReserved
+OrderReservationFailed
+OrderShipmentCreated
+OrderPartiallyShipped
+OrderShipped
+OrderDelivered
+OrderReturned
+OrderReturnRequested
+OrderPaymentPlanCreated
+OrderFileUploaded
+
+
+OrderCreated
+Dinleyenler:
+Inventory
+Finance
+Notification
+Timeline
+Reporting
+Workflow
+
+
+Yan etkiler:
+
+Stock reservation request
+Account transaction draft
+Payment plan creation
+Customer notification
+
+
+
+
+12. PRODUCT Events
+ProductCreated
+ProductUpdated
+ProductDeactivated
+ProductVariantCreated
+ProductVariantUpdated
+ProductPriceCreated
+ProductPriceUpdated
+ProductCategoryCreated
+ProductBrandCreated
+ProductImageUploaded
+ProductFileUploaded
+ProductDescriptionGenerated
+
+
+Dinleyenler:
+
+Inventory
+Catalog
+AI
+Reporting
+Search
+13. INVENTORY Events
+WarehouseCreated
+WarehouseUpdated
+StockCreated
+StockChanged
+StockMovementCreated
+StockReserved
+StockReservationReleased
+StockReservationFailed
+StockCriticalLevelReached
+StockCountStarted
+StockCountCompleted
+StockAdjusted
+StockTransferCreated
+StockTransferShipped
+StockTransferReceived
+
+
+StockCriticalLevelReached
+Dinleyenler:
+
+Notification
+Procurement
+Workflow
+Reporting
+AI
+
+
+Otomasyon:
+
+Satın alma önerisi oluştur
+Depo yöneticisine bildirim gönder
+
+
+
+
+14. FINANCE Events
+AccountCreated
+AccountBalanceUpdated
+AccountTransactionCreated
+CreditLimitUpdated
+CreditLimitExceeded
+PaymentCreated
+PaymentReceived
+PaymentCancelled
+PaymentOverdue
+InstallmentCreated
+InstallmentDueSoon
+InstallmentOverdue
+InvoiceCreated
+InvoiceSent
+InvoiceCancelled
+BankTransactionImported
+BankTransactionMatched
+
+
+PaymentReceived
+Dinleyenler:
+
+Timeline
+Order
+Reporting
+Notification
+Workflow
+
+
+Yan etkiler:
+
+Customer balance update
+Receivable status update
+Sales rep notification
+
+
+
+
+15. TASK / ACTIVITY Events
+TaskCreated
+TaskAssigned
+TaskUpdated
+TaskCompleted
+TaskCancelled
+TaskOverdue
+TaskReminderTriggered
+ActivityCreated
+CallLogged
+MeetingLogged
+VisitLogged
+EmailLogged
+WhatsAppLogged
+NoteAdded
+
+
+Dinleyenler:
+
+Timeline
+Notification
+Reporting
+AI
+Workflow
+
+
+
+
+16. COMMUNICATION Events
+ChannelConnected
+ChannelDisconnected
+ConversationCreated
+ConversationAssigned
+ConversationStatusChanged
+MessageReceived
+MessageSent
+MessageDelivered
+MessageRead
+MessageFailed
+CallStarted
+CallEnded
+CallRecorded
+CallTranscribed
+MeetingCreated
+MeetingCompleted
+ConversationSummarized
+
+
+MessageReceived
+Dinleyenler:
+
+Inbox
+Notification
+AI
+Workflow
+CRM Timeline
+AI aksiyon:
+
+Duygu analizi
+Özetleme
+Müşteri niyeti tahmini
+Cevap önerisi
+
+
+
+
+17. SUPPORT Events
+TicketCreated
+TicketAssigned
+TicketUpdated
+TicketPriorityChanged
+TicketStatusChanged
+TicketResolved
+TicketClosed
+TicketReopened
+TicketSlaBreached
+TicketMessageAdded
+TicketFileUploaded
+CustomerSatisfactionSubmitted
+KnowledgeBaseArticleCreated
+
+
+TicketSlaBreached
+Dinleyenler:
+
+Notification
+Workflow
+Reporting
+Management Dashboard
+
+
+
+
+18. WORKFLOW Events
+WorkflowCreated
+WorkflowActivated
+WorkflowPaused
+WorkflowDisabled
+WorkflowTriggered
+WorkflowRunStarted
+WorkflowRunCompleted
+WorkflowRunFailed
+WorkflowStepStarted
+WorkflowStepCompleted
+WorkflowStepFailed
+ApprovalRequested
+ApprovalStepAssigned
+ApprovalApproved
+ApprovalRejected
+ApprovalExpired
+
+
+WorkflowRunFailed
+Dinleyenler:
+
+Notification
+Audit
+Admin Dashboard
+
+
+
+
+19. NOTIFICATION Events
+NotificationCreated
+NotificationDelivered
+NotificationRead
+NotificationFailed
+NotificationPreferenceUpdated
+
+
+
+
+20. AI Events
+AIActionRequested
+AIActionCompleted
+AIActionFailed
+AISummaryGenerated
+AIClassificationCompleted
+AILeadScoreCalculated
+AIOpportunityWinProbabilityCalculated
+AIQuoteTextGenerated
+AIRecommendationCreated
+AIUsageLimitExceeded
+AIFeedbackSubmitted
+
+
+AIActionRequested
+Kritik kontroller:
+
+tenant scope
+permission scope
+usage quota
+PII masking
+
+
+
+
+21. REPORTING Events
+DashboardCreated
+DashboardUpdated
+ReportCreated
+ReportScheduled
+ReportGenerated
+ReportExportRequested
+ReportExportCompleted
+MetricSnapshotCreated
+KpiTargetUpdated
+
+
+
+
+22. INTEGRATION Events
+ApiKeyCreated
+ApiKeyRevoked
+WebhookCreated
+WebhookUpdated
+WebhookDeleted
+WebhookDeliveryRequested
+WebhookDelivered
+WebhookFailed
+ConnectorConnected
+ConnectorDisconnected
+IntegrationRunStarted
+IntegrationRunCompleted
+IntegrationRunFailed
+ExternalOrderImported
+ExternalPaymentImported
+
+
+
+
+23. Event → Handler Matrix
+                       Timelin   Notificati   Workflo   A   Reporti   Integrati
+        Event
+                          e         on          w       I     ng         on
+CustomerCreated             ✓                      ✓ ✓            ✓
+
+LeadCreated                 ✓            ✓         ✓ ✓            ✓
+
+LeadConverted               ✓            ✓         ✓              ✓
+OpportunityStageChan
+                            ✓            ✓         ✓ ✓            ✓
+ged
+QuoteSent                   ✓            ✓         ✓ ✓            ✓          ✓
+QuoteApproved               ✓            ✓         ✓              ✓
+
+OrderCreated                ✓            ✓         ✓              ✓          ✓
+
+PaymentReceived             ✓            ✓         ✓              ✓
+
+TicketCreated               ✓            ✓         ✓ ✓            ✓
+
+MessageReceived             ✓            ✓         ✓ ✓
+
+
+
+24. Critical End-to-End Event Flow
+
+Lead → Quote Flow
+LeadCreated
+↓
+LeadAssigned
+↓
+LeadQualified
+↓
+CustomerCreated
+↓
+OpportunityCreated
+↓
+LeadConverted
+↓
+OpportunityStageChanged
+↓
+QuoteCreated
+↓
+QuoteItemAdded
+↓
+QuoteCalculated
+↓
+QuoteSent
+↓
+QuoteViewed
+↓
+QuoteApproved
+
+
+
+
+25. Quote → Order → Payment Flow
+QuoteApproved
+↓
+QuoteConvertedToOrder
+↓
+OrderCreated
+↓
+OrderReservationRequested
+↓
+StockReserved
+↓
+OrderConfirmed
+↓
+InvoiceCreated
+↓
+PaymentCreated
+↓
+PaymentReceived
+↓
+AccountBalanceUpdated
+
+
+
+
+26. Support Flow
+MessageReceived
+↓
+ConversationCreated
+↓
+TicketCreated
+↓
+TicketAssigned
+↓
+TicketStatusChanged
+↓
+TicketResolved
+↓
+CustomerSatisfactionSubmitted
+
+
+
+
+27. Workflow Trigger Mapping
+Workflow trigger kaynakları:
+
+LeadCreated
+LeadAssigned
+QuoteSent
+QuoteViewed
+QuoteExpired
+OrderCreated
+PaymentOverdue
+StockCriticalLevelReached
+TicketCreated
+TicketSlaBreached
+MessageReceived
+TaskOverdue
+
+
+Örnek:
+
+Trigger: QuoteSent
+Delay: 3 days
+Condition: Quote not viewed
+Action: Send reminder
+Action: Create task
+28. Notification Trigger Mapping
+LeadAssigned → Sales rep notification
+QuoteApprovalRequested → Manager notification
+PaymentOverdue → Finance + Sales notification
+StockCriticalLevelReached → Warehouse notification
+TicketSlaBreached → Support manager notification
+WorkflowRunFailed → Admin notification
+
+
+
+
+29. AI Trigger Mapping
+LeadCreated → AI lead score
+MessageReceived → sentiment + reply suggestion
+CallTranscribed → summary + action extraction
+OpportunityStageChanged → win probability update
+QuoteCreated → quote text suggestion
+TicketCreated → classification + solution suggestion
+
+
+
+
+30. Reporting Trigger Mapping
+LeadCreated → lead metrics
+LeadConverted → conversion rate
+OpportunityStageChanged → pipeline velocity
+QuoteSent → quote activity
+QuoteApproved → win rate
+OrderCreated → sales revenue
+PaymentReceived → collection metrics
+TicketResolved → support SLA metrics
+
+
+
+
+31. Integration Trigger Mapping
+QuoteSent → webhook
+OrderCreated → webhook
+PaymentReceived → webhook
+StockChanged → webhook
+CustomerCreated → webhook
+TicketCreated → webhook
+
+
+
+
+32. Event Idempotency
+Her handler idempotent olmalı.
+
+Handler log tablosu:
+
+event_handler_logs
+
+
+Alanlar:
+
+event_id
+handler_name
+status
+processed_at
+error_message
+
+
+Kural:
+
+Aynı event aynı handler tarafından ikinci kez işlenirse tekrar yan
+etki üretmez.
+
+
+
+
+33. Event Versioning
+Event tipi versiyonlanabilir:
+
+CustomerCreated.v1
+CustomerCreated.v2
+
+
+Payload içinde:
+
+{
+    "schemaVersion": 1
+}
+
+
+Kural:
+
+Breaking change varsa yeni versiyon çıkar.
+34. Event Priority
+
+High
+PaymentReceived
+QuoteApproved
+OrderCreated
+TicketSlaBreached
+SecurityEventDetected
+
+
+Normal
+CustomerCreated
+LeadCreated
+QuoteSent
+MessageReceived
+
+
+Low
+DashboardUpdated
+ReportGenerated
+AISummaryGenerated
+
+
+
+
+35. Event Retention
+domain_events: 12-24 ay
+audit_logs: 5-10 yıl
+workflow_logs: 12 ay
+notification_logs: 6-12 ay
+ai_usage_logs: 12 ay
+webhook_logs: 3-6 ay
+
+
+
+
+36. Event Security
+Event payload içinde:
+
+password yok
+token yok
+secret yok
+full payment sensitive data yok
+gereksiz PII yok
+
+
+Sensitive eventlerde payload minimize edilir.
+
+
+
+37. Event Testing
+Her domain event için test:
+
+event created
+payload valid
+outbox persisted
+handler processed
+idempotency works
+tenant isolation respected
+
+
+
+
+38. Event Observability
+Metrikler:
+
+events_created_total
+events_published_total
+events_failed_total
+event_publish_latency
+handler_duration
+handler_failure_count
+outbox_lag
+dlq_count
+
+
+
+
+39. MVP Event List
+MVP’de zorunlu eventler:
+
+TenantCreated
+UserInvited
+UserLoggedIn
+CustomerCreated
+CustomerUpdated
+LeadCreated
+LeadAssigned
+LeadConverted
+OpportunityCreated
+OpportunityStageChanged
+QuoteCreated
+QuoteSent
+QuoteApproved
+TaskCreated
+TaskCompleted
+NotificationCreated
+AuditLogCreated
+
+
+
+
+40. Sonraki Çıktı
+CRM OS Implementation Roadmap v1
+
+
+
+
+CRM OS Implementation Roadmap v1
+
+1. Ana Hedef
+12 ay içinde:
+Enterprise-ready CRM OS SaaS platformunun
+MVP → Commercial → Enterprise → AI aşamalarını tamamlamak.
+
+
+Ana ürün akışı:
+
+Tenant
+→ User
+→ Customer
+→ Lead
+→ Opportunity
+→ Quote
+→ Order
+→ Inventory
+→ Finance
+→ Support
+→ Workflow
+→ AI
+2. Yol Haritası Özeti
+            Faz                 Süre                          Hedef
+                                                  Hazırlık, repo, mimari,
+Phase 0                                 2 hafta
+                                                  CI/CD
+ Phase 1                               10 hafta   CRM MVP
+ Phase 2                               12 hafta   Commercial MVP
+ Phase 3                               12 hafta   Enterprise CRM
+ Phase 4                               12 hafta   AI + Analytics + Scale
+Toplam:
+
+48 hafta ≈ 12 ay
+
+
+
+
+3. Phase 0 — Foundation
+
+Süre
+Hafta 1–2
+
+
+Hedef
+Kod tabanı, altyapı ve ekip çalışma düzeni kurulur.
+
+
+Teslimatlar
+Monorepo
+Backend skeleton
+Frontend skeleton
+Docker Compose
+PostgreSQL
+Redis
+RabbitMQ
+MinIO
+CI/CD pipeline
+Design tokens
+App shell
+OpenAPI skeleton
+Migration pipeline
+RLS proof of concept
+Kabul Kriteri
+Developer local ortamı 1 komutla ayağa kalkar.
+API health check çalışır.
+Web app login shell açılır.
+PostgreSQL migration pipeline çalışır.
+Tenant RLS POC geçer.
+
+
+
+
+4. Phase 1 — CRM MVP
+
+Süre
+Hafta 3–12
+
+
+Hedef
+İlk satılabilir CRM çekirdeği.
+
+Modüller
+IAM
+Customer
+Lead
+Pipeline
+Opportunity
+Quote
+Task
+Timeline
+Notification
+Dashboard
+Audit
+
+
+Ana Akış
+Login
+→ Customer Create
+→ Lead Create
+→ Lead Convert
+→ Opportunity Create
+→ Pipeline Move
+→ Quote Create
+→ Quote PDF
+→ Task Create
+→ Dashboard View
+
+
+Teslimatlar
+Tenant management
+User management
+Role/permission
+Customer CRUD
+Customer 360 shell
+Lead CRUD
+Lead conversion
+Pipeline kanban
+Opportunity CRUD
+Quote builder v1
+Quote PDF v1
+Task module
+Activity module
+Notification center
+MVP dashboard
+Audit log
+Tenant isolation tests
+
+
+Kabul Kriteri
+Pilot müşteri sisteme girip müşteri oluşturabilir.
+Lead oluşturup fırsata çevirebilir.
+Pipeline’da fırsatı taşıyabilir.
+Teklif oluşturup PDF alabilir.
+Tüm aksiyonlar audit log’a düşer.
+Tenant A, Tenant B verisini göremez.
+
+
+
+
+5. Phase 2 — Commercial MVP
+
+Süre
+Hafta 13–24
+
+
+Hedef
+CRM satıştan operasyon ve gelire bağlanır.
+Modüller
+Order
+Product
+Inventory
+Finance Lite
+Payment
+Receivable
+Workflow v1
+Email/WhatsApp basic
+Customer Portal v1
+
+
+Ana Akış
+Quote Approved
+→ Order Created
+→ Stock Reserved
+→ Payment Plan
+→ Invoice Reference slot
+→ Payment Received
+→ Balance Updated
+
+
+Teslimatlar
+Order CRUD
+Order items
+Order status history
+Product catalog
+Product variants
+Warehouses
+Stocks
+Stock movements
+Stock reservations
+Customer account
+Account transactions
+Payment entry
+Installments
+Receivable dashboard
+Workflow trigger/action v1
+Email sending
+WhatsApp reference slot/API integration shell
+Customer portal login
+Customer quote view
+Kabul Kriteri
+Teklif siparişe çevrilebilir.
+Sipariş stok rezervasyonu oluşturur.
+Tahsilat girilebilir.
+Cari bakiye güncellenir.
+Müşteri portalından teklif görüntülenir.
+Basit workflow çalışır.
+
+
+
+
+6. Phase 3 — Enterprise CRM
+
+Süre
+Hafta 25–36
+
+
+Hedef
+Kurumsal müşteriler için gelişmiş CRM kabiliyeti.
+
+Modüller
+Omnichannel Inbox
+Support/Ticket
+SLA
+Dealer Portal
+Advanced Workflow
+Approval Engine
+Public API
+Webhooks
+SSO/SAML hazırlığı
+Advanced Audit
+Branch/Dealer Access
+
+
+Ana Akışlar
+Message Received
+→ Conversation Created
+→ Ticket Created
+→ SLA Tracked
+→ Resolution
+Dealer Login
+→ Catalog View
+→ Dealer Price
+→ Dealer Order
+→ Balance View
+
+
+Teslimatlar
+Conversation list
+Messages
+Customer context panel
+Ticket CRUD
+SLA rules
+Ticket assignment
+Dealer portal
+Dealer catalog
+Dealer order
+Approval engine
+Quote approval rules
+Discount approval
+Webhook system
+API key management
+Public API v1
+Branch scoped access
+Dealer scoped access
+Enterprise audit screen
+
+
+Kabul Kriteri
+WhatsApp/e-posta mesajları inbox’a düşer.
+Mesajdan ticket oluşturulur.
+SLA takip edilir.
+Bayi portalından sipariş oluşturulur.
+İndirim onay akışı çalışır.
+Webhook eventleri gönderilir.
+API key ile public API çalışır.
+
+
+
+
+7. Phase 4 — AI + Analytics + Scale
+
+Süre
+Hafta 37–48
+
+
+Hedef
+Platform AI destekli ve ölçeklenebilir kurumsal ürüne dönüşür.
+Modüller
+AI Gateway
+AI Assistant
+AI Summaries
+AI Lead Scoring
+AI Quote Assistant
+Advanced Reporting
+Custom Dashboards
+Mobile CRM v1
+Performance Scaling
+Marketplace foundation
+
+
+Teslimatlar
+AI provider abstraction
+Ask CRM
+Conversation summary
+Call/meeting summary reference slot
+Lead scoring AI
+Opportunity win probability
+Quote text generator
+AI usage quota
+AI usage logs
+Custom dashboard builder
+Report export
+Mobile CRM v1
+Offline sync foundation
+Read replica support
+Partitioning for large logs
+Marketplace app model
+
+
+Kabul Kriteri
+Kullanıcı doğal dilde CRM verisini sorgular.
+AI müşteri görüşmesini özetler.
+Lead skor önerisi üretir.
+Teklif açıklaması oluşturur.
+Dashboard özelleştirilebilir.
+Mobil uygulama temel saha akışını destekler.
+Sistem 100 tenant / yüksek veri hacmi testini geçer.
+8. 12 Aylık Sprint Planı
+
+Sprint 1–2
+Foundation
+Repo
+Docker
+CI/CD
+Backend skeleton
+Frontend skeleton
+RLS POC
+
+
+Sprint 3–4
+IAM
+Tenant
+Users
+Roles
+Permissions
+Login
+Audit base
+
+
+Sprint 5–6
+Customer
+Contacts
+Addresses
+Timeline
+Files
+Tags
+Customer 360
+
+
+Sprint 7–8
+Lead
+Lead Sources
+Lead Assignment
+Lead Conversion
+Pipeline setup
+
+
+Sprint 9–10
+Opportunity
+Pipeline Kanban
+Stage Move
+Win/Loss
+Stage History
+
+
+Sprint 11–12
+Quote
+Quote Items
+Pricing
+PDF
+Approval
+Dashboard
+Tasks
+Notifications
+
+
+Sprint 13–14
+Order
+Order Items
+Order Status
+Quote to Order
+
+
+Sprint 15–16
+Products
+Variants
+Warehouses
+Stocks
+Stock Movements
+
+
+Sprint 17–18
+Finance Lite
+Accounts
+Transactions
+Payments
+Installments
+Receivables
+
+
+Sprint 19–20
+Workflow v1
+Email
+WhatsApp shell
+Customer Portal
+
+
+Sprint 21–22
+Omnichannel Inbox
+Messages
+Conversation Context
+
+
+Sprint 23–24
+Support
+Tickets
+SLA
+Knowledge Base shell
+
+
+Sprint 25–26
+Dealer Portal
+Dealer Catalog
+Dealer Orders
+Dealer Balance
+
+
+Sprint 27–28
+Approval Engine
+Discount Approval
+Purchase Approval shell
+
+
+Sprint 29–30
+Public API
+API Keys
+Webhooks
+Integration logs
+
+
+Sprint 31–32
+Enterprise Security
+Branch scope
+Dealer scope
+Advanced audit
+SSO preparation
+Sprint 33–34
+AI Gateway
+AI Assistant
+AI usage quota
+AI logs
+
+
+Sprint 35–36
+AI Summaries
+Lead scoring
+Quote assistant
+Next best action
+
+
+Sprint 37–38
+Advanced Reporting
+Custom Dashboards
+Report Export
+
+
+Sprint 39–40
+Mobile CRM v1
+Field sales
+Tasks
+Visits
+Offline foundation
+
+
+Sprint 41–42
+Performance
+Read replicas
+Partitioning
+Load testing
+Query optimization
+
+
+Sprint 43–44
+Marketplace foundation
+Connector model
+App installs
+Sprint 45–46
+Hardening
+Security review
+QA regression
+UAT
+
+
+Sprint 47–48
+Launch preparation
+Documentation
+Training
+Pilot rollout
+Commercial launch
+
+
+
+
+9. Workstream Plan
+
+Backend Workstream
+Core platform
+IAM
+CRM
+Lead
+Sales
+Quote
+Order
+Inventory
+Finance
+Communication
+Workflow
+AI
+Reporting
+Integration
+
+
+Frontend Workstream
+Design system
+App shell
+DataGrid
+Customer 360
+Lead UI
+Pipeline
+Quote builder
+Order UI
+Inventory UI
+Finance UI
+Inbox
+Portal
+Dashboard
+AI UI
+
+
+DevOps Workstream
+Docker
+CI/CD
+Kubernetes
+Monitoring
+Logging
+Backup
+Secrets
+Security scan
+Load test infra
+Production readiness
+
+
+QA Workstream
+Test automation
+API tests
+E2E tests
+Tenant isolation tests
+Permission tests
+Regression suite
+Performance tests
+UAT
+
+
+Product / UX Workstream
+PRD
+User stories
+Wireframes
+Design system
+Prototype
+Acceptance criteria
+UAT scripts
+Training material
+
+
+
+
+10. Critical Path
+DevOps Foundation
+↓
+Backend Foundation
+↓
+Tenant + IAM
+↓
+Customer
+↓
+Lead
+↓
+Opportunity
+↓
+Quote
+↓
+Order
+↓
+Inventory
+↓
+Finance
+↓
+Workflow
+↓
+Omnichannel
+↓
+AI
+
+
+Frontend critical path:
+
+Design System
+↓
+App Shell
+↓
+DataGrid/Form/Drawer
+↓
+Customer
+↓
+Lead
+↓
+Pipeline
+↓
+Quote
+↓
+Order
+
+
+
+
+11. Parallelization Plan for 50 People
+
+Month 1
+Core/IAM
+DevOps
+Frontend Platform
+UX/UI
+QA Automation
+
+
+Month 2
+CRM
+Lead
+Sales
+Frontend CRM
+QA
+
+
+Month 3
+Quote
+Task
+Dashboard
+Notification
+MVP hardening
+
+
+Month 4–6
+Order
+Inventory
+Finance
+Workflow
+Portal
+Month 7–9
+Omnichannel
+Support
+Dealer
+Public API
+Approval Engine
+
+
+Month 10–12
+AI
+Reporting
+Mobile
+Performance
+Marketplace
+Hardening
+
+
+
+
+12. MVP Release Criteria
+MVP şu koşullarda çıkar:
+
+Tenant isolation passed
+RBAC passed
+Customer CRUD stable
+Lead conversion stable
+Pipeline stable
+Quote PDF stable
+Audit log active
+Dashboard working
+E2E happy path passed
+P95 API latency acceptable
+No critical security issue
+Pilot user UAT approved
+
+
+
+
+13. Commercial Release Criteria
+Order flow complete
+Stock reservation complete
+Payment entry complete
+Account balance accurate
+Workflow v1 stable
+Customer portal usable
+Backup/restore tested
+Production monitoring active
+
+
+
+
+14. Enterprise Release Criteria
+Omnichannel usable
+Ticket/SLA stable
+Dealer portal usable
+Approval engine stable
+Public API documented
+Webhook retry/DLQ working
+Branch/dealer scoped access tested
+Advanced audit available
+
+
+
+
+15. AI Release Criteria
+AI actions permission-aware
+Tenant isolation in AI context tested
+Usage quota active
+AI logs active
+PII masking active
+Human approval for risky actions
+
+
+
+
+16. Key Risks
+
+Risk: Scope Creep
+Mitigation:
+
+MVP freeze
+Change control board
+Icebox backlog
+
+
+Risk: Tenant Leakage
+Mitigation:
+RLS
+Automated tenant isolation tests
+Security review per module
+
+
+Risk: 50 Kişilik Ekipte Çakışma
+Mitigation:
+
+Module ownership
+API contracts
+Architecture review board
+Code owners
+
+
+Risk: UI Tutarsızlığı
+Mitigation:
+
+Design system
+Storybook
+Visual regression
+Frontend platform squad
+
+
+Risk: Performans
+Mitigation:
+
+Index review
+Pagination mandatory
+Load test
+Read replica
+Partitioning
+
+
+
+
+17. Architecture Review Board
+Her hafta gözden geçirilecek:
+
+New tables
+New APIs
+Event changes
+Security changes
+Performance risk
+Cross-module dependencies
+Zorunlu onay gerekenler:
+
+Database schema breaking change
+Permission model change
+Tenant isolation affecting code
+Financial calculation
+AI data access
+Public API change
+
+
+
+
+18. Documentation Deliverables
+Her release için:
+
+ERD update
+Data Dictionary update
+OpenAPI update
+Event catalog update
+Permission matrix update
+User guide
+Admin guide
+Deployment notes
+Release notes
+Known issues
+
+
+
+
+19. Launch Strategy
+
+Pilot 1
+1 tenant
+10 users
+CRM + Lead + Quote
+
+
+Pilot 2
+3 tenants
+50 users
+Order + Inventory + Finance
+Beta
+10 tenants
+200 users
+Workflow + Portal + Support
+
+
+Commercial Launch
+Public onboarding
+Paid plans
+Support process
+SLA
+
+
+
+
+20. Success Metrics
+
+Product
+Time to first customer create < 10 min
+Time to first quote < 30 min
+Lead to quote conversion tracked
+Weekly active users > 70%
+
+
+Technical
+API p95 < 500ms
+Uptime > 99.5% MVP
+Critical bugs = 0
+Tenant isolation incidents = 0
+
+
+Business
+Pilot activation rate
+Trial to paid conversion
+MRR
+Churn
+Expansion revenue
+
+
+
+
+21. Final Roadmap Output
+Bu roadmap 50 kişilik ekibi aşağıdaki sırayla çalıştırır:
+Foundation
+→ CRM MVP
+→ Commercial MVP
+→ Enterprise CRM
+→ AI + Scale
+
+
+Sonraki belge:
+
+CRM OS Permission Matrix v1
+
+
+
+
+CRM OS Permission Matrix v1
+
+1. Yetki Modeli
+CRM OS yetkilendirme modeli:
+
+RBAC
++ Permission-Based Access
++ Tenant Scope
++ Branch Scope
++ Dealer Scope
++ Team Scope
++ Record Ownership
++ Field-Level Security
+
+
+Temel kural:
+
+Frontend sadece görünürlüğü yönetir.
+Backend her istekte yetkiyi tekrar kontrol eder.
+PostgreSQL RLS tenant izolasyonunu zorunlu uygular.
+
+
+
+
+2. Standart Roller
+                  Rol                               Açıklama
+super_admin                        Platform yöneticisi
+tenant_admin                       Firma yöneticisi
+sales_director                     Satış direktörü
+sales_manager                      Satış müdürü
+sales_rep                          Satış temsilcisi
+finance_manager                     Finans müdürü
+finance_user                        Finans kullanıcısı
+warehouse_manager                   Depo müdürü
+warehouse_user                      Depo kullanıcısı
+support_manager                     Destek müdürü
+support_agent                       Destek temsilcisi
+marketing_user                      Pazarlama kullanıcısı
+dealer_admin                        Bayi yöneticisi
+dealer_user                         Bayi kullanıcısı
+customer_portal_user                Müşteri portal kullanıcısı
+auditor                             Denetçi / salt okunur
+
+
+
+3. Scope Seviyeleri
+tenant_all       Tenant içindeki tüm kayıtlar
+branch           Sadece bağlı şube
+team             Sadece bağlı ekip
+owned            Sadece kendisine atanmış kayıtlar
+dealer           Sadece bağlı bayi
+customer_self    Sadece kendi müşteri portal verisi
+none             Erişim yok
+
+
+
+
+4. Permission Naming Standard
+Format:
+
+<module>.<resource>.<action>
+
+
+Örnek:
+
+crm.customer.read
+crm.customer.create
+crm.customer.update
+crm.customer.delete
+sales.quote.approve
+finance.payment.create
+inventory.stock.adjust
+admin.user.manage
+
+
+Action standardı:
+read
+create
+update
+delete
+restore
+assign
+approve
+reject
+export
+import
+manage
+
+
+
+
+5. CORE / Admin Permissions
+              Permission                              Açıklama
+core.tenant.read                     Tenant bilgisi görüntüleme
+core.tenant.update                   Tenant ayarlarını güncelleme
+core.plan.read                       Plan bilgisi görme
+core.subscription.manage             Abonelik yönetimi
+core.feature.manage                  Feature flag yönetimi
+core.audit.read                      Audit log görüntüleme
+core.system.manage                   Sistem ayarları
+
+Rol Matrisi
+       Permission          super_admin       tenant_admin           auditor
+core.tenant.read                         ✓                  ✓                 ✓
+core.tenant.update                       ✓                  ✓
+
+core.subscription.manage                 ✓                  ✓
+
+core.feature.manage                      ✓
+core.audit.read                          ✓                  ✓                 ✓
+core.system.manage                       ✓
+
+
+
+6. IAM Permissions
+              Permission                             Açıklama
+iam.user.read                        Kullanıcı görüntüleme
+iam.user.create                      Kullanıcı oluşturma
+iam.user.update                       Kullanıcı güncelleme
+iam.user.delete                       Kullanıcı pasifleştirme
+iam.user.invite                       Kullanıcı davet
+iam.role.read                         Rol görüntüleme
+iam.role.create                       Rol oluşturma
+iam.role.update                       Rol güncelleme
+iam.role.delete                       Rol silme
+iam.permission.read                   Yetki görüntüleme
+iam.permission.assign                 Yetki atama
+iam.session.revoke                    Oturum sonlandırma
+
+Rol Matrisi
+     Permission         super_admin tenant_admin sales_manager         auditor
+iam.user.read                     ✓           ✓           team               ✓
+iam.user.create                  ✓              ✓
+
+iam.user.update                  ✓              ✓               team
+
+iam.user.delete                  ✓              ✓
+
+iam.user.invite                  ✓              ✓
+
+iam.role.read                    ✓              ✓                           ✓
+
+iam.role.create                  ✓              ✓
+
+iam.role.update                  ✓              ✓
+
+iam.permission.assign            ✓              ✓
+
+iam.session.revoke               ✓              ✓
+
+
+
+7. CRM Permissions
+             Permission                                  Açıklama
+crm.customer.read                     Müşteri görüntüleme
+crm.customer.create                   Müşteri oluşturma
+crm.customer.update                   Müşteri güncelleme
+crm.customer.delete                   Müşteri silme
+crm.customer.restore                  Silinen müşteriyi geri alma
+crm.customer.assign                   Temsilci atama
+crm.customer.export                   Müşteri dışa aktarma
+crm.contact.manage                    İletişim kişileri yönetimi
+crm.address.manage                    Adres yönetimi
+crm.file.manage                              Müşteri dosyaları
+crm.timeline.read                            Timeline görüntüleme
+crm.tag.manage                               Etiket yönetimi
+crm.segment.manage                           Segment yönetimi
+crm.customer.merge                           Müşteri birleştirme
+crm.customer.risk.read                       Risk skoru görme
+crm.customer.ltv.read                        LTV görme
+
+Rol Matrisi
+               tenant    sales_     sales_    sale                      deale
+                                                     suppor financ              audi
+Permission     _admi     directo    manag     s_re                      r_use
+                                                     t_agent e_user              tor
+                  n         r         er       p                          r
+                                                                                tena
+crm.custom tenant_       tenant_              own    assigne
+                                      team                      read dealer     nt_al
+er.read         all           all              ed          d
+                                                                                    l
+crm.custom
+                   ✓           ✓         ✓       ✓
+er.create
+crm.custom                                    own    assigne
+                   ✓           ✓      team
+er.update                                      ed          d
+crm.custom
+                   ✓
+er.delete
+crm.custom
+                   ✓           ✓      team
+er.assign
+crm.custom
+                   ✓           ✓                                                   ✓
+er.export
+crm.contact                                   own    assigne
+                   ✓           ✓      team
+.manage                                        ed          d
+crm.addres                                    own    assigne
+                   ✓           ✓      team
+s.manage                                       ed          d
+crm.timelin                                   own    assigne
+                   ✓           ✓      team                      read dealer        ✓
+e.read                                         ed          d
+crm.custom
+                   ✓           ✓      team                          ✓              ✓
+er.risk.read
+crm.custom
+                   ✓           ✓      team                          ✓              ✓
+er.ltv.read
+
+
+
+8. LEAD Permissions
+               Permission                                   Açıklama
+lead.lead.read                               Lead görüntüleme
+lead.lead.create                             Lead oluşturma
+lead.lead.update                           Lead güncelleme
+lead.lead.delete                           Lead silme
+lead.lead.assign                           Lead atama
+lead.lead.convert                          Lead dönüştürme
+lead.lead.export                           Lead dışa aktarma
+lead.source.manage                         Lead kaynakları yönetimi
+lead.score.read                            Lead skoru görme
+lead.score.update                          Lead skoru değiştirme
+
+Rol Matrisi
+                 tenant_a     sales_dir    sales_ma   sales_   marketing   audito
+ Permission
+                   dmin         ector        nager     rep      _user        r
+lead.lead.rea                                                              tenant
+                 tenant_all   tenant_all       team   owned     tenant_all
+d                                                                             _all
+lead.lead.crea
+                         ✓            ✓           ✓        ✓           ✓
+te
+lead.lead.upd
+                         ✓            ✓        team   owned            ✓
+ate
+lead.lead.dele
+                         ✓
+te
+lead.lead.assi
+                         ✓            ✓        team
+gn
+lead.lead.con
+                         ✓            ✓        team   owned
+vert
+lead.lead.exp
+                         ✓            ✓                                ✓        ✓
+ort
+lead.source.
+                         ✓            ✓                                ✓
+manage
+lead.score.rea
+                         ✓            ✓        team   owned            ✓        ✓
+d
+lead.score.up
+                         ✓            ✓
+date
+
+
+
+9. SALES Permissions
+               Permission                                  Açıklama
+sales.pipeline.read                        Pipeline görüntüleme
+sales.pipeline.manage                      Pipeline yönetimi
+sales.opportunity.read                     Fırsat görüntüleme
+sales.opportunity.create                   Fırsat oluşturma
+sales.opportunity.update                   Fırsat güncelleme
+sales.opportunity.delete                  Fırsat silme
+sales.opportunity.assign                  Fırsat atama
+sales.opportunity.move_stage              Aşama değiştirme
+sales.opportunity.win                     Kazanıldı yapma
+sales.opportunity.lose                    Kaybedildi yapma
+sales.forecast.read                       Forecast görüntüleme
+sales.forecast.manage                     Forecast yönetimi
+
+Rol Matrisi
+                      tenant_a sales_dir sales_ma sales_ finance_ audit
+   Permission
+                        dmin      ector    nager   rep      user     or
+                      tenant_al tenant_al          owne            tenant
+sales.pipeline.read                           team            read
+                              l         l              d              _all
+sales.pipeline.man
+                             ✓           ✓
+age
+sales.opportunity.r   tenant_al   tenant_al              owne               tenant
+                                                 team                read
+ead                           l           l                 d                  _all
+sales.opportunity.c
+                             ✓           ✓          ✓       ✓
+reate
+sales.opportunity.u                                      owne
+                             ✓           ✓       team
+pdate                                                       d
+sales.opportunity.d
+                             ✓
+elete
+sales.opportunity.a
+                             ✓           ✓       team
+ssign
+sales.opportunity.                                       owne
+                             ✓           ✓       team
+move_stage                                                  d
+sales.opportunity.w                                      owne
+                             ✓           ✓       team
+in                                                          d
+sales.opportunity.l                                      owne
+                             ✓           ✓       team
+ose                                                         d
+sales.forecast.read          ✓           ✓       team                  ✓         ✓
+sales.forecast.man
+                             ✓           ✓
+age
+
+
+
+10. QUOTE Permissions
+              Permission                                  Açıklama
+sales.quote.read                          Teklif görüntüleme
+sales.quote.create                        Teklif oluşturma
+sales.quote.update                         Teklif güncelleme
+sales.quote.delete                         Teklif silme
+sales.quote.send                           Teklif gönderme
+sales.quote.approve                        Teklif onaylama
+sales.quote.reject                         Teklif reddetme
+sales.quote.discount.apply                 İndirim uygulama
+sales.quote.discount.approve               İndirim onaylama
+sales.quote.pdf                            PDF üretme/görme
+sales.quote.export                         Teklif dışa aktarma
+sales.quote.margin.read                    Kâr marjı görme
+
+Rol Matrisi
+                tenan sales_ sales_       finan deal               customer
+                                    sales                                      audi
+ Permission     t_adm direct manag        ce_us er_us              _portal_u
+                                    _rep                                        tor
+                  in    or     er           er    er                  ser
+                                                                               tena
+sales.quote.r   tenant    tenant           owne            deale   own_quot
+                                    team            read                       nt_a
+ead                _all      _all             d                r         es
+                                                                                  ll
+sales.quote.c
+                     ✓         ✓      ✓        ✓
+reate
+                                         owne
+sales.quote.u
+                     ✓         ✓    team d_dra
+pdate
+                                             ft
+sales.quote.d
+                     ✓
+elete
+sales.quote.s                              owne
+                     ✓         ✓    team
+end                                           d
+sales.quote.a
+                     ✓         ✓      ✓
+pprove
+sales.quote.r
+                     ✓         ✓      ✓
+eject
+sales.quote.d                              limite
+                     ✓         ✓      ✓
+iscount.apply                                   d
+sales.quote.d
+iscount.appr         ✓         ✓      ✓
+ove
+sales.quote.p                              owne            deale   own_quot
+                     ✓         ✓    team            read                          ✓
+df                                            d                r         es
+sales.quote.
+                     ✓         ✓      ✓                ✓                          ✓
+margin.read
+11. ORDER Permissions
+               Permission                        Açıklama
+order.order.read                 Sipariş görüntüleme
+order.order.create               Sipariş oluşturma
+order.order.update               Sipariş güncelleme
+order.order.cancel               Sipariş iptal
+order.order.confirm              Sipariş onay
+order.order.ship                 Sevk işlemi
+order.order.deliver              Teslimat
+order.order.return               İade
+
+Rol Matrisi
+          tenan sales_ sale warehou wareho finan deal customer
+Permiss
+          t_adm manag s_re se_mana use_us ce_us er_u _portal_u
+   ion
+            in     er    p     ger       er   er    ser    ser
+order.or tenant         own                        deale own_order
+                  team      tenant_all branch read
+der.read     _all        ed                             r        s
+order.or
+der.crea       ✓      ✓   ✓                           ✓
+te
+order.or                                           deale
+                        own
+der.upd        ✓  team                             r_dra
+                         ed
+ate                                                    ft
+order.or                                           deale
+der.canc       ✓      ✓                            r_dra
+el                                                     ft
+order.or
+der.confi      ✓      ✓
+rm
+order.or
+                                    ✓       ✓
+der.ship
+order.or
+der.deliv                           ✓       ✓
+er
+order.or
+der.retur      ✓      ✓             ✓            ✓
+n
+12. INVENTORY Permissions
+              Permission                            Açıklama
+inventory.product.read              Ürün görüntüleme
+inventory.product.create            Ürün oluşturma
+inventory.product.update            Ürün güncelleme
+inventory.product.delete            Ürün silme
+inventory.stock.read                Stok görüntüleme
+inventory.stock.adjust              Stok düzeltme
+inventory.stock.transfer            Depolar arası transfer
+inventory.stock.reserve             Stok rezervasyon
+inventory.stock.count               Stok sayım
+
+Rol Matrisi
+                                         sales_
+                tenant warehouse warehou        sales_r dealer_ aud
+ Permission                              manage
+                _admin _manager se_user           ep     user   itor
+                                            r
+inventory.pro                                           dealer_
+                     ✓         ✓       ✓      ✓      ✓             ✓
+duct.read                                               catalog
+inventory.pro
+                    ✓         ✓
+duct.create
+inventory.pro
+                    ✓         ✓
+duct.update
+inventory.pro
+                    ✓
+duct.delete
+inventory.sto                                        availab availabl
+                    ✓         ✓    branch        ✓                      ✓
+ck.read                                              le_only e_only
+inventory.sto
+                    ✓         ✓
+ck.adjust
+inventory.sto
+                    ✓         ✓        ✓
+ck.transfer
+inventory.sto
+                    ✓         ✓        ✓         ✓        ✓
+ck.reserve
+inventory.sto
+                    ✓         ✓        ✓
+ck.count
+
+
+
+13. FINANCE Permissions
+             Permission                            Açıklama
+finance.account.read                Cari hesap görüntüleme
+finance.account.update              Cari güncelleme
+finance.balance.read                  Bakiye görüntüleme
+finance.transaction.read              Cari hareket okuma
+finance.payment.read                  Tahsilat görüntüleme
+finance.payment.create                Tahsilat oluşturma
+finance.payment.cancel                Tahsilat iptal
+finance.invoice.read                  Fatura görüntüleme
+finance.invoice.create                Fatura oluşturma
+finance.credit_limit.update           Kredi limiti güncelleme
+finance.report.read                   Finans raporları
+
+Rol Matrisi
+              tena   financ finan sales   sales            deal custome au
+Permissio                                         sales_
+              nt_a   e_man ce_u _dire     _man             er_u r_portal_ dit
+    n                                              rep
+              dmin    ager   ser   ctor    ager            ser    user    or
+finance.ac                                     owned
+                                                           deal
+count.rea       ✓         ✓    ✓     ✓    team  _sum                 own   ✓
+                                                             er
+d                                               mary
+                                               owned
+finance.ba                                                 deal
+                ✓         ✓    ✓     ✓    team  _sum                 own   ✓
+lance.read                                                   er
+                                                mary
+finance.tr
+                                                           deal
+ansaction.      ✓         ✓    ✓     ✓    team                       own   ✓
+                                                             er
+read
+finance.pa
+                                                           deal
+yment.rea       ✓         ✓    ✓     ✓    team                       own   ✓
+                                                             er
+d
+finance.pa
+yment.cre       ✓         ✓    ✓
+ate
+finance.pa
+yment.can       ✓         ✓
+cel
+finance.in                                                 deal
+                ✓         ✓    ✓     ✓    team                       own   ✓
+voice.read                                                   er
+finance.in
+voice.crea      ✓         ✓    ✓
+te
+finance.cr
+edit_limit.     ✓         ✓
+update
+finance.re
+                ✓       ✓       ✓      ✓                                    ✓
+port.read
+
+
+
+14. COMMUNICATION Permissions
+             Permission                                   Açıklama
+comm.inbox.read                           Inbox görüntüleme
+comm.conversation.read                    Konuşma görüntüleme
+comm.conversation.assign                  Konuşma atama
+comm.message.send                         Mesaj gönderme
+comm.message.delete                       Mesaj silme
+comm.channel.manage                       Kanal yönetimi
+comm.call.read                            Çağrı görüntüleme
+comm.call.recording.read                  Çağrı kaydı dinleme
+
+Rol Matrisi
+                    tenant_a sales_ma sales_       support_m     support_ audi
+   Permission
+                      dmin     nager    rep          anager        agent   tor
+comm.inbox.read            ✓      team owned                ✓     assigned   ✓
+comm.conversati
+                            ✓       team owned               ✓   assigned   ✓
+on.read
+comm.conversati
+                            ✓         ✓                      ✓
+on.assign
+comm.message.s
+                            ✓         ✓        ✓             ✓         ✓
+end
+comm.message.
+                            ✓                                ✓
+delete
+comm.channel.m
+                            ✓                                ✓
+anage
+comm.call.read              ✓       team owned               ✓   assigned   ✓
+comm.call.record
+                            ✓         ✓                      ✓              ✓
+ing.read
+
+
+
+15. SUPPORT Permissions
+               Permission                                 Açıklama
+support.ticket.read                       Ticket görüntüleme
+support.ticket.create                     Ticket oluşturma
+support.ticket.update                     Ticket güncelleme
+support.ticket.assign                     Ticket atama
+support.ticket.resolve                      Ticket çözme
+support.ticket.close                        Ticket kapatma
+support.sla.manage                          SLA yönetimi
+support.kb.manage                           Bilgi bankası yönetimi
+
+Rol Matrisi
+                tenant_      support_     support                customer_po audi
+ Permission                                          sales_rep
+                 admin       manager       _agent                  rtal_user  tor
+support.ticke                                        owned_cu
+                         ✓          ✓     assigned                        own   ✓
+t.read                                                 stomer
+support.ticke
+                         ✓          ✓           ✓            ✓             ✓
+t.create
+support.ticke
+                         ✓          ✓     assigned                   own_open
+t.update
+support.ticke
+                         ✓          ✓
+t.assign
+support.ticke
+                         ✓          ✓     assigned
+t.resolve
+support.ticke
+                         ✓          ✓     assigned
+t.close
+support.sla.
+                         ✓          ✓
+manage
+support.kb.
+                         ✓          ✓
+manage
+
+
+
+16. WORKFLOW / AUTOMATION Permissions
+              Permission                                    Açıklama
+workflow.workflow.read                      Workflow görüntüleme
+workflow.workflow.create                    Workflow oluşturma
+workflow.workflow.update                    Workflow güncelleme
+workflow.workflow.delete                    Workflow silme
+workflow.workflow.activate                  Workflow aktifleştirme
+workflow.workflow.pause                     Workflow durdurma
+workflow.run.read                           Workflow çalıştırma logları
+workflow.approval.read                      Onayları görüntüleme
+workflow.approval.action                    Onaylama/reddetme
+
+Rol Matrisi
+                   tenant_     sales_di    sales_m    finance_m support_m audi
+  Permission
+                    admin       rector      anager      anager    anager   tor
+workflow.workfl
+                          ✓            ✓                     ✓              ✓      ✓
+ow.read
+workflow.workfl
+                          ✓
+ow.create
+workflow.workfl
+                          ✓
+ow.update
+workflow.workfl
+                          ✓
+ow.delete
+workflow.workfl
+                          ✓
+ow.activate
+workflow.workfl
+                          ✓
+ow.pause
+workflow.run.re
+                          ✓            ✓                     ✓              ✓      ✓
+ad
+workflow.approv
+                          ✓            ✓         ✓           ✓              ✓      ✓
+al.read
+workflow.approv
+                          ✓            ✓         ✓           ✓              ✓
+al.action
+
+
+
+17. AI Permissions
+               Permission                                   Açıklama
+ai.assistant.use                           AI asistan kullanma
+ai.summary.generate                        Özet üretme
+ai.quote.generate                          Teklif metni üretme
+ai.lead_score.read                         AI lead skoru görme
+ai.prediction.read                         Tahminleri görme
+ai.agent.manage                            AI agent yönetimi
+ai.usage.read                              AI kullanım raporu
+ai.settings.manage                         AI sağlayıcı ayarları
+
+Rol Matrisi
+                tenant_     sales_di   sales_m   sales   support_      finance   audi
+ Permission
+                 admin       rector     anager   _rep     agent          _user    tor
+ai.assistant.
+                     ✓            ✓          ✓       ✓           ✓          ✓
+use
+ai.summary.
+                     ✓            ✓          ✓       ✓           ✓
+generate
+ai.quote.gen
+                     ✓            ✓          ✓       ✓
+erate
+ai.lead_scor
+                    ✓            ✓              ✓      ✓                     ✓
+e.read
+ai.prediction
+                    ✓            ✓              ✓                       ✓    ✓
+.read
+ai.agent.man
+                    ✓
+age
+ai.usage.rea
+                    ✓            ✓                                           ✓
+d
+ai.settings.m
+                    ✓
+anage
+
+
+
+18. REPORTING Permissions
+               Permission                                    Açıklama
+reporting.dashboard.read                      Dashboard görüntüleme
+reporting.dashboard.create                    Dashboard oluşturma
+reporting.dashboard.update                    Dashboard güncelleme
+reporting.report.read                         Rapor görüntüleme
+reporting.report.create                       Rapor oluşturma
+reporting.report.export                       Rapor dışa aktarma
+reporting.executive.read                      Yönetici dashboard
+
+Rol Matrisi
+                tenant sales_        sales_    finance_ warehous            au
+                                                                 support_
+ Permission     _admi directo        manag     manage e_manage              dit
+                                                                 manager
+                   n      r            er          r        r               or
+reporting.das
+                    ✓        ✓         team           ✓           ✓     ✓    ✓
+hboard.read
+reporting.das
+hboard.creat        ✓        ✓                        ✓
+e
+reporting.das
+hboard.updat        ✓        ✓                        ✓
+e
+reporting.rep
+                    ✓        ✓         team           ✓           ✓     ✓    ✓
+ort.read
+reporting.rep
+                    ✓        ✓                        ✓
+ort.create
+reporting.rep
+                    ✓        ✓                        ✓                      ✓
+ort.export
+reporting.exe
+                       ✓       ✓                   ✓                            ✓
+cutive.read
+
+
+
+19. INTEGRATION Permissions
+               Permission                                  Açıklama
+integration.api_key.read                   API key görüntüleme
+integration.api_key.create                 API key oluşturma
+integration.api_key.revoke                 API key iptal
+integration.webhook.read                   Webhook görüntüleme
+integration.webhook.create                 Webhook oluşturma
+integration.webhook.update                 Webhook güncelleme
+integration.webhook.delete                 Webhook silme
+integration.connector.manage               Connector yönetimi
+integration.log.read                       Entegrasyon logları
+
+Rol Matrisi
+          Permission               tenant_admin integration_admin     auditor
+integration.api_key.read                      ✓                ✓                ✓
+integration.api_key.create                    ✓                   ✓
+
+integration.api_key.revoke                    ✓                   ✓
+integration.webhook.read                      ✓                   ✓             ✓
+integration.webhook.create                    ✓                   ✓
+
+integration.webhook.update                    ✓                   ✓
+
+integration.webhook.delete                    ✓                   ✓
+
+integration.connector.manage                  ✓                   ✓
+integration.log.read                          ✓                   ✓             ✓
+
+
+
+20. Field-Level Permissions
+
+Customer
+                  Field                                   Permission
+tax_number                                 crm.customer.tax_number.read
+credit_limit                               finance.credit_limit.read
+risk_score                                 crm.customer.risk.read
+lifetime_value                             crm.customer.ltv.read
+Quote
+                  Field                      Permission
+cost_amount                    sales.quote.cost.read
+profit_amount                  sales.quote.margin.read
+margin_percent                 sales.quote.margin.read
+discount_amount                sales.quote.discount.read
+
+Finance
+                  Field                      Permission
+account.balance                finance.balance.read
+account_transactions           finance.transaction.read
+bank_transactions              finance.bank.read
+payment.amount                 finance.payment.read
+
+AI
+                  Field                        Permission
+ai_raw_prompt                  ai.debug.read
+ai_cost_amount                 ai.usage.read
+ai_provider_response           ai.debug.read
+
+
+
+21. Portal Permissions
+
+Customer Portal
+portal.quote.read_own
+portal.quote.approve_own
+portal.order.read_own
+portal.payment_plan.read_own
+portal.ticket.create_own
+portal.ticket.read_own
+portal.file.download_own
+
+
+Dealer Portal
+dealer.catalog.read
+dealer.price.read
+dealer.order.create
+dealer.order.read
+dealer.balance.read
+dealer.invoice.read
+dealer.support.create
+22. Sensitive Action Re-Auth
+Şu işlemler yeniden şifre/2FA ister:
+
+role permission update
+api key create
+api key revoke
+customer export
+finance export
+payment cancel
+stock adjust
+tenant settings update
+integration secret update
+delete customer
+delete quote
+
+
+
+
+23. Approval Required Actions
+quote discount above threshold
+credit limit increase
+payment cancel
+stock adjustment above threshold
+purchase order above threshold
+customer delete
+bulk export
+workflow activation
+ai agent publish
+
+
+
+
+24. Permission Cache
+Cache key:
+
+permissions:{tenantId}:{userId}
+
+
+Invalidation eventleri:
+
+UserAssignedToRole
+UserRemovedFromRole
+PermissionAssignedToRole
+PermissionRevokedFromRole
+RoleUpdated
+UserDeactivated
+
+
+
+
+25. Backend Guard Standard
+Her endpoint:
+
+JwtAuthGuard
+TenantGuard
+PermissionGuard
+ScopeGuard
+
+
+Örnek:
+
+@RequirePermission('sales.quote.approve')
+@Post(':id/approve')
+approveQuote() {}
+
+
+
+
+26. UI Permission Standard
+<Can permission="sales.quote.approve">
+  <ApproveQuoteButton />
+</Can>
+
+
+Ama kural:
+
+UI gizleme güvenlik değildir.
+Backend kontrol zorunludur.
+
+
+
+
+27. MVP Permission Set
+İlk sürüm için minimum izinler:
+
+iam.user.read
+iam.user.create
+iam.role.read
+iam.role.update
+
+crm.customer.read
+crm.customer.create
+crm.customer.update
+crm.customer.delete
+
+lead.lead.read
+lead.lead.create
+lead.lead.update
+lead.lead.assign
+lead.lead.convert
+
+sales.pipeline.read
+sales.opportunity.read
+sales.opportunity.create
+sales.opportunity.update
+sales.opportunity.move_stage
+
+sales.quote.read
+sales.quote.create
+sales.quote.update
+sales.quote.send
+sales.quote.approve
+sales.quote.pdf
+
+task.task.read
+task.task.create
+task.task.update
+task.task.complete
+
+reporting.dashboard.read
+core.audit.read
+
+
+
+
+28. Go-Live Permission Checklist
+Default roles seeded
+Default permissions seeded
+Role-permission matrix loaded
+Tenant admin exists
+Super admin separated
+Portal roles isolated
+Dealer roles isolated
+Permission tests passed
+Scope tests passed
+Field-level masking tested
+Audit for permission changes active
+
+
+Sonraki çıktı: CRM OS MVP Build Package v1.
+
+
+
+
+CRM OS MVP Build Package v1
+
+1. MVP Amacı
+Bu paket, CRM OS’in ilk çalışan ürün çekirdeğini üretmek için
+hazırlanmış uygulama başlangıç paketidir.
+
+MVP’nin amacı:
+
+Tenant
+→ User
+→ Customer
+→ Lead
+→ Opportunity
+→ Quote
+→ Task
+→ Dashboard
+
+
+akışını uçtan uca çalıştırmak.
+
+
+
+2. MVP Kapsamı
+
+Dahil Modüller
+CORE
+IAM
+CRM
+LEAD
+SALES
+QUOTE
+TASK
+ACTIVITY
+NOTIFICATION
+AUDIT
+DASHBOARD
+
+
+Dahil Değil
+Order
+Inventory
+Finance
+Omnichannel
+Support
+Workflow Builder
+AI Copilot
+Dealer Portal
+Mobile App
+Marketplace
+Low-Code
+
+
+Bunlar MVP sonrası fazlara alınacak.
+
+
+
+3. MVP Uçtan Uca Akış
+1. Tenant oluşturulur.
+2. Admin kullanıcı giriş yapar.
+3. Kullanıcı / rol / yetki tanımlanır.
+4. Müşteri oluşturulur.
+5. Lead oluşturulur.
+6. Lead fırsata çevrilir.
+7. Pipeline’da fırsat aşama değiştirir.
+8. Teklif oluşturulur.
+9. Teklife ürün/hizmet kalemi eklenir.
+10. Teklif PDF üretilir.
+11. Görev oluşturulur.
+12. Dashboard metrikleri güncellenir.
+13. Audit log oluşur.
+14. Timeline event oluşur.
+4. MVP Database Scope
+
+Migration Set
+001_core
+002_iam
+003_crm
+004_lead
+005_sales
+006_quote
+007_task_activity
+008_common
+009_notification
+010_audit_event
+
+
+MVP Tabloları
+tenants
+tenant_settings
+plans
+
+branches
+departments
+users
+roles
+permissions
+user_roles
+role_permissions
+teams
+team_members
+
+customer_segments
+customers
+customer_contacts
+customer_addresses
+
+lead_sources
+leads
+lead_conversion_logs
+
+pipelines
+pipeline_stages
+opportunities
+opportunity_products
+product_categories
+product_brands
+products
+product_variants
+
+quotes
+quote_items
+quote_approvals
+
+tasks
+activities
+
+files
+comments
+tags
+entity_tags
+timeline_events
+domain_events
+audit_logs
+notifications
+
+
+
+
+5. MVP API Scope
+
+Auth
+POST /api/v1/auth/login
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+
+
+Users / Roles
+GET    /api/v1/users
+POST   /api/v1/users
+GET    /api/v1/users/{id}
+PATCH /api/v1/users/{id}
+DELETE /api/v1/users/{id}
+
+GET     /api/v1/roles
+POST    /api/v1/roles
+PATCH   /api/v1/roles/{id}
+GET      /api/v1/permissions
+
+
+Customers
+GET    /api/v1/customers
+POST   /api/v1/customers
+GET    /api/v1/customers/{id}
+PATCH /api/v1/customers/{id}
+DELETE /api/v1/customers/{id}
+
+GET      /api/v1/customers/{id}/contacts
+POST     /api/v1/customers/{id}/contacts
+
+GET      /api/v1/customers/{id}/timeline
+
+
+Leads
+GET      /api/v1/leads
+POST     /api/v1/leads
+GET      /api/v1/leads/{id}
+PATCH    /api/v1/leads/{id}
+POST     /api/v1/leads/{id}/convert
+
+
+Pipeline / Opportunity
+GET      /api/v1/pipelines
+POST     /api/v1/pipelines
+GET      /api/v1/pipelines/{id}/stages
+POST     /api/v1/pipelines/{id}/stages
+
+GET      /api/v1/opportunities
+POST     /api/v1/opportunities
+GET      /api/v1/opportunities/{id}
+PATCH    /api/v1/opportunities/{id}
+POST     /api/v1/opportunities/{id}/move-stage
+POST     /api/v1/opportunities/{id}/win
+POST     /api/v1/opportunities/{id}/lose
+
+
+Quotes
+GET      /api/v1/quotes
+POST     /api/v1/quotes
+GET      /api/v1/quotes/{id}
+PATCH    /api/v1/quotes/{id}
+
+POST   /api/v1/quotes/{id}/items
+PATCH /api/v1/quotes/{id}/items/{itemId}
+DELETE /api/v1/quotes/{id}/items/{itemId}
+
+POST     /api/v1/quotes/{id}/send
+POST     /api/v1/quotes/{id}/approve
+POST     /api/v1/quotes/{id}/reject
+GET      /api/v1/quotes/{id}/pdf
+
+
+Tasks / Activities
+GET      /api/v1/tasks
+POST     /api/v1/tasks
+PATCH    /api/v1/tasks/{id}
+POST     /api/v1/tasks/{id}/complete
+
+GET      /api/v1/activities
+POST     /api/v1/activities
+
+
+Notifications / Audit
+GET /api/v1/notifications
+POST /api/v1/notifications/{id}/read
+
+GET    /api/v1/audit-logs
+
+
+
+
+6. MVP Frontend Scope
+
+Ekranlar
+/login
+
+/my-work
+/dashboard
+
+/customers
+/customers/new
+/customers/[id]
+/leads
+/leads/new
+/leads/[id]
+
+/pipeline
+/opportunities/[id]
+
+/quotes
+/quotes/new
+/quotes/[id]
+/quotes/[id]/preview
+
+/tasks
+
+/settings/users
+/settings/roles
+/settings/permissions
+
+
+Ana Bileşenler
+AppShell
+Sidebar
+Topbar
+CommandMenu
+NotificationCenter
+
+DataGrid
+Form
+Drawer
+Modal
+Tabs
+Timeline
+Kanban
+MetricCard
+QuoteItemTable
+PricingPanel
+PdfPreview
+7. MVP Backend Module Scope
+apps/api
+apps/worker
+apps/scheduler
+
+modules/core
+modules/iam
+modules/crm
+modules/lead
+modules/sales
+modules/quote
+modules/task
+modules/notification
+modules/reporting
+
+
+Worker Jobs
+domain-events-outbox
+quote-pdf-generation
+notification-delivery
+email-reference slot
+
+
+
+
+8. MVP Events
+TenantCreated
+UserInvited
+UserLoggedIn
+
+CustomerCreated
+CustomerUpdated
+
+LeadCreated
+LeadAssigned
+LeadConverted
+
+OpportunityCreated
+OpportunityStageChanged
+OpportunityWon
+OpportunityLost
+QuoteCreated
+QuoteItemAdded
+QuoteCalculated
+QuoteSent
+QuoteApproved
+QuoteRejected
+QuotePdfGenerated
+
+TaskCreated
+TaskCompleted
+
+NotificationCreated
+AuditLogCreated
+
+
+
+
+9. MVP Permission Set
+iam.user.read
+iam.user.create
+iam.user.update
+iam.role.read
+iam.role.update
+iam.permission.read
+
+crm.customer.read
+crm.customer.create
+crm.customer.update
+crm.customer.delete
+crm.contact.manage
+crm.timeline.read
+
+lead.lead.read
+lead.lead.create
+lead.lead.update
+lead.lead.assign
+lead.lead.convert
+
+sales.pipeline.read
+sales.pipeline.manage
+sales.opportunity.read
+sales.opportunity.create
+sales.opportunity.update
+sales.opportunity.move_stage
+sales.opportunity.win
+sales.opportunity.lose
+
+sales.quote.read
+sales.quote.create
+sales.quote.update
+sales.quote.send
+sales.quote.approve
+sales.quote.reject
+sales.quote.pdf
+
+task.task.read
+task.task.create
+task.task.update
+task.task.complete
+
+reporting.dashboard.read
+core.audit.read
+
+
+
+
+10. MVP Default Roles
+
+tenant_admin
+Tüm MVP izinleri.
+
+sales_manager
+crm.customer.read
+crm.customer.create
+crm.customer.update
+crm.contact.manage
+crm.timeline.read
+
+lead.lead.read
+lead.lead.create
+lead.lead.update
+lead.lead.assign
+lead.lead.convert
+
+sales.pipeline.read
+sales.opportunity.read
+sales.opportunity.create
+sales.opportunity.update
+sales.opportunity.move_stage
+sales.opportunity.win
+sales.opportunity.lose
+
+sales.quote.read
+sales.quote.create
+sales.quote.update
+sales.quote.send
+sales.quote.approve
+sales.quote.reject
+sales.quote.pdf
+
+task.task.read
+task.task.create
+task.task.update
+task.task.complete
+
+reporting.dashboard.read
+
+
+sales_rep
+crm.customer.read
+crm.customer.create
+crm.customer.update
+crm.contact.manage
+crm.timeline.read
+
+lead.lead.read
+lead.lead.create
+lead.lead.update
+lead.lead.convert
+
+sales.pipeline.read
+sales.opportunity.read
+sales.opportunity.create
+sales.opportunity.update
+sales.opportunity.move_stage
+
+sales.quote.read
+sales.quote.create
+sales.quote.update
+sales.quote.send
+sales.quote.pdf
+
+task.task.read
+task.task.create
+task.task.update
+task.task.complete
+
+reporting.dashboard.read
+
+
+auditor
+crm.customer.read
+crm.timeline.read
+lead.lead.read
+sales.pipeline.read
+sales.opportunity.read
+sales.quote.read
+core.audit.read
+reporting.dashboard.read
+
+
+
+
+11. MVP Sprint Build Plan
+
+Sprint 1 — Foundation
+Repo setup
+Docker Compose
+PostgreSQL
+Redis
+RabbitMQ
+MinIO
+NestJS API skeleton
+Next.js Web skeleton
+CI pipeline
+Design tokens
+App shell
+Sprint 2 — Auth / Tenant / IAM
+Tenant migration
+User migration
+Role migration
+Permission migration
+Login API
+Refresh API
+Permission guard
+Tenant context
+RLS proof
+Login UI
+User list shell
+
+
+Sprint 3 — Customer
+Customer migration
+Contact migration
+Address migration
+Customer CRUD API
+Customer list UI
+Customer create form
+Customer detail shell
+Customer contacts
+
+
+Sprint 4 — Customer 360 / Common
+Timeline events
+Files metadata
+Comments
+Tags
+Customer timeline UI
+Customer KPI strip
+Audit base
+Domain event base
+
+
+Sprint 5 — Lead
+Lead migration
+Lead source migration
+Lead CRUD API
+Lead list UI
+Lead detail UI
+Lead assignment
+
+
+Sprint 6 — Lead Conversion / Pipeline Setup
+Lead conversion API
+Conversion logs
+Pipeline migration
+Stage migration
+Default pipeline seed
+Pipeline settings UI
+Lead convert modal
+
+
+Sprint 7 — Opportunity
+Opportunity migration
+Opportunity product migration
+Opportunity CRUD API
+Opportunity drawer UI
+Opportunity detail
+
+
+Sprint 8 — Pipeline Kanban
+Stage move API
+Win/Loss API
+Stage history
+Pipeline kanban UI
+Drag-drop
+Deal cards
+Deal inspector
+
+
+Sprint 9 — Quote Core
+Quote migration
+Quote item migration
+Quote CRUD API
+Quote item APIs
+Quote builder UI
+Pricing panel
+Quote item table
+
+
+Sprint 10 — Quote PDF / Approval
+Quote calculation service
+Quote approval API
+Quote send API
+PDF generation worker
+PDF preview
+Approval modal
+
+
+Sprint 11 — Task / Activity
+Task migration
+Activity migration
+Task CRUD API
+Task complete API
+Activity API
+My Work UI
+Task modal
+Activity composer
+
+
+Sprint 12 — Dashboard / Notification / Hardening
+Notification migration
+Notification API
+Dashboard metrics API
+Dashboard UI
+Notification center
+Command menu
+MVP E2E
+Tenant isolation tests
+Permission tests
+Regression
+
+
+
+
+12. MVP Acceptance Criteria
+MVP kabul için aşağıdaki senaryo eksiksiz çalışmalı:
+
+1. Tenant oluşturulur.
+2. Admin giriş yapar.
+3. Kullanıcı oluşturur.
+4. Rol atar.
+5. Müşteri oluşturur.
+6. Müşteri detayında timeline görür.
+7. Lead oluşturur.
+8. Lead’i fırsata çevirir.
+9. Pipeline’da fırsatı taşır.
+10. Fırsatı kazanıldı/kaybedildi yapar.
+11. Teklif oluşturur.
+12. Teklife kalem ekler.
+13. Teklif toplamı backend’de hesaplanır.
+14. Teklif PDF üretir.
+15. Teklifi gönderildi yapar.
+16. Görev oluşturur.
+17. Görevi tamamlar.
+18. Dashboard metrikleri görünür.
+19. Notification oluşur.
+20. Audit log oluşur.
+21. Tenant izolasyonu testten geçer.
+22. Yetkisiz kullanıcı 403 alır.
+
+
+
+
+13. MVP Non-Functional Requirements
+
+Performans
+Customer list p95 < 300ms
+Customer detail p95 < 400ms
+Pipeline board p95 < 500ms
+Quote detail p95 < 400ms
+Dashboard p95 < 800ms
+
+
+Güvenlik
+JWT auth
+Refresh token
+Tenant header
+PostgreSQL RLS
+RBAC
+Audit log
+Rate limit
+CORS allowlist
+Input validation
+
+
+Kullanılabilirlik
+Loading state
+Empty state
+Error state
+Toast feedback
+Keyboard accessible
+Dark theme
+Responsive desktop
+
+
+
+
+14. MVP Test Suite
+
+Backend
+Auth tests
+Tenant context tests
+RLS tests
+Permission guard tests
+Customer CRUD tests
+Lead conversion tests
+Opportunity stage move tests
+Quote calculation tests
+Quote approval tests
+Task tests
+Audit tests
+
+
+Frontend
+Login E2E
+Customer create E2E
+Lead convert E2E
+Pipeline drag-drop E2E
+Quote builder E2E
+Permission UI tests
+Dashboard smoke
+
+
+Security
+Tenant A cannot read Tenant B customer
+Tenant A cannot read Tenant B quote
+Sales rep cannot approve quote
+Anonymous cannot access API
+Deleted customer not visible in list
+15. Seed Data
+
+Default Tenant
+Demo Tenant
+
+
+Default Users
+admin@demo.local
+manager@demo.local
+rep@demo.local
+auditor@demo.local
+
+
+Default Roles
+tenant_admin
+sales_manager
+sales_rep
+auditor
+
+
+Default Pipeline
+New
+Discovery
+Proposal
+Negotiation
+Won
+Lost
+
+
+Default Lead Sources
+Web Form
+WhatsApp
+Instagram
+Referral
+Manual
+
+
+
+
+16. MVP Deployment Package
+
+Servisler
+api
+web
+worker
+scheduler
+postgres
+redis
+rabbitmq
+minio
+
+
+Minimum Production
+API: 3 replicas
+Web: 2 replicas
+Worker: 2 replicas
+Scheduler: 1 replica
+PostgreSQL: primary + backup
+Redis: managed or HA
+RabbitMQ: managed or 3-node
+Object Storage: S3/MinIO
+
+
+
+
+17. MVP Go-Live Checklist
+Migrations applied
+Default permissions seeded
+Default roles seeded
+Default pipeline seeded
+Admin user created
+RLS enabled
+Tenant isolation tests passed
+Permission tests passed
+Audit logs active
+PDF worker active
+Notification worker active
+Backups active
+Monitoring active
+Smoke tests passed
+
+
+
+
+18. MVP Deliverables
+Backend source
+Frontend source
+Database migrations
+Seed scripts
+OpenAPI spec
+Design system v1
+Docker Compose
+Helm chart baseline
+CI/CD pipeline
+Test suite
+MVP user guide
+Admin guide
+Release notes
+
+
+
+
+19. MVP Team Assignment
+
+Core/IAM
+Tenant
+Auth
+Users
+Roles
+Permissions
+Audit
+
+
+CRM/Lead
+Customer
+Contact
+Address
+Timeline
+Lead
+Lead Conversion
+
+
+Sales/Quote
+Pipeline
+Opportunity
+Quote
+Quote PDF
+Approval
+Frontend Platform
+App Shell
+DataGrid
+Forms
+Drawer
+Kanban
+Timeline
+Command Menu
+
+
+DevOps
+Docker
+CI/CD
+Staging
+Monitoring
+Backup
+Release
+
+
+QA
+Test automation
+E2E
+Tenant isolation
+Permission tests
+Regression
+
+
+
+
+20. MVP Final Definition
+MVP, aşağıdaki zincir canlıda çalışınca tamamdır:
+
+Login
+→ Customer
+→ Lead
+→ Opportunity
+→ Quote
+→ Task
+→ Dashboard
+
+
+Bu paket tamamlandıktan sonra sıradaki paket:
+CRM OS Commercial Build Package v1
+
+
+olmalıdır.
+
+
+
+
+CRM OS Enterprise Build Package v1
+
+1. Enterprise Package Amacı
+Bu paket, Commercial sürümde çalışan zinciri kurumsal seviyeye
+taşır:
+
+CRM
+→ Quote
+→ Order
+→ Inventory
+→ Finance
+→ Portal
+
+
+Enterprise sürümde buna şunlar eklenir:
+
+Omnichannel
+Support / Ticket
+SLA
+Dealer Portal
+Approval Engine
+Public API
+Webhooks
+Advanced Audit
+Branch / Dealer Scoped Access
+Enterprise Security
+
+
+
+
+2. Enterprise Kapsam
+
+Dahil Modüller
+COMMUNICATION
+SUPPORT
+DEALER PORTAL
+APPROVAL ENGINE
+PUBLIC API
+WEBHOOKS
+INTEGRATION LOGS
+ADVANCED AUDIT
+BRANCH SCOPE
+DEALER SCOPE
+SSO PREPARATION
+ADVANCED REPORTING
+
+
+Dahil Değil
+Full AI Copilot
+Marketplace
+Low-Code Builder
+Full Mobile Offline
+Advanced CDP
+Full Accounting
+
+
+
+
+3. Ana Enterprise Akışları
+
+Omnichannel → Ticket
+Message Received
+→ Conversation Created
+→ Assigned to Agent
+→ Ticket Created
+→ SLA Started
+→ Ticket Resolved
+→ CSAT Sent
+
+
+Dealer Portal
+Dealer Login
+→ Catalog View
+→ Dealer Price
+→ Stock Availability
+→ Dealer Order
+→ Balance View
+
+
+Approval Engine
+Discount Request
+→ Approval Request
+→ Manager Review
+→ Approve / Reject
+→ Quote Updated
+→ Audit Log
+
+
+Public API / Webhook
+External App
+→ API Key Auth
+→ API Request
+→ Event Created
+→ Webhook Delivered
+→ Delivery Log
+
+
+
+
+4. Enterprise Database Scope
+
+Yeni Migration Set
+019_communication
+020_support_ticket
+021_sla
+022_dealer_portal
+023_approval_engine
+024_public_api
+025_webhooks
+026_integration_logs
+027_branch_dealer_scope
+028_enterprise_audit
+029_sso_preparation
+030_reporting_enterprise
+
+
+Yeni Tablolar
+channels
+channel_accounts
+channel_settings
+
+conversations
+conversation_participants
+conversation_assignments
+conversation_tags
+conversation_status_history
+
+messages
+message_attachments
+message_delivery_logs
+message_read_receipts
+
+email_logs
+sms_logs
+whatsapp_logs
+call_logs
+meeting_logs
+
+tickets
+ticket_categories
+ticket_priorities
+ticket_statuses
+ticket_messages
+ticket_files
+ticket_assignments
+ticket_sla_logs
+ticket_satisfaction_surveys
+ticket_resolution_notes
+
+sla_policies
+sla_policy_rules
+sla_timers
+
+dealer_portal_users
+dealer_catalogs
+dealer_product_visibility
+dealer_price_rules
+dealer_orders
+dealer_order_items
+dealer_balances
+dealer_targets
+dealer_commissions
+
+approval_requests
+approval_steps
+approval_actions
+approval_delegations
+approval_logs
+
+api_keys
+api_key_scopes
+api_usage_logs
+
+webhooks
+webhook_events
+webhook_logs
+webhook_delivery_attempts
+
+connectors
+connector_accounts
+integration_runs
+integration_errors
+
+branch_access_rules
+dealer_access_rules
+record_access_overrides
+
+sso_providers
+sso_sessions
+saml_configs
+oidc_configs
+
+audit_log_exports
+security_events
+
+
+
+
+5. Enterprise API Scope
+
+Communication
+GET     /api/v1/channels
+POST    /api/v1/channels
+GET     /api/v1/channel-accounts
+POST    /api/v1/channel-accounts
+
+GET     /api/v1/conversations
+POST    /api/v1/conversations
+GET     /api/v1/conversations/{id}
+PATCH   /api/v1/conversations/{id}
+POST    /api/v1/conversations/{id}/assign
+POST    /api/v1/conversations/{id}/resolve
+
+GET     /api/v1/conversations/{id}/messages
+POST    /api/v1/conversations/{id}/messages
+POST    /api/v1/messages/{id}/read
+
+
+Support
+GET     /api/v1/tickets
+POST    /api/v1/tickets
+GET     /api/v1/tickets/{id}
+PATCH   /api/v1/tickets/{id}
+POST    /api/v1/tickets/{id}/assign
+POST    /api/v1/tickets/{id}/resolve
+POST    /api/v1/tickets/{id}/close
+POST    /api/v1/tickets/{id}/reopen
+
+GET     /api/v1/tickets/{id}/messages
+POST    /api/v1/tickets/{id}/messages
+
+GET     /api/v1/sla-policies
+POST    /api/v1/sla-policies
+PATCH   /api/v1/sla-policies/{id}
+
+
+Dealer Portal
+POST    /api/v1/dealer-portal/auth/login
+GET     /api/v1/dealer-portal/me
+
+GET     /api/v1/dealer-portal/catalog
+GET     /api/v1/dealer-portal/products/{id}
+GET     /api/v1/dealer-portal/stocks
+GET     /api/v1/dealer-portal/prices
+
+GET     /api/v1/dealer-portal/orders
+POST    /api/v1/dealer-portal/orders
+GET     /api/v1/dealer-portal/orders/{id}
+
+GET     /api/v1/dealer-portal/account
+GET     /api/v1/dealer-portal/balance
+Approval Engine
+GET     /api/v1/approval-requests
+POST    /api/v1/approval-requests
+GET     /api/v1/approval-requests/{id}
+POST    /api/v1/approval-requests/{id}/approve
+POST    /api/v1/approval-requests/{id}/reject
+POST    /api/v1/approval-requests/{id}/delegate
+
+
+Public API
+GET     /api/v1/public/customers
+POST    /api/v1/public/customers
+
+GET     /api/v1/public/products
+GET     /api/v1/public/stocks
+
+GET     /api/v1/public/orders
+POST    /api/v1/public/orders
+
+GET     /api/v1/public/quotes
+POST    /api/v1/public/quotes
+
+
+Webhooks
+GET    /api/v1/webhooks
+POST   /api/v1/webhooks
+GET    /api/v1/webhooks/{id}
+PATCH /api/v1/webhooks/{id}
+DELETE /api/v1/webhooks/{id}
+
+GET     /api/v1/webhook-logs
+POST    /api/v1/webhooks/{id}/test
+
+
+SSO Preparation
+GET     /api/v1/sso/providers
+POST    /api/v1/sso/providers
+PATCH   /api/v1/sso/providers/{id}
+POST    /api/v1/sso/providers/{id}/test
+6. Enterprise Frontend Scope
+
+Yeni Ekranlar
+/inbox
+/inbox/conversations/[id]
+
+/tickets
+/tickets/[id]
+/tickets/settings/sla
+
+/dealer-portal/login
+/dealer-portal/catalog
+/dealer-portal/products/[id]
+/dealer-portal/orders
+/dealer-portal/orders/[id]
+/dealer-portal/account
+
+/approvals
+/approvals/[id]
+
+/settings/api-keys
+/settings/webhooks
+/settings/integrations
+/settings/sso
+/settings/security
+/settings/audit
+
+/reports/enterprise
+/reports/sla
+/reports/dealer
+/reports/api-usage
+
+
+Yeni Bileşenler
+InboxShell
+ConversationList
+ChatThread
+MessageComposer
+CustomerContextPanel
+ConversationAssignmentPanel
+
+TicketList
+TicketDetail
+SlaTimer
+SlaPolicyBuilder
+CsatSurveyPanel
+
+DealerPortalShell
+DealerCatalogGrid
+DealerPriceBadge
+DealerStockAvailability
+DealerOrderBuilder
+DealerBalanceCard
+
+ApprovalInbox
+ApprovalRequestDetail
+ApprovalTimeline
+ApprovalDecisionModal
+
+ApiKeyManager
+WebhookManager
+WebhookDeliveryLogs
+IntegrationHealthPanel
+SsoProviderForm
+
+EnterpriseAuditTable
+SecurityEventsTable
+
+
+
+
+7. Backend Module Scope
+
+communication module
+channels
+channel_accounts
+conversations
+messages
+assignments
+delivery_logs
+read_receipts
+
+
+support module
+tickets
+ticket_messages
+ticket_files
+ticket_assignment
+ticket_status
+ticket_sla
+csat
+knowledge_base_shell
+
+
+dealer module
+dealer_auth
+dealer_catalog
+dealer_pricing
+dealer_orders
+dealer_balance
+dealer_targets
+
+
+approval module
+approval_requests
+approval_steps
+approval_actions
+approval_rules
+delegation
+
+
+integration module
+api_keys
+public_api
+webhooks
+webhook_delivery
+connector_shell
+integration_logs
+
+
+security module
+sso_preparation
+security_events
+advanced_audit
+ip_rules
+session_controls
+8. Enterprise Events
+ChannelConnected
+ChannelDisconnected
+
+ConversationCreated
+ConversationAssigned
+ConversationStatusChanged
+
+MessageReceived
+MessageSent
+MessageDelivered
+MessageRead
+MessageFailed
+
+TicketCreated
+TicketAssigned
+TicketStatusChanged
+TicketResolved
+TicketClosed
+TicketReopened
+TicketSlaBreached
+CustomerSatisfactionSubmitted
+
+DealerUserLoggedIn
+DealerCatalogViewed
+DealerOrderCreated
+DealerBalanceViewed
+
+ApprovalRequested
+ApprovalStepAssigned
+ApprovalApproved
+ApprovalRejected
+ApprovalDelegated
+ApprovalExpired
+
+ApiKeyCreated
+ApiKeyRevoked
+PublicApiRequestReceived
+
+WebhookCreated
+WebhookUpdated
+WebhookDeliveryRequested
+WebhookDelivered
+WebhookFailed
+
+ConnectorConnected
+ConnectorDisconnected
+IntegrationRunStarted
+IntegrationRunCompleted
+IntegrationRunFailed
+
+SsoProviderCreated
+SsoLoginSucceeded
+SsoLoginFailed
+
+SecurityEventDetected
+
+
+
+
+9. Enterprise Permissions
+
+Communication
+comm.channel.manage
+comm.inbox.read
+comm.conversation.read
+comm.conversation.assign
+comm.message.send
+comm.message.delete
+comm.call.read
+comm.call.recording.read
+
+
+Support
+support.ticket.read
+support.ticket.create
+support.ticket.update
+support.ticket.assign
+support.ticket.resolve
+support.ticket.close
+support.sla.manage
+support.csat.read
+support.kb.manage
+Dealer
+dealer.catalog.read
+dealer.price.read
+dealer.stock.read
+dealer.order.create
+dealer.order.read
+dealer.balance.read
+dealer.target.read
+dealer.commission.read
+
+
+Approval
+approval.request.read
+approval.request.create
+approval.request.approve
+approval.request.reject
+approval.request.delegate
+approval.rule.manage
+
+
+Integration
+integration.api_key.read
+integration.api_key.create
+integration.api_key.revoke
+integration.webhook.read
+integration.webhook.create
+integration.webhook.update
+integration.webhook.delete
+integration.log.read
+integration.connector.manage
+
+
+Enterprise Security
+security.sso.manage
+security.ip_rules.manage
+security.session.manage
+security.event.read
+audit.export
+audit.advanced_read
+10. Enterprise Default Role Updates
+
+tenant_admin
+Tüm enterprise izinleri.
+
+support_manager
+comm.inbox.read
+comm.conversation.read
+comm.conversation.assign
+comm.message.send
+
+support.ticket.read
+support.ticket.create
+support.ticket.update
+support.ticket.assign
+support.ticket.resolve
+support.ticket.close
+support.sla.manage
+support.csat.read
+
+
+support_agent
+comm.inbox.read assigned
+comm.conversation.read assigned
+comm.message.send
+
+support.ticket.read assigned
+support.ticket.create
+support.ticket.update assigned
+support.ticket.resolve assigned
+
+
+dealer_admin
+dealer.catalog.read
+dealer.price.read
+dealer.stock.read
+dealer.order.create
+dealer.order.read
+dealer.balance.read
+dealer.target.read
+dealer.commission.read
+integration_admin
+integration.api_key.read
+integration.api_key.create
+integration.api_key.revoke
+integration.webhook.read
+integration.webhook.create
+integration.webhook.update
+integration.webhook.delete
+integration.log.read
+integration.connector.manage
+
+
+auditor
+audit.advanced_read
+audit.export
+security.event.read
+integration.log.read
+support.ticket.read
+comm.conversation.read readonly
+
+
+
+
+11. Enterprise Sprint Plan
+
+Sprint 21 — Communication Core
+COMM-001 channels migration
+COMM-002 channel_accounts migration
+COMM-003 conversations migration
+COMM-004 messages migration
+COMM-005 conversation list API
+COMM-006 conversation detail API
+COMM-007 message send API
+COMM-008 Inbox UI shell
+COMM-009 Conversation list UI
+COMM-010 Chat thread UI
+
+
+Sprint 22 — Inbox Operations
+COMM-011 conversation assignment
+COMM-012 conversation status change
+COMM-013 message delivery logs
+COMM-014 read receipts
+COMM-015 customer context panel
+COMM-016 AI reference slot panel
+COMM-017 inbox permissions
+COMM-018 inbox E2E tests
+
+
+Sprint 23 — Ticket Core
+SUP-001 tickets migration
+SUP-002 ticket_messages migration
+SUP-003 ticket_files migration
+SUP-004 ticket CRUD API
+SUP-005 ticket assignment API
+SUP-006 ticket list UI
+SUP-007 ticket detail UI
+SUP-008 ticket message composer
+
+
+Sprint 24 — SLA / Support Management
+SUP-009 sla_policies migration
+SUP-010 sla timers
+SUP-011 SLA breach detection
+SUP-012 ticket resolve/close flow
+SUP-013 CSAT survey shell
+SUP-014 SLA settings UI
+SUP-015 support dashboard widgets
+
+
+Sprint 25 — Dealer Portal Core
+DEALER-001 dealer portal users
+DEALER-002 dealer catalog visibility
+DEALER-003 dealer price rules
+DEALER-004 dealer portal auth
+DEALER-005 dealer catalog API
+DEALER-006 dealer catalog UI
+DEALER-007 dealer product detail UI
+
+
+Sprint 26 — Dealer Orders / Balance
+DEALER-008 dealer order create API
+DEALER-009 dealer order list/detail
+DEALER-010 dealer balance API
+DEALER-011 dealer portal order UI
+DEALER-012 dealer account UI
+DEALER-013 dealer permission tests
+
+
+Sprint 27 — Approval Engine
+APPROVAL-001 approval_requests migration
+APPROVAL-002 approval_steps migration
+APPROVAL-003 approval_actions migration
+APPROVAL-004 approval request API
+APPROVAL-005 approve/reject API
+APPROVAL-006 approval inbox UI
+APPROVAL-007 quote discount approval integration
+
+
+Sprint 28 — Advanced Approval Rules
+APPROVAL-008 approval delegation
+APPROVAL-009 approval expiry
+APPROVAL-010 approval timeline
+APPROVAL-011 credit limit approval integration
+APPROVAL-012 stock adjustment approval shell
+APPROVAL-013 approval reporting widgets
+
+
+Sprint 29 — Public API / API Keys
+INT-001 api_keys migration
+INT-002 api key creation
+INT-003 api key hashing
+INT-004 scope validation
+INT-005 public API auth middleware
+INT-006 public customers/products/orders APIs
+INT-007 API usage logs
+INT-008 API key manager UI
+
+
+Sprint 30 — Webhooks
+INT-009 webhooks migration
+INT-010 webhook event subscription
+INT-011 webhook HMAC signature
+INT-012 webhook delivery worker
+INT-013 webhook retry/DLQ
+INT-014 webhook logs UI
+INT-015 webhook test button
+Sprint 31 — Enterprise Security / SSO Prep
+SEC-001 sso_providers migration
+SEC-002 SAML config storage
+SEC-003 OIDC config storage
+SEC-004 SSO provider management UI
+SEC-005 IP allowlist rules
+SEC-006 session management screen
+SEC-007 security events table
+
+
+Sprint 32 — Enterprise Hardening
+ENT-001 branch scope enforcement
+ENT-002 dealer scope enforcement
+ENT-003 advanced audit filters
+ENT-004 audit export
+ENT-005 enterprise reporting widgets
+ENT-006 permission regression
+ENT-007 security regression
+ENT-008 UAT hardening
+
+
+
+
+12. Communication Business Rules
+
+Conversation
+Bir conversation bir customer ile bağlanabilir.
+Conversation channel bazlıdır.
+Açık conversation aynı kanalda tekrar açılmaz; mevcut conversation
+güncellenir.
+Conversation assigned user veya team alabilir.
+
+
+Message
+Inbound message customer/system kaynaklıdır.
+Outbound message user/ai/system kaynaklıdır.
+Her message delivery log üretir.
+Message tenant ve channel scope dışına çıkamaz.
+
+
+Assignment
+Support manager conversation atayabilir.
+Agent sadece kendisine atanmış conversation üzerinde işlem
+yapabilir.
+
+
+
+
+13. Ticket Business Rules
+
+Ticket Status
+open
+pending
+waiting_customer
+resolved
+closed
+reopened
+
+
+SLA
+Ticket açılınca SLA timer başlar.
+Önceliğe göre first response ve resolution süresi hesaplanır.
+SLA breach event üretir.
+Resolved olunca timer durur.
+Reopened olursa timer devam eder veya yeni timer açılır.
+
+
+
+
+14. Dealer Portal Business Rules
+Dealer sadece kendisine açık ürünleri görür.
+Dealer sadece bayi fiyatını görür.
+Dealer margin/cost göremez.
+Dealer kendi siparişlerini görür.
+Dealer kendi cari bakiyesini görür.
+Dealer başka bayi verisini göremez.
+
+
+
+
+15. Approval Engine Business Rules
+
+Approval Status
+pending
+approved
+rejected
+expired
+cancelled
+delegated
+
+
+Rules
+İndirim eşiği aşılırsa approval gerekir.
+Credit limit artışı approval gerektirir.
+Stock adjustment threshold aşılırsa approval gerekir.
+Approval tamamlanmadan ilgili işlem finalize edilemez.
+Her karar audit log’a düşer.
+
+
+
+
+16. Public API Business Rules
+API key hashlenmiş saklanır.
+API key sadece bir kez gösterilir.
+Scope zorunludur.
+Rate limit plan bazlıdır.
+Her request api_usage_logs’a yazılır.
+Tenant isolation zorunludur.
+
+
+
+
+17. Webhook Business Rules
+Her webhook HMAC ile imzalanır.
+Timestamp replay protection vardır.
+Başarısız delivery retry edilir.
+5 başarısız denemeden sonra DLQ.
+Webhook payload event schema version içerir.
+
+
+
+
+18. Enterprise Test Suite
+
+Communication
+conversation create
+message send
+message receive
+assignment
+tenant isolation
+agent assigned scope
+delivery log
+
+
+Ticket / SLA
+ticket create
+ticket assign
+ticket resolve
+ticket close
+SLA start
+SLA breach
+CSAT created
+
+
+Dealer
+dealer login
+dealer sees own catalog
+dealer cannot see another dealer price
+dealer order create
+dealer balance visible
+
+
+Approval
+approval request create
+approve
+reject
+delegation
+expired approval
+quote discount blocked until approval
+
+
+Public API
+api key auth
+scope allowed
+scope denied
+rate limit
+tenant isolation
+usage log
+
+
+Webhook
+event subscribed
+signature valid
+signature invalid rejected
+retry
+DLQ
+delivery log
+
+
+
+
+19. Enterprise Non-Functional Requirements
+
+Performance
+Inbox list p95 < 500ms
+Chat thread p95 < 500ms
+Ticket list p95 < 500ms
+Dealer catalog p95 < 600ms
+Public API p95 < 400ms
+Webhook dispatch p95 < 2s
+
+
+Reliability
+Webhook retry guaranteed
+Message delivery log durable
+Approval state transition atomic
+API key revocation immediate
+SLA timers recover after restart
+
+
+Security
+Dealer isolation mandatory
+Branch scope mandatory
+Public API rate limit mandatory
+Webhook signature mandatory
+Audit export permission required
+
+
+
+
+20. Enterprise Acceptance Criteria
+Enterprise sürüm kabul için:
+
+1. Conversation inbox çalışır.
+2. Mesaj gönderme/alma akışı çalışır.
+3. Conversation’dan ticket açılır.
+4. Ticket SLA takip eder.
+5. SLA breach event üretir.
+6. Dealer portal giriş yapar.
+7. Dealer katalog/fiyat/sipariş görür.
+8. Dealer başka bayi verisini göremez.
+9. Approval engine quote discount akışında çalışır.
+10. API key oluşturulur ve scope uygulanır.
+11. Public API çalışır.
+12. Webhook HMAC imzalı gönderilir.
+13. Retry/DLQ çalışır.
+14. Branch/dealer scope testleri geçer.
+15. Advanced audit filtrelenebilir.
+16. Enterprise security ekranları çalışır.
+
+
+
+
+21. Enterprise Deliverables
+Omnichannel inbox
+Ticket system
+SLA engine
+Dealer portal
+Approval engine
+Public API
+API key management
+Webhook engine
+Integration logs
+Branch/dealer scope
+Enterprise audit
+SSO preparation
+Security events
+Enterprise reports
+Permission updates
+E2E tests
+Security tests
+Updated OpenAPI
+Updated docs
+Release notes
+
+
+
+
+22. Enterprise Go-Live Checklist
+Communication flow tested
+Ticket/SLA tested
+Dealer isolation tested
+Approval engine tested
+Public API tested
+Webhook signature tested
+Webhook retry tested
+API rate limit active
+Advanced audit active
+Branch scope tested
+Dealer scope tested
+Security regression passed
+Performance smoke passed
+UAT approved
+
+
+
+
+23. Enterprise Final Definition
+Enterprise sürüm şu zincirleri canlıda çalıştırır:
+
+Inbox
+→ Ticket
+→ SLA
+Dealer
+→ Catalog
+→ Order
+→ Balance
+Approval
+→ Decision
+→ Audit
+Public API
+→ Event
+→ Webhook
+
+
+Sonraki paket:
+
+CRM OS AI & Analytics Build Package v1
+
+
+
+
+CRM OS AI & Analytics Build Package v1
+
+1. Paket Amacı
+Bu paket CRM OS’i klasik operasyonel CRM’den akıllı karar, tahmin,
+raporlama ve otomasyon platformuna dönüştürür.
+Enterprise sürümde çalışan zincir:
+
+CRM
+→ Sales
+→ Order
+→ Inventory
+→ Finance
+→ Support
+→ Workflow
+
+
+AI & Analytics sürümde şu yetenekler eklenir:
+
+Ask CRM
+AI Assistant
+AI Summaries
+Lead Scoring
+Opportunity Prediction
+Quote Assistant
+Customer Risk
+Advanced Dashboards
+Custom Reports
+Metric Snapshots
+Data Quality
+AI Usage Governance
+
+
+
+
+2. Dahil Modüller
+AI GATEWAY
+AI ASSISTANT
+AI AGENTS
+AI SUMMARIZATION
+AI CLASSIFICATION
+AI PREDICTION
+AI RECOMMENDATION
+AI DOCUMENT READING
+ANALYTICS
+REPORTING
+CUSTOM DASHBOARDS
+METRIC SNAPSHOTS
+DATA QUALITY
+SEARCH / ASK CRM
+
+
+Dahil değil:
+
+Tam otonom agent işlemleri
+Muhasebe kararlarının otomatik verilmesi
+Otomatik ödeme iptali
+Otomatik stok düzeltme
+Yetki değiştiren AI aksiyonları
+
+
+Bunlar insan onayı gerektirir.
+
+
+
+3. Ana AI Akışları
+
+Ask CRM
+User question
+→ Permission check
+→ Tenant context
+→ Semantic / SQL intent parse
+→ Query planning
+→ Safe query execution
+→ Answer generation
+→ Citation to records
+→ Audit + AI usage log
+
+
+Örnek:
+
+"Bu ay en çok kâr ettiren ürünler hangileri?"
+
+
+Cevap:
+
+1. Flora Gold — ₺420.000 kâr
+2. Zen Pattern — ₺310.000 kâr
+3. Aurora Premium — ₺255.000 kâr
+
+
+
+
+Conversation Summary
+MessageReceived
+→ Conversation context loaded
+→ PII masking
+→ AI summary
+→ Sentiment
+→ Next action
+→ Timeline event
+
+
+
+
+Lead Scoring
+LeadCreated
+→ Source + profile + activity data
+→ AI score
+→ Temperature
+→ Assignment recommendation
+→ Sales rep notification
+
+
+
+
+Opportunity Prediction
+OpportunityStageChanged
+→ Customer history
+→ Deal value
+→ Stage velocity
+→ Activity count
+→ Win probability
+→ Risk reason
+→ Next best action
+
+
+
+
+Quote Assistant
+QuoteCreated
+→ Customer segment
+→ Product items
+→ Margin
+→ Past deals
+→ AI text generation
+→ Sales rep review
+4. AI Database Scope
+
+Yeni Migration Set
+031_ai_gateway
+032_ai_agents
+033_ai_prompts
+034_ai_conversations
+035_ai_documents_embeddings
+036_ai_predictions
+037_ai_recommendations
+038_ai_usage_governance
+039_analytics_core
+040_reporting_builder
+041_data_quality
+
+
+Yeni Tablolar
+ai_providers
+ai_provider_models
+ai_provider_settings
+
+ai_agents
+ai_agent_tools
+ai_agent_permissions
+ai_agent_runs
+ai_agent_run_steps
+
+ai_prompts
+ai_prompt_versions
+
+ai_conversations
+ai_conversation_messages
+
+ai_documents
+ai_document_chunks
+ai_embeddings
+
+ai_summaries
+ai_classifications
+ai_predictions
+ai_recommendations
+
+ai_usage_logs
+ai_usage_quotas
+ai_feedback
+
+analytics_datasets
+analytics_dataset_fields
+analytics_queries
+analytics_query_runs
+
+dashboards
+dashboard_widgets
+dashboard_permissions
+dashboard_filters
+
+reports
+report_columns
+report_filters
+report_schedules
+report_exports
+
+metrics
+metric_snapshots
+kpi_targets
+
+data_quality_rules
+data_quality_issues
+data_quality_runs
+
+saved_searches
+semantic_search_logs
+
+
+
+
+5. AI API Scope
+
+AI Assistant
+POST /api/v1/ai/ask
+GET /api/v1/ai/conversations
+POST /api/v1/ai/conversations
+GET /api/v1/ai/conversations/{id}
+POST /api/v1/ai/conversations/{id}/messages
+AI Summaries
+POST /api/v1/ai/summarize/conversation/{conversationId}
+POST /api/v1/ai/summarize/customer/{customerId}
+POST /api/v1/ai/summarize/opportunity/{opportunityId}
+POST /api/v1/ai/summarize/ticket/{ticketId}
+
+
+AI Predictions
+POST /api/v1/ai/predict/lead-score/{leadId}
+POST /api/v1/ai/predict/opportunity-win/{opportunityId}
+POST /api/v1/ai/predict/customer-risk/{customerId}
+POST /api/v1/ai/predict/payment-risk/{customerId}
+
+
+AI Recommendations
+GET /api/v1/ai/recommendations
+GET /api/v1/ai/recommendations/customer/{customerId}
+GET /api/v1/ai/recommendations/opportunity/{opportunityId}
+POST /api/v1/ai/recommendations/{id}/dismiss
+POST /api/v1/ai/recommendations/{id}/accept
+
+
+AI Admin
+GET     /api/v1/ai/providers
+POST    /api/v1/ai/providers
+PATCH   /api/v1/ai/providers/{id}
+
+GET     /api/v1/ai/agents
+POST    /api/v1/ai/agents
+PATCH   /api/v1/ai/agents/{id}
+
+GET     /api/v1/ai/usage
+GET     /api/v1/ai/usage/tenant
+GET     /api/v1/ai/feedback
+
+
+
+
+6. Analytics / Reporting API Scope
+
+Dashboards
+GET     /api/v1/dashboards
+POST    /api/v1/dashboards
+GET    /api/v1/dashboards/{id}
+PATCH /api/v1/dashboards/{id}
+DELETE /api/v1/dashboards/{id}
+
+POST   /api/v1/dashboards/{id}/widgets
+PATCH /api/v1/dashboard-widgets/{id}
+DELETE /api/v1/dashboard-widgets/{id}
+
+
+Reports
+GET     /api/v1/reports
+POST    /api/v1/reports
+GET     /api/v1/reports/{id}
+PATCH   /api/v1/reports/{id}
+POST    /api/v1/reports/{id}/run
+POST    /api/v1/reports/{id}/export
+
+
+Metrics
+GET /api/v1/metrics/sales
+GET /api/v1/metrics/pipeline
+GET /api/v1/metrics/finance
+GET /api/v1/metrics/inventory
+GET /api/v1/metrics/support
+GET /api/v1/metrics/ai
+
+
+Data Quality
+GET /api/v1/data-quality/issues
+POST /api/v1/data-quality/rules
+POST /api/v1/data-quality/runs
+POST /api/v1/data-quality/issues/{id}/resolve
+
+
+
+
+7. Frontend Scope
+
+Yeni Ekranlar
+/ai
+/ai/ask
+/ai/conversations
+/ai/agents
+/ai/usage
+/ai/settings
+
+/reports
+/reports/new
+/reports/[id]
+/reports/exports
+
+/dashboards
+/dashboards/new
+/dashboards/[id]
+
+/analytics/executive
+/analytics/sales
+/analytics/finance
+/analytics/inventory
+/analytics/support
+/analytics/ai
+
+/data-quality
+/data-quality/issues
+/data-quality/rules
+
+
+
+
+8. Yeni UI Bileşenleri
+AskCrmInput
+AiAnswerPanel
+AiCitationList
+AiConfidenceBadge
+AiRecommendationCard
+AiSummaryBox
+AiUsageMeter
+AiAgentCard
+AiAgentBuilderShell
+
+DashboardBuilder
+WidgetLibrary
+MetricWidget
+ChartWidget
+TableWidget
+KpiTargetWidget
+ReportBuilder
+ReportFilterBuilder
+ReportColumnSelector
+ReportPreviewTable
+ReportExportDrawer
+
+DataQualityIssueTable
+DuplicateRecordResolver
+DataQualityScoreCard
+
+
+
+
+9. Backend Module Scope
+
+ai module
+providers
+models
+gateway
+agents
+prompts
+conversations
+summaries
+classifications
+predictions
+recommendations
+usage
+feedback
+
+
+analytics module
+datasets
+query_engine
+metrics
+snapshots
+dashboards
+reports
+exports
+data-quality module
+rules
+issues
+deduplication
+validation
+cleanup_suggestions
+
+
+search module
+global_search
+semantic_search
+saved_searches
+natural_language_search
+
+
+
+
+10. AI Gateway Design
+AI Gateway görevi:
+
+Provider abstraction
+Prompt template management
+Tenant-aware execution
+Permission-aware context loading
+PII masking
+Token/cost tracking
+Rate limiting
+Audit logging
+Fallback handling
+
+
+Provider adapter:
+
+OpenAIAdapter
+AzureOpenAIAdapter
+AnthropicAdapter
+LocalModelAdapter
+
+
+İç arayüz:
+
+interface AiProvider {
+  complete(input: AiCompletionInput): Promise<AiCompletionResult>;
+  embed(input: AiEmbeddingInput): Promise<AiEmbeddingResult>;
+}
+
+
+
+
+11. AI Safety Rules
+AI asla doğrudan şu işlemleri yapamaz:
+
+payment.cancel
+stock.adjust
+quote.approve
+order.cancel
+customer.delete
+permission.update
+api_key.create
+workflow.activate
+
+
+Bu aksiyonlar için:
+
+AI önerir
+→ Kullanıcı inceler
+→ Approval gerekirse açılır
+→ İnsan onayı sonrası işlem yapılır
+
+
+
+
+12. Permission Model
+
+AI Permissions
+ai.assistant.use
+ai.ask_crm.use
+ai.summary.generate
+ai.recommendation.read
+ai.prediction.read
+ai.lead_score.read
+ai.quote.generate
+ai.agent.read
+ai.agent.manage
+ai.usage.read
+ai.settings.manage
+ai.debug.read
+Analytics Permissions
+analytics.dashboard.read
+analytics.dashboard.create
+analytics.dashboard.update
+analytics.dashboard.delete
+analytics.report.read
+analytics.report.create
+analytics.report.update
+analytics.report.export
+analytics.metric.read
+analytics.executive.read
+analytics.custom_query.run
+
+
+Data Quality Permissions
+data_quality.issue.read
+data_quality.issue.resolve
+data_quality.rule.read
+data_quality.rule.manage
+data_quality.merge.suggest
+data_quality.merge.execute
+
+
+
+
+13. AI Events
+AIActionRequested
+AIActionCompleted
+AIActionFailed
+AIUsageLimitExceeded
+
+AISummaryGenerated
+AIClassificationCompleted
+AILeadScoreCalculated
+AIOpportunityWinProbabilityCalculated
+AICustomerRiskCalculated
+AIPaymentRiskCalculated
+AIRecommendationCreated
+AIRecommendationAccepted
+AIRecommendationDismissed
+
+AIAgentCreated
+AIAgentRunStarted
+AIAgentRunCompleted
+AIAgentRunFailed
+
+ReportGenerated
+ReportExportRequested
+ReportExportCompleted
+DashboardWidgetUpdated
+MetricSnapshotCreated
+
+DataQualityIssueDetected
+DataQualityIssueResolved
+DuplicateRecordDetected
+DuplicateRecordMerged
+
+
+
+
+14. Ask CRM Business Rules
+Kullanıcının görme yetkisi olmayan veri cevaba dahil edilemez.
+Cevapta kullanılan kayıtlar citation olarak gösterilir.
+Finansal veriler field-level permission’a göre maskelenir.
+AI SQL üretirse sadece read-only query çalışır.
+DELETE/UPDATE/INSERT çalıştırılamaz.
+Query timeout zorunludur.
+Sonuç sayısı limitlidir.
+
+
+Safe SQL policy:
+
+SELECT only
+tenant_id enforced
+permission filter enforced
+limit mandatory
+timeout mandatory
+no raw arbitrary SQL from user
+
+
+
+
+15. AI Context Loading Rules
+Context şu sırayla yüklenir:
+Tenant scope
+↓
+User permission scope
+↓
+Entity scope
+↓
+Field-level masking
+↓
+PII minimization
+↓
+Prompt context
+
+
+Context kaynakları:
+
+customers
+leads
+opportunities
+quotes
+orders
+payments
+tickets
+messages
+activities
+timeline_events
+products
+stocks
+
+
+
+
+16. RAG / Embedding Scope
+İlk aşama:
+
+pgvector
+
+
+Embedding yapılacak içerikler:
+
+product descriptions
+knowledge base articles
+quote templates
+support articles
+customer notes
+ticket resolutions
+uploaded documents
+
+
+Embedding metadata:
+
+tenant_id
+entity_type
+entity_id
+permission_scope
+created_at
+source
+
+
+
+
+17. Analytics Model
+Analytics iki katmanlı olacak:
+
+Operational Metrics
+Canlı uygulama DB’den veya replica’dan:
+
+lead count
+pipeline value
+quote count
+order count
+payment total
+stock alerts
+ticket SLA
+
+
+Snapshot Metrics
+Zaman serisi snapshot:
+
+daily_sales
+daily_pipeline_value
+daily_collections
+daily_stock_value
+daily_ticket_sla
+daily_ai_usage
+
+
+Tablo:
+
+metric_snapshots
+
+
+Alanlar:
+tenant_id
+metric_key
+dimensions
+value
+snapshot_date
+created_at
+
+
+
+
+18. Dashboard Builder Scope
+Widget tipleri:
+
+metric
+line_chart
+bar_chart
+pie_chart
+table
+funnel
+kanban_summary
+ai_insight
+target_progress
+
+
+Widget config:
+
+{
+    "metricKey": "sales.revenue",
+    "dimensions": ["branch", "sales_rep"],
+    "filters": {
+      "dateRange": "this_month"
+    },
+    "visualization": "line_chart"
+}
+
+
+
+
+19. Report Builder Scope
+Report kaynakları:
+
+customers
+leads
+opportunities
+quotes
+orders
+payments
+products
+stocks
+tickets
+activities
+
+
+Özellikler:
+
+column select
+filters
+sorting
+grouping
+aggregations
+scheduled export
+CSV/XLSX/PDF export
+permission-aware fields
+
+
+
+
+20. Data Quality Scope
+Kurallar:
+
+missing email
+invalid phone
+duplicate customer
+duplicate tax number
+missing assigned user
+stale opportunity
+inactive customer with open balance
+quote expired but still open
+
+
+Data Quality Score:
+
+Customer Data Quality
+Lead Quality
+Sales Data Quality
+Finance Data Quality
+21. AI Usage Governance
+Her AI çağrısı loglanır:
+
+tenant_id
+user_id
+agent_id
+action_type
+model
+input_tokens
+output_tokens
+cost_amount
+latency_ms
+status
+
+
+Quota:
+
+monthly_token_limit
+monthly_cost_limit
+per_user_limit
+per_agent_limit
+
+
+Aşımda:
+
+AIUsageLimitExceeded
+
+
+event’i üretilir.
+
+
+
+22. Sprint Plan
+
+Sprint 33 — AI Gateway
+AI-001 ai_providers migration
+AI-002 ai_models migration
+AI-003 AI gateway interface
+AI-004 Provider adapter v1
+AI-005 Token/cost logging
+AI-006 AI usage quota
+AI-007 AI settings UI
+Sprint 34 — Ask CRM v1
+AI-008 Ask CRM API
+AI-009 Permission-aware context loader
+AI-010 Safe query planner
+AI-011 AI answer generator
+AI-012 citation builder
+AI-013 Ask CRM UI
+AI-014 AI audit logs
+
+
+Sprint 35 — Summaries / Recommendations
+AI-015 conversation summary
+AI-016 customer summary
+AI-017 opportunity summary
+AI-018 ticket summary
+AI-019 recommendation table
+AI-020 recommendation cards UI
+
+
+Sprint 36 — Predictions
+AI-021 lead scoring
+AI-022 opportunity win probability
+AI-023 customer risk
+AI-024 payment risk
+AI-025 prediction widgets
+AI-026 prediction tests
+
+
+Sprint 37 — Analytics Core
+AN-001 analytics datasets
+AN-002 metric definitions
+AN-003 metric snapshots
+AN-004 sales metrics API
+AN-005 finance metrics API
+AN-006 inventory metrics API
+AN-007 support metrics API
+
+
+Sprint 38 — Dashboard Builder
+AN-008 dashboards migration
+AN-009 dashboard widgets
+AN-010 widget config schema
+AN-011 dashboard builder UI
+AN-012 metric widgets
+AN-013 chart widgets
+AN-014 dashboard permissions
+
+
+Sprint 39 — Report Builder
+AN-015 reports migration
+AN-016 report filters
+AN-017 report columns
+AN-018 report run API
+AN-019 export jobs
+AN-020 report builder UI
+AN-021 report export UI
+
+
+Sprint 40 — Data Quality
+DQ-001 data quality rules
+DQ-002 data quality issues
+DQ-003 duplicate detection v1
+DQ-004 data quality score
+DQ-005 issue resolver UI
+DQ-006 duplicate merge flow
+
+
+
+
+23. Acceptance Criteria
+AI & Analytics paketi kabul için:
+
+1. AI Gateway en az bir provider ile çalışır.
+2. Her AI çağrısı usage log yazar.
+3. Quota aşımı engellenir.
+4. Ask CRM kullanıcı yetkisine göre cevap verir.
+5. Ask CRM cevaplarında citation gösterilir.
+6. AI summary customer/conversation/ticket için çalışır.
+7. Lead scoring sonucu lead üzerinde görünür.
+8. Opportunity win probability görünür.
+9. Dashboard builder widget ekleyebilir.
+10. Report builder filtreli rapor çalıştırır.
+11. Export job CSV/XLSX üretir.
+12. Data quality issue listesi çalışır.
+13. Duplicate customer detection v1 çalışır.
+14. AI tenant isolation testleri geçer.
+15. AI sensitive action’ları doğrudan yapamaz.
+
+
+
+
+24. Test Suite
+
+AI Tests
+provider adapter test
+prompt template test
+tenant context test
+permission context test
+PII masking test
+quota test
+usage log test
+AI action blocked test
+citation test
+
+
+Analytics Tests
+metric calculation test
+snapshot generation test
+dashboard widget test
+report filter test
+report export test
+permission-aware report test
+
+
+Data Quality Tests
+duplicate detection
+missing field detection
+invalid email
+invalid phone
+merge permission
+resolve issue
+
+
+
+
+25. Non-Functional Requirements
+AI answer p95 < 8s
+Summary p95 < 10s
+Metric dashboard p95 < 1s
+Report run p95 < 5s for standard reports
+Export async for large data
+AI usage log durability 100%
+
+
+
+
+26. Final Definition
+Bu paket tamamlandığında CRM OS şu seviyeye gelir:
+
+Kullanıcı CRM’e soru sorabilir.
+AI müşteri ve görüşmeleri özetleyebilir.
+Lead/fırsat risk ve skor üretilebilir.
+Yönetici özel dashboard oluşturabilir.
+Raporlar filtrelenip dışa aktarılabilir.
+Veri kalitesi izlenebilir.
+AI kullanımı güvenli, limitli ve audit’li çalışır.
+
+
+Sonraki çıktı:
+
+CRM OS Final Architecture Pack v1
+
+
+
+
+CRM OS Final Architecture Pack v1
+
+Executive Architecture Summary
+CRM OS artık aşağıdaki katmanları kapsayan tam kapsamlı bir
+Enterprise SaaS Platform'dur:
+
+CRM
+Sales
+Quote
+Order
+Inventory
+Finance Lite
+Customer Portal
+
+Omnichannel
+Support
+SLA
+
+Dealer Portal
+
+Workflow Engine
+Approval Engine
+
+Public API
+Webhook Platform
+
+AI Platform
+Analytics Platform
+
+Multi-Tenant Security
+Enterprise IAM
+
+DevOps Platform
+Observability Platform
+
+
+
+
+1. High-Level Architecture
+┌─────────────────────────────────────────┐
+│                USERS                    │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│              Cloudflare CDN             │
+│                  WAF                    │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│              API Gateway                │
+│ Auth / Rate Limit / Audit / Tenant      │
+└─────────────────────────────────────────┘
+                    │
+        ┌───────────┼───────────┐
+        ▼           ▼           ▼
+
+┌───────────┐ ┌───────────┐ ┌───────────┐
+│ Next.js   │ │ PublicAPI │ │ Webhooks │
+│ Frontend │ │ Platform │ │ Platform │
+└───────────┘ └───────────┘ └───────────┘
+                   │
+
+┌─────────────────────────────────────────┐
+│          NestJS Application Layer       │
+└─────────────────────────────────────────┘
+
+        │
+        ▼
+
+┌─────────────────────────────────────────┐
+│           Domain Modules                │
+└─────────────────────────────────────────┘
+
+IAM
+CRM
+LEAD
+SALES
+QUOTE
+ORDER
+PRODUCT
+INVENTORY
+FINANCE
+SUPPORT
+COMMUNICATION
+WORKFLOW
+APPROVAL
+AI
+ANALYTICS
+
+        │
+        ▼
+
+┌─────────────────────────────────────────┐
+│          Domain Event Bus               │
+│      RabbitMQ + Outbox Pattern          │
+└─────────────────────────────────────────┘
+
+        │
+        ▼
+
+┌─────────────────────────────────────────┐
+│ PostgreSQL + RLS + Read Replica         │
+└─────────────────────────────────────────┘
+
+
+
+
+2. Final Deployment Architecture
+
+Production
+Region A
+
+Kubernetes Cluster
+
+api-deployment
+worker-deployment
+scheduler-deployment
+frontend-deployment
+
+postgres-primary
+
+redis-cluster
+
+rabbitmq-cluster
+
+minio/s3
+
+grafana
+prometheus
+loki
+tempo
+
+vault
+
+
+
+
+Enterprise Scale
+Region A
+Region B
+
+Active / Passive
+
+PostgreSQL PITR
+Cross Region Backups
+
+Disaster Recovery
+
+
+RTO:
+
+< 2 hours
+
+
+RPO:
+
+< 15 min
+
+
+
+
+3. Final Repository Structure
+crm-os/
+
+apps/
+├── api
+├── worker
+├── scheduler
+├── web
+├── customer-portal
+├── dealer-portal
+
+packages/
+├── ui
+├── design-system
+├── api-client
+├── auth
+├── permissions
+├── analytics
+├── ai
+├── shared
+
+infra/
+├── terraform
+├── helm
+├── k8s
+├── monitoring
+├── security
+docs/
+├── architecture
+├── api
+├── security
+├── operations
+
+scripts/
+
+tests/
+
+
+
+
+4. Final Backend Architecture
+apps/api
+
+src/
+
+core/
+
+modules/
+
+iam/
+crm/
+lead/
+sales/
+quote/
+order/
+inventory/
+finance/
+support/
+communication/
+workflow/
+approval/
+integration/
+analytics/
+ai/
+
+common/
+
+
+Her modül:
+module/
+
+controllers/
+dto/
+services/
+repositories/
+entities/
+events/
+listeners/
+guards/
+policies/
+tests/
+
+
+
+
+5. Frontend Architecture
+
+Stack
+Next.js
+React
+TypeScript
+TanStack Query
+TanStack Table
+Zustand
+React Hook Form
+Zod
+Tailwind
+Shadcn
+Framer Motion
+
+
+
+
+App Layout
+AppShell
+
+Sidebar
+Topbar
+Command Palette
+
+Workspace
+
+Pages
+Drawers
+Modals
+Notifications
+
+
+
+
+6. Design System
+
+Theme
+Dark First
+
+Graphite Black
+Obsidian
+Glass Layers
+Neon Accent
+
+
+Style
+Linear
+Stripe
+Vercel
+Raycast
+Warp
+Attio
+
+
+karışımı.
+
+
+
+UI Rules
+8px grid
+
+16 radius
+
+Glass surfaces
+
+Soft shadows
+
+Minimal borders
+
+High density
+Keyboard first
+
+
+
+
+7. Database Architecture
+
+PostgreSQL
+Primary
+
+Read Replica
+
+Partitioned Tables
+
+RLS
+
+
+
+
+Heavy Tables
+audit_logs
+domain_events
+timeline_events
+messages
+notifications
+ai_usage_logs
+metric_snapshots
+
+
+Partition:
+
+monthly
+
+
+
+
+8. Caching Architecture
+Redis:
+
+sessions
+permissions
+dashboard
+metrics
+feature flags
+workflow cache
+
+
+Key pattern:
+
+tenant:{tenantId}:...
+
+
+
+
+9. Event Architecture
+
+Outbox Pattern
+Business Transaction
+
+↓
+
+Insert Event
+
+↓
+
+Commit
+
+↓
+
+Outbox Worker
+
+↓
+
+RabbitMQ
+
+↓
+
+Consumers
+
+
+
+
+Main Event Topics
+customer.*
+
+lead.*
+
+opportunity.*
+quote.*
+
+order.*
+
+payment.*
+
+ticket.*
+
+workflow.*
+
+ai.*
+
+analytics.*
+
+
+
+
+10. Security Architecture
+
+Authentication
+JWT
+
+Refresh Token Rotation
+
+2FA
+
+SSO
+
+SAML
+
+OIDC
+
+
+
+
+Authorization
+RBAC
+
+Permission
+
+Scope
+Field Security
+
+RLS
+
+
+
+
+Data Protection
+TLS
+
+Encryption At Rest
+
+Secrets Vault
+
+Audit Trail
+
+Rate Limiting
+
+
+
+
+11. AI Architecture
+AI Gateway
+
+
+altında:
+
+OpenAI
+Azure OpenAI
+Anthropic
+Local LLM
+
+
+providerları.
+
+
+
+AI Services
+Ask CRM
+
+Lead Scoring
+
+Win Prediction
+
+Quote Assistant
+Conversation Summary
+
+Ticket Summary
+
+Recommendation Engine
+
+
+
+
+AI Safety Layer
+Permission Check
+
+Tenant Isolation
+
+PII Masking
+
+Cost Tracking
+
+Quota
+
+Approval Required Actions
+
+
+
+
+12. Analytics Architecture
+
+Operational Metrics
+Sales
+Pipeline
+Inventory
+Finance
+Support
+
+
+
+
+Snapshot Metrics
+Daily
+
+Weekly
+Monthly
+
+
+
+
+Dashboards
+Executive
+
+Sales
+
+Finance
+
+Inventory
+
+Support
+
+AI
+
+
+
+
+13. Integration Architecture
+
+Public API
+REST
+
+OpenAPI
+
+API Keys
+
+Scopes
+
+
+
+
+Webhooks
+HMAC
+
+Retry
+
+DLQ
+
+Logs
+Connectors
+Hazır connector katmanı:
+
+SAP
+Logo
+Mikro
+Netsis
+Nebim
+
+Shopify
+WooCommerce
+
+Meta
+WhatsApp
+
+Google
+
+Microsoft
+
+
+
+
+14. Observability Architecture
+
+Metrics
+Prometheus
+
+api_latency
+error_rate
+queue_depth
+db_connections
+cache_hit_rate
+webhook_failures
+ai_cost
+
+
+
+
+Logs
+Loki
+
+structured logs
+tenant id
+user id
+request id
+
+
+
+
+Tracing
+Tempo
+
+frontend
+api
+worker
+db
+
+
+tam izlenebilir.
+
+
+
+15. Scalability Targets
+
+MVP
+10 tenant
+
+100 user
+
+
+
+
+Commercial
+100 tenant
+
+1000 user
+
+
+
+
+Enterprise
+1000 tenant
+
+10000 user
+Scale Target
+5000 tenant
+
+100000+ user
+
+
+
+
+16. Final Team Structure (50 Kişi)
+
+Platform Squad
+6 kişi
+
+
+
+
+IAM + Security
+4 kişi
+
+
+
+
+CRM Squad
+6 kişi
+
+
+
+
+Sales Squad
+6 kişi
+
+
+
+
+Order + Inventory
+6 kişi
+
+
+
+
+Finance
+4 kişi
+Support + Omnichannel
+5 kişi
+
+
+
+
+AI + Analytics
+5 kişi
+
+
+
+
+Frontend Platform
+4 kişi
+
+
+
+
+DevOps + SRE
+2 kişi
+
+
+
+
+QA Automation
+2 kişi
+
+
+
+
+17. Release Strategy
+Dev
+↓
+Integration
+↓
+Staging
+↓
+UAT
+↓
+Production
+
+
+Deployment:
+
+Blue/Green
+veya
+
+Canary
+
+
+
+
+18. Commercial Launch Package
+İlk satılacak paket:
+
+CRM
+Lead
+Pipeline
+Quote
+Task
+Dashboard
+
+
+
+
+Professional
+CRM
+Sales
+Quote
+Order
+Inventory
+Finance Lite
+Portal
+Workflow
+
+
+
+
+Enterprise
+Omnichannel
+Support
+Dealer Portal
+Approval
+Public API
+Webhooks
+SSO
+Advanced Audit
+AI Enterprise
+Ask CRM
+AI Assistant
+Predictions
+Analytics
+Custom Dashboards
+Data Quality
+
+
+
+
+19. Final Go-Live Gates
+Canlıya çıkmadan önce:
+
+Tenant Isolation PASS
+
+Permission PASS
+
+RLS PASS
+
+Performance PASS
+
+Security PASS
+
+Backup PASS
+
+Restore PASS
+
+Audit PASS
+
+E2E PASS
+
+UAT PASS
+
+
+
+
+20. Final Architecture Verdict
+Bu blueprint ile ortaya çıkan ürün:
+
+Attio
++
+HubSpot
++
+Pipedrive
++
+Zoho CRM
++
+Freshworks
++
+Monday CRM
++
+Salesforce Essentials
++
+Dealer Portal
++
+AI Copilot
+
+
+seviyesinde modüler bir SaaS CRM platformudur.
+
+Bu noktadan sonra mimari fazı tamamlanmıştır. Sonraki adım artık
+belge üretmek değil, doğrudan:
+
+Sprint-1 Repository Bootstrap Pack
+Sprint-1 PostgreSQL Migration Pack
+Sprint-1 NestJS Source Tree
+Sprint-1 Next.js Source Tree
+Sprint-1 Docker/Kubernetes Pack
+
+
+çıktılarının üretilmesidir.
+
+
+
+
+Eğer hedefiniz 50 kişilik ekibin 12 ayda yapacağı işi Cursor + AI
+Agent + CI/CD fabrikasına dönüştürmekse, amaç tek tek kod yazdırmak
+değil, üretim hattı kurmaktır.
+
+Mimariyi çıkarmışsınız. Bundan sonra asıl verim şurada gelir:
+
+Blueprint
+→ Spec
+→ Task
+→ Code Generation
+→ Review
+→ Test
+→ Deploy
+→ Documentation
+
+
+insansız veya yarı-insansız akacak.
+
+
+
+Faz 1 — AI Factory Kurulumu
+Önce CRM değil üretim fabrikası yapılır.
+
+Repo içine:
+
+.ai/
+
+agents/
+prompts/
+templates/
+playbooks/
+
+specs/
+modules/
+
+pipelines/
+
+
+
+
+Agent Rolleri
+Her agent tek iş yapar.
+
+Architect Agent
+Backend Agent
+Frontend Agent
+Database Agent
+DevOps Agent
+QA Agent
+Security Agent
+Reviewer Agent
+Documentation Agent
+Architect Agent
+Input:
+
+module: customer
+
+features:
+ - customer crud
+ - contacts
+ - addresses
+
+
+Output:
+
+ERD
+DTO
+API Contract
+Events
+Permissions
+Acceptance Criteria
+
+
+
+
+Backend Agent
+Input:
+
+customer-module-spec.yaml
+
+
+Output:
+
+NestJS module
+
+controller
+service
+repository
+
+dto
+
+events
+
+tests
+Frontend Agent
+Input:
+
+customer-ui-spec.yaml
+
+
+Output:
+
+pages
+forms
+tables
+drawers
+modals
+queries
+hooks
+
+
+
+
+QA Agent
+Input:
+
+customer module
+
+
+Output:
+
+unit tests
+
+integration tests
+
+playwright tests
+
+permission tests
+
+tenant isolation tests
+
+
+
+
+Faz 2 — Spec Driven Development
+Kod değil spec üret.
+
+Her modül:
+modules/
+
+customer/
+lead/
+opportunity/
+quote/
+inventory/
+finance/
+
+
+
+
+Örnek:
+
+module: customer
+
+entities:
+  - customer
+  - contact
+  - address
+
+permissions:
+  - customer.read
+  - customer.create
+
+events:
+  - CustomerCreated
+  - CustomerUpdated
+
+screens:
+  - customer-list
+  - customer-detail
+
+
+
+
+Bu dosya tek kaynak olur.
+
+
+
+Faz 3 — Code Generation
+Cursor'a:
+
+Kod yaz
+demezsiniz.
+
+Şunu dersiniz:
+
+Generate customer module from spec.
+
+
+Agent:
+
+migration
+
+entity
+
+dto
+
+controller
+
+service
+
+tests
+
+swagger
+
+
+üretir.
+
+
+
+Faz 4 — Monorepo Generator
+Tek komut:
+
+pnpm generate customer
+
+
+çıktı:
+
+backend module
+
+frontend pages
+
+tests
+
+docs
+Generator stack:
+
+plop
+hygen
+nx generators
+custom scripts
+
+
+
+
+Faz 5 — Vertical Slice Strategy
+En kritik nokta.
+
+Modül modül git.
+
+Yanlış:
+
+Önce tüm backend
+
+sonra frontend
+
+
+
+
+Doğru:
+
+Customer
+
+DB
+API
+UI
+Test
+
+biter
+
+
+sonra
+
+Lead
+
+DB
+API
+UI
+Test
+Faz 6 — Cursor Swarm
+Tek Cursor yerine çok agent.
+
+Örnek:
+
+Agent-1
+Customer Backend
+
+Agent-2
+Customer Frontend
+
+Agent-3
+Customer Tests
+
+Agent-4
+Customer Documentation
+
+
+aynı anda.
+
+
+
+Faz 7 — CI Factory
+PR açılınca:
+
+Lint
+
+Typecheck
+
+Unit Test
+
+Integration Test
+
+Security Scan
+
+Architecture Rules
+
+E2E Smoke
+
+
+çalışır.
+Faz 8 — Architecture Guardrails
+AI'ın kafasına göre kod yazmasını engellersiniz.
+
+Kurallar:
+
+No direct SQL
+
+Repository Pattern
+
+Event Driven
+
+DTO Required
+
+Swagger Required
+
+Tests Required
+
+Permission Required
+
+Audit Required
+
+
+
+
+Cursor her üretimde bu checklistten geçer.
+
+
+
+Faz 9 — Auto Review Agents
+Kod yazan agent ayrı.
+
+Kod inceleyen agent ayrı.
+
+Pipeline:
+
+Code Agent
+
+↓
+
+Review Agent
+
+↓
+
+Security Agent
+↓
+
+Performance Agent
+
+↓
+
+Merge
+
+
+
+
+Faz 10 — Documentation Factory
+Her merge sonrası:
+
+OpenAPI
+
+ERD
+
+Permissions
+
+Events
+
+Release Notes
+
+
+otomatik güncellenir.
+
+
+
+Faz 11 — Enterprise Ölçeği
+50 kişi yerine:
+
+10 senior engineer
+
++
+Cursor Agents
+
++
+CI/CD Factory
+
+
+yeterli hale gelir.
+En Hızlı Üretim Modeli
+Sizin mevcut blueprint için ideal üretim hattı:
+
+Blueprint
+↓
+Module Spec
+↓
+Generator
+↓
+Cursor Backend Agent
+↓
+Cursor Frontend Agent
+↓
+Cursor Test Agent
+↓
+Review Agent
+↓
+CI Validation
+↓
+Auto Documentation
+↓
+Merge
+
+
+Bu model kurulduğunda Sprint-1'den Sprint-40'a kadar olan planın
+büyük kısmı spec-first ve generator-first ilerler. İnsanlar mimari
+karar, iş kuralları ve kalite kontrolüne odaklanır; tekrar eden
+CRUD, DTO, form, tablo, test ve dokümantasyon üretimi büyük ölçüde
+otomatikleşir.
+
+
+
+Evet, yöntem doğru; ama daha gelişmiş hâli şu olmalı:
+
+Spec-Driven AI Factory
++ Cursor Rules
++ Generators
++ Background Agents
++ MCP
++ CI Quality Gates
++ Auto Review
+
+
+Yani sadece Cursor’a “kod yaz” demek değil; Cursor’u kontrollü
+üretim hattına bağlamak.
+En iyi kurgu
+Blueprint
+↓
+Module Spec
+↓
+Code Generator
+↓
+Cursor Agent
+↓
+Tests
+↓
+BugBot / Review Agent
+↓
+CI/CD
+↓
+Staging
+
+
+Cursor’un resmi dokümanlarında Agent, Rules, MCP, Skills ve CLI gibi
+özellikler bu tarz agentic geliştirme için temel araçlar olarak
+geçiyor. (Cursor)
+
+Daha gelişmiş kullanım:
+
+1. .cursor/rules ile mimari kuralları sabitle
+2. Her modül için YAML spec yaz
+3. Generator ile dosya iskeletlerini üret
+4. Cursor Agent sadece spec’e göre kod yazsın
+5. MCP ile Jira, GitHub, DB, Swagger, docs bağla
+6. Background Agent ile paralel PR üret
+7. CI her PR’da lint/test/security/e2e çalıştırsın
+8. BugBot veya review agent PR’ı incelesin
+9. İnsan sadece mimari ve kritik iş kurallarını onaylasın
+
+
+Büyük ekiplerde Cursor’un değeri en çok burada çıkıyor: kalıcı
+kurallar, agent iş akışı, test üretimi ve review süreci. Nvidia’nın
+binlerce mühendiste Cursor benzeri özelleştirilmiş iş akışlarıyla
+kod üretimini ciddi artırdığı da raporlanmış; burada kritik nokta
+insan denetimi ve custom rules kullanımı. (Tom's Hardware)
+
+En gelişmiş model:
+Cursor = Kod yazan kişi değil
+Cursor = Yazılım üretim fabrikasının işçisi
+
+
+Senin CRM için ideal sıra:
+
+1. .cursor/rules mimari paketi
+2. module-spec şablonları
+3. code generator
+4. Sprint-1 bootstrap
+5. Customer vertical slice
+6. CI kalite kapıları
+7. Background agent paralel üretim
+
+
+Bu şekilde kullanırsan Cursor’dan maksimum verim alınır.
+
+
+
+Hayır, sadece bu kadar değil. O 7 madde temel kurgu. Daha güçlü
+versiyon şöyle olur:
+
+1. Blueprint → module-spec otomasyonu
+2. .cursor/rules mimari kuralları
+3. AGENTS.md / task playbook
+4. Code generator
+5. Cursor Agent task queue
+6. Background Agents ile paralel PR
+7. MCP bağlantıları
+8. Auto test generation
+9. Auto code review
+10. Security review
+11. Performance review
+12. Migration validator
+13. OpenAPI validator
+14. Visual regression
+15. Auto documentation
+16. Release bot
+17. Staging deploy bot
+18. Bug triage bot
+19. Regression bot
+20. Human approval gates
+
+
+En gelişmiş kurgu:
+Product Spec
+↓
+Module Spec
+↓
+Generator
+↓
+Cursor Agent
+↓
+Background Agent PR
+↓
+BugBot / Review Agent
+↓
+CI Quality Gates
+↓
+Staging Deploy
+↓
+E2E + Security + Performance
+↓
+Human Approval
+↓
+Production
+
+
+Cursor tarafında Agent, Rules, MCP, Skills, CLI ve Teams/Enterprise
+gibi araçlar bu tarz üretim hattını destekleyen ana parçalar olarak
+geçiyor. (Cursor)
+
+Senin CRM için gerçek “AI factory” seviyesi şudur:
+
+Cursor kod yazmaz.
+Cursor kontrollü task alır.
+Spec dışına çıkamaz.
+Test geçmeden PR açamaz.
+Review geçmeden merge olmaz.
+Security gate geçmeden release olmaz.
+
+
+Yani evet, önceki plan iyi başlangıçtı; ama profesyonel seviye 20
+adımlı AI üretim hattı olmalı.
+
+```

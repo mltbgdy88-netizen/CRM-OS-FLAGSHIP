@@ -1,0 +1,55 @@
+sprint: 2
+name: "Auth + Tenant + IAM"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Auth + Tenant + IAM as a production-ready CRM OS module slice."
+domain: "Core/IAM"
+module: "iam"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - tenants
+  - users
+  - roles
+  - permissions
+  - sessions
+  - devices
+  - audit_logs
+permissions:
+  - auth.login
+  - tenant.manage
+  - user.manage
+  - role.manage
+events:
+  - UserInvited
+  - UserLoggedIn
+  - RoleChanged
+api:
+  - "POST /auth/login"
+  - "POST /auth/refresh"
+  - "GET /users"
+  - "POST /roles"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

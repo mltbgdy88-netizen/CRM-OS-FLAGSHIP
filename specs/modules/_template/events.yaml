@@ -1,0 +1,17 @@
+events:
+  ExampleCreated:
+    aggregate: Example
+    payload:
+      exampleId: uuid
+      tenantId: uuid
+# rules:
+#   - event names must be past tense
+#   - tenantId must exist in payload
+#   - secret/token/password values are not allowed in payload
+
+# event_quality_gate:
+#   - minimal payload
+#   - immutable event name
+#   - outbox publish mapping
+#   - idempotent consumer design
+#   - no sensitive fields

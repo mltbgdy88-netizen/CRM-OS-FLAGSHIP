@@ -1,0 +1,22 @@
+resource: examples
+routes:
+  list:
+    method: GET
+    path: /api/v1/examples
+    permission: example.read
+  detail:
+    method: GET
+    path: /api/v1/examples/{id}
+    permission: example.read
+  create:
+    method: POST
+    path: /api/v1/examples
+    permission: example.create
+  update:
+    method: PATCH
+    path: /api/v1/examples/{id}
+    permission: example.update
+  delete:
+    method: DELETE
+    path: /api/v1/examples/{id}
+    permission: example.delete

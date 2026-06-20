@@ -1,0 +1,50 @@
+sprint: 16
+name: "Inventory Core"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Inventory Core as a production-ready CRM OS module slice."
+domain: "Inventory"
+module: "inventory"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - warehouses
+  - warehouse_locations
+  - stocks
+  - stock_movements
+  - stock_counts
+  - stock_adjustments
+permissions:
+  - inventory.read
+  - inventory.adjust
+events:
+  - StockChanged
+  - CriticalStockReached
+api:
+  - "GET /inventory"
+  - "GET /stocks"
+  - "POST /stock-movements"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

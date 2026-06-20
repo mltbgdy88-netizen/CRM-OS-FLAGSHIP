@@ -1,0 +1,9 @@
+locks:
+  - path: packages/database/migrations
+    owner: database-agent
+  - path: apps/api/src/modules
+    owner: backend-agent
+  - path: apps/web/src/features
+    owner: frontend-agent
+  - path: tests/e2e
+    owner: qa-agent

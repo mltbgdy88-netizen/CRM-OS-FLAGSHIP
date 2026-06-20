@@ -1,0 +1,50 @@
+sprint: 33
+name: "AI Gateway"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement AI Gateway as a production-ready CRM OS module slice."
+domain: "AI"
+module: "ai"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - ai_agents
+  - ai_prompts
+  - ai_prompt_versions
+  - ai_usage_logs
+  - ai_feedback
+permissions:
+  - ai.use
+  - ai.manage
+events:
+  - AIActionRequested
+  - AIActionCompleted
+  - AIUsageLimitExceeded
+api:
+  - "POST /ai/actions"
+  - "GET /ai/usage"
+  - "GET /ai/agents"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

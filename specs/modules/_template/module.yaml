@@ -1,0 +1,15 @@
+module: example
+bounded_context: crm
+sprint: 0
+owner_team: platform
+description: Example module template.
+status: draft
+dependencies: []
+permissions: []
+events: []
+ui: []
+api_tags: []
+# generation_notes:
+#   Use this file as the entry point for module generation.
+#   Keep module dependencies explicit.
+#   Do not add permissions or events outside the module scope without review.

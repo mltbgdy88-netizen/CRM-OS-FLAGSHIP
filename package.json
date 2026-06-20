@@ -1,0 +1,30 @@
+{
+  "name": "crm-os",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:e2e": "echo e2e-not-configured-yet",
+    "db:migrate": "pnpm --filter @crm-os/database migrate",
+    "db:seed": "pnpm --filter @crm-os/database seed",
+    "generate:module": "echo generator-runtime-not-configured-yet",
+    "validate:specs": "echo spec-validator-not-configured-yet",
+    "openapi:validate": "echo openapi-validation-not-configured",
+    "db:migrate:check": "echo migration-check-not-configured",
+    "ci:check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "sprint:01:verify": "pnpm run ci:check"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "eslint": "^9.16.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0"
+  }
+}

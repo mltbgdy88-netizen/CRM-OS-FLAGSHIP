@@ -1,0 +1,11 @@
+gates:
+  - id: permission-guard
+    rule: "Every protected endpoint uses PermissionGuard."
+  - id: tenant-isolation
+    rule: "RLS tests prove Tenant A cannot read Tenant B data."
+  - id: audit-log
+    rule: "Critical actions create audit log records."
+  - id: secrets
+    rule: "No secrets are committed or printed in logs."
+  - id: export-control
+    rule: "Exports require explicit permission and audit trail."

@@ -1,0 +1,52 @@
+sprint: 40
+name: "Data Quality"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Data Quality as a production-ready CRM OS module slice."
+domain: "Data"
+module: "data-quality"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - data_quality_rules
+  - data_quality_issues
+  - merge_requests
+  - merge_logs
+  - import_jobs
+  - export_jobs
+permissions:
+  - data.quality.manage
+  - import.run
+  - export.run
+events:
+  - DataQualityIssueCreated
+  - CustomerMerged
+  - ImportCompleted
+api:
+  - "GET /data-quality/issues"
+  - "POST /merge-requests"
+  - "POST /imports"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

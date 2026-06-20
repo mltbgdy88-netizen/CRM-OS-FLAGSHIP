@@ -1,0 +1,50 @@
+sprint: 4
+name: "Customer 360"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Customer 360 as a production-ready CRM OS module slice."
+domain: "CRM"
+module: "crm"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - customer_timeline_events
+  - customer_scores
+  - customer_risk_scores
+  - customer_lifetime_values
+  - files
+  - comments
+permissions:
+  - customer.read
+  - customer.timeline.read
+  - customer.export
+events:
+  - CustomerUpdated
+  - CustomerMerged
+api:
+  - "GET /customers/{id}/360"
+  - "GET /customers/{id}/timeline"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

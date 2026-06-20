@@ -1,0 +1,15 @@
+pages:
+  examples_list:
+    route: /examples
+    layout: table
+    filters:
+      - status
+    columns:
+      - name
+      - created_at
+    actions:
+      - create
+# rules:
+#   - pages must use CRM OS AppShell
+#   - tables must use CRM OS Data Display System
+#   - forms must use CRM OS Form & Input System

@@ -1,0 +1,51 @@
+sprint: 15
+name: "Product Catalog"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Product Catalog as a production-ready CRM OS module slice."
+domain: "Product"
+module: "product"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - products
+  - product_variants
+  - product_categories
+  - product_brands
+  - product_collections
+  - product_prices
+permissions:
+  - product.read
+  - product.create
+  - product.update
+events:
+  - ProductCreated
+  - ProductUpdated
+api:
+  - "GET /products"
+  - "POST /products"
+  - "PATCH /products/{id}"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

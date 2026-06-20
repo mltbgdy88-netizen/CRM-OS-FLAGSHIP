@@ -1,0 +1,11 @@
+gates:
+  - id: tenant-id-required
+    rule: "Every tenant-owned table includes tenant_id."
+  - id: rls-required
+    rule: "Every tenant-owned table has PostgreSQL RLS enabled."
+  - id: base-columns
+    rule: "Business tables include id, tenant_id, audit timestamps, actors, deleted_at and version."
+  - id: indexes
+    rule: "Tenant, status and time based indexes are defined where needed."
+  - id: migration-reviewed
+    rule: "Migrations are reversible or have documented forward recovery."

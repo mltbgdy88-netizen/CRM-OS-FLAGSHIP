@@ -1,0 +1,18 @@
+gates:
+  pull_request:
+    - lint
+    - typecheck
+    - unit_tests
+    - migration_check
+    - security_scan
+    - api_contract_check
+  staging:
+    - integration_tests
+    - e2e_tests
+    - tenant_isolation_tests
+    - performance_smoke
+  production:
+    - manual_approval
+    - backup_before_migration
+    - health_check
+    - rollback_plan

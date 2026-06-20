@@ -1,0 +1,23 @@
+tasks:
+  - id: sprint-01-repo-bootstrap
+    sprint: 1
+    module: foundation
+    agent: devops
+    branch: agent/sprint-01-repo-bootstrap
+    status: ready
+  - id: sprint-01-api-skeleton
+    sprint: 1
+    module: api
+    agent: backend
+    branch: agent/sprint-01-api-skeleton
+    depends_on:
+      - sprint-01-repo-bootstrap
+    status: backlog
+  - id: sprint-01-web-skeleton
+    sprint: 1
+    module: web
+    agent: frontend
+    branch: agent/sprint-01-web-skeleton
+    depends_on:
+      - sprint-01-repo-bootstrap
+    status: backlog

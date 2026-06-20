@@ -1,0 +1,49 @@
+sprint: 12
+name: "Dashboard & Notification"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Dashboard & Notification as a production-ready CRM OS module slice."
+domain: "Reporting/Notification"
+module: "notification"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - notifications
+  - notification_recipients
+  - notification_preferences
+  - dashboards
+  - dashboard_widgets
+permissions:
+  - dashboard.read
+  - notification.read
+events:
+  - NotificationCreated
+  - DashboardViewed
+api:
+  - "GET /dashboard"
+  - "GET /notifications"
+  - "PATCH /notifications/{id}/read"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

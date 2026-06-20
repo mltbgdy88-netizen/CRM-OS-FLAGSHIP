@@ -1,0 +1,53 @@
+sprint: 10
+name: "Quote PDF + Approval"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Quote PDF + Approval as a production-ready CRM OS module slice."
+domain: "Quote"
+module: "quote"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - quote_approvals
+  - quote_files
+  - quote_view_logs
+  - quote_signatures
+  - quote_status_history
+permissions:
+  - quote.send
+  - quote.approve
+  - quote.pdf.generate
+events:
+  - QuoteSent
+  - QuoteViewed
+  - QuoteApproved
+  - QuoteRejected
+  - QuoteExpired
+api:
+  - "POST /quotes/{id}/send"
+  - "POST /quotes/{id}/approve"
+  - "GET /quotes/{id}/pdf"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

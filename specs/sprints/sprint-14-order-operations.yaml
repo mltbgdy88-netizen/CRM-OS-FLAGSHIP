@@ -1,0 +1,52 @@
+sprint: 14
+name: "Order Operations"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Order Operations as a production-ready CRM OS module slice."
+domain: "Order"
+module: "order"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - order_shipments
+  - order_deliveries
+  - order_returns
+  - order_files
+  - order_notes
+permissions:
+  - order.ship
+  - order.cancel
+  - order.return
+events:
+  - OrderShipped
+  - OrderDelivered
+  - OrderReturned
+  - OrderCancelled
+api:
+  - "POST /orders/{id}/ship"
+  - "POST /orders/{id}/cancel"
+  - "POST /orders/{id}/deliver"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

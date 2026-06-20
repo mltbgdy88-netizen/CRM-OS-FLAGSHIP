@@ -1,0 +1,17 @@
+tests:
+  unit:
+    - create example
+  integration:
+    - list examples
+  permissions:
+    - read permission
+  tenant_isolation:
+    - cannot read another tenant
+  events:
+    - ExampleCreated emitted
+  api_contract:
+    - OpenAPI match
+# rules:
+#   - tenant isolation tests are mandatory
+#   - permission tests are mandatory
+#   - OpenAPI contract tests are mandatory for API modules

@@ -1,0 +1,19 @@
+entities:
+  Example:
+    table: examples
+    tenant_scoped: true
+    soft_delete: true
+    audit_enabled: true
+    fields:
+      id:
+        type: uuid
+        primary: true
+      tenant_id:
+        type: uuid
+      name:
+        type: string
+        required: true
+      created_at:
+        type: timestamp
+      updated_at:
+        type: timestamp

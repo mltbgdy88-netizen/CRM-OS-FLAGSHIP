@@ -1,0 +1,11 @@
+gates:
+  - id: app-shell
+    rule: "Authenticated screens use CRM OS AppShell."
+  - id: states
+    rule: "Screens include loading, empty, error and permission states."
+  - id: design-system
+    rule: "Components use CRM OS tokens and existing UI primitives."
+  - id: accessibility
+    rule: "Interactive elements are keyboard reachable and labelled."
+  - id: storybook
+    rule: "Reusable components have Storybook coverage."

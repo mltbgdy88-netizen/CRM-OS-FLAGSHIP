@@ -1,0 +1,15 @@
+permissions:
+  example.read:
+    description: Read examples
+  example.create:
+    description: Create example
+  example.update:
+    description: Update example
+  example.delete:
+    description: Delete example
+roles:
+  admin:
+    - example.read
+    - example.create
+    - example.update
+    - example.delete

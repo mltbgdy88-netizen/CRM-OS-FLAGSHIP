@@ -1,0 +1,48 @@
+sprint: 29
+name: "Public API"
+source_status: FROM_RECONSTRUCTED_CONTENT
+objective: "Implement Public API as a production-ready CRM OS module slice."
+domain: "Integration"
+module: "integration"
+architecture:
+  backend: "NestJS modular monolith"
+  frontend: "Next.js App Router"
+  database: "PostgreSQL with tenant_id and RLS"
+  events: "Domain events with audit trace"
+entities:
+  - api_keys
+  - oauth_clients
+  - oauth_tokens
+  - api_usage_logs
+permissions:
+  - api.manage
+  - developer.portal.read
+events:
+  - APIKeyCreated
+  - APICallLogged
+api:
+  - "GET /developer/api-keys"
+  - "POST /developer/api-keys"
+  - "GET /public/v1/customers"
+ui:
+  requires_app_shell: true
+  requires_loading_state: true
+  requires_empty_state: true
+  requires_error_state: true
+  requires_permission_state: true
+tests:
+  - unit
+  - integration
+  - rls
+  - permission_guard
+  - api_contract
+  - frontend_states
+definition_of_done:
+  - backend_complete
+  - frontend_complete_when_applicable
+  - migration_complete
+  - rls_policy_complete
+  - permissions_registered
+  - events_registered
+  - tests_pass
+  - documentation_updated

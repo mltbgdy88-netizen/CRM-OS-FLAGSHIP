@@ -1,54 +1,25 @@
 # 00 Cursor Sprint-01 Hard Guard
 
-Source Status: CANON_FIXED_FOR_CURSOR_READY_v1.1
+Source Status: COMPLETED — SUPERSEDED BY 00-sprint-02-hard-guard.md
 
-## Active Sprint
+## Status
 
-Only Sprint-01 Repository Bootstrap is active.
+Sprint-01 Repository Bootstrap is **complete** and frozen.
 
-## Before Code
+Do not modify Sprint-01 scope except bootstrap hygiene fixes explicitly requested.
 
-Cursor must first return a plan and stop.
-
-The plan must include:
-
-```text
-1. canonical source order
-2. exact Sprint-01 scope
-3. files to create/change
-4. commands to run
-5. explicitly forbidden implementations
-```
-
-## Sprint-01 Allowed
+## Historical Scope (Completed)
 
 ```text
 - monorepo foundation
-- NestJS skeleton
+- NestJS skeleton + GET /health
 - Next.js skeleton
-- shared/database package skeletons
+- packages/shared + packages/database skeletons (no business schema)
 - Docker Compose PostgreSQL + Redis
-- .env.example
-- GitHub Actions CI skeleton
-- health endpoint only
+- GitHub Actions CI
+- pnpm sprint:01:verify
 ```
 
-## Sprint-01 Forbidden
+## Active Sprint
 
-```text
-- CRM business modules
-- real auth
-- tenant/user/audit implementation
-- RLS business schema
-- AI features
-- quote/order/inventory/finance modules
-- uncontrolled generator output
-```
-
-## Queue Decision
-
-Use Redis + BullMQ for initial queue/runtime planning. Do not add RabbitMQ in Sprint-01.
-
-## Prisma + RLS Decision
-
-No tenant-scoped data access may bypass tenant-aware repository rules. Sprint-01 must not implement real tenant-owned tables.
+See `.cursor/rules/00-sprint-02-hard-guard.md`.

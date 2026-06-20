@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { getDatabaseConfigFromEnv } from './index';
+import { getDatabaseConfigFromEnv } from './config';
 
-describe('@crm-os/database', () => {
+describe('@crm-os/database config', () => {
   it('reads DATABASE_URL from env', () => {
     const config = getDatabaseConfigFromEnv({
       DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/crmos',

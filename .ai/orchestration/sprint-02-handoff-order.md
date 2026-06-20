@@ -65,3 +65,15 @@ sessions/devices   → user-owned; active tenant context on use
 ## Queue Runtime
 
 Redis + BullMQ only. RabbitMQ deferred.
+
+## DevOps CI gate (TODO — before PR-final)
+
+RLS cross-tenant proof must run against **real PostgreSQL** in CI. Do not treat skipped RLS tests in generic `pnpm test` as Sprint-02 acceptance.
+
+```bash
+pnpm db:migrate
+pnpm db:seed
+pnpm db:test:rls
+```
+
+Wire the above in GitHub Actions with a PostgreSQL service before merging `agent/sprint-02-auth-tenant-iam` → `main`. Root placeholder: `pnpm db:migrate:check`.

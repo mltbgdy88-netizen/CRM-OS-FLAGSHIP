@@ -89,3 +89,109 @@ a {
 .form-message--success {
   color: #7ddea3;
 }
+
+.app-shell__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #24304d;
+  background: #121a2e;
+}
+
+.app-shell__brand {
+  font-weight: 700;
+}
+
+.app-shell__nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.app-shell__nav button {
+  background: transparent;
+  border: 1px solid #24304d;
+  color: #e8ecf5;
+  border-radius: 8px;
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+}
+
+.app-shell__content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.customer-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.customer-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #24304d;
+}
+
+.customer-list__meta {
+  color: #b8c4dc;
+  font-size: 0.875rem;
+}
+
+.state-message {
+  margin: 1rem 0;
+}
+
+.state-message--error {
+  color: #ff8a8a;
+}
+
+.pagination {
+  color: #b8c4dc;
+  font-size: 0.875rem;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.edit-form {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.edit-form input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #24304d;
+  border-radius: 8px;
+  background: #0b1020;
+  color: #e8ecf5;
+}
+
+.edit-form button,
+.customer-create-form button {
+  width: fit-content;
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #3b6cff;
+  color: #fff;
+  cursor: pointer;
+}

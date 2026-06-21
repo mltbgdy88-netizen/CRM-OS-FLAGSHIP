@@ -19,6 +19,9 @@ export default function HomePage() {
         <p>
           <Link href="/login">Sign in (Sprint-02 Slice A)</Link>
         </p>
+        <p>
+          <Link href="/customers">Customer list (Sprint-03)</Link>
+        </p>
       </div>
     </main>
   );

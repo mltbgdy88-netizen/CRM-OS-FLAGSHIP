@@ -29,4 +29,5 @@ Required env for IAM integration tests:
 - `API_PORT` — optional, default `3001`
 
 Full environment reference: `docs/api/sprint-02-environment.md`  
-OpenAPI-style contract: `docs/api/sprint-02-iam-openapi.md`
+OpenAPI-style contract: `docs/api/sprint-02-iam-openapi.md`  
+Sprint-03 customer API: `docs/api/sprint-03-customer-openapi.md`

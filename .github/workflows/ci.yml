@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - agent/sprint-02-auth-tenant-iam
+      - agent/sprint-03-customer-core
 
 jobs:
   workspace-check:
@@ -82,3 +83,47 @@ jobs:
 
       - name: Sprint-02 verify gate
         run: pnpm sprint:02:verify
+
+  sprint-03-verify:
+    name: Sprint-03 Verify (preparatory)
+    runs-on: ubuntu-latest
+    # Runs expanded sprint:03:verify; finalize after Frontend PR merges to integration.
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: crmos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/crmos
+      DATABASE_APP_URL: postgresql://crmos_app:crmos_app@localhost:5432/crmos
+      JWT_SECRET: ci-test-jwt-secret-not-for-production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Sprint-03 verify gate
+        run: pnpm sprint:03:verify

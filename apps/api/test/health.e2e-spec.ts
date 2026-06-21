@@ -1,22 +1,24 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
+import { HealthModule } from '../src/health/health.module';
 
 describe('Health (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [HealthModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1', { exclude: ['health'] });
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   it('GET /health returns ok', () => {

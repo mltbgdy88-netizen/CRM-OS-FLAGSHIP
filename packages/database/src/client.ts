@@ -2,7 +2,13 @@ import { PrismaClient } from '@prisma/client';
 
 let prismaSingleton: PrismaClient | undefined;
 
-export function createPrismaClient(): PrismaClient {
+export function createPrismaClient(options?: { datasourceUrl?: string }): PrismaClient {
+  if (options?.datasourceUrl) {
+    return new PrismaClient({
+      datasources: { db: { url: options.datasourceUrl } },
+    });
+  }
+
   return new PrismaClient();
 }
 

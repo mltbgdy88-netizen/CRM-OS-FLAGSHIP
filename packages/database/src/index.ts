@@ -2,8 +2,10 @@ export { createPrismaClient, disconnectPrismaClient, getPrismaClient } from './c
 export type { DatabaseConfig } from './config';
 export { getDatabaseConfigFromEnv } from './config';
 export { applyMigration, MIGRATION_BAND } from './migrate';
+export { applyMigrationFromEnv } from './migrate-from-env';
 export { SEED_ADMIN_PASSWORD, SEED_IDS, SEED_PERMISSIONS } from './seed/constants';
 export { seedIamData } from './seed/index';
+export { seedIamFromEnv } from './seed/from-env';
 export {
   getAppDatabaseUrlFromEnv,
   setTenantContext,

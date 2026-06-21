@@ -12,13 +12,13 @@ Last updated: Phase 4 gate activation on `agent/sprint-02-auth-tenant-iam`.
 | **2.5** | IAM documentation | **Complete** | `5971e11` |
 | **3A** | Frontend Slice A (login + auth wiring) | **Complete** | PR #3 → squash `a6fc8d2` |
 | **3B** | Frontend IAM admin (users, roles, sessions) | **Disabled** | locks.yaml + hard guard |
-| **4** | DevOps CI gate, QA, Security, Review, Release | **In progress** | `sprint-02-verify` CI job + gate reports |
+| **4** | DevOps CI gate, QA, Security, Review, Release | **Complete** | CI run `27890336405`; gate reports in `docs/qa/`, `docs/security/`, `docs/release/` |
 
 ## Integration branch
 
 ```text
 Branch: agent/sprint-02-auth-tenant-iam
-HEAD:   a6fc8d2 feat(sprint-02): add frontend login slice
+HEAD:   3793211 fix(sprint-02): generate Prisma client before db seed in sprint:02:verify
 main:   unchanged (5f9c3d0) — Sprint-02 not merged to main
 ```
 
@@ -33,7 +33,7 @@ main:   unchanged (5f9c3d0) — Sprint-02 not merged to main
 | `pnpm --filter @crm-os/web test` | Pass (9/9) |
 | `pnpm db:test:rls` | Pass (5/5) |
 | GitHub Actions PR #3 run `27889880359` | Success |
-| GitHub Actions `sprint-02-verify` job | Pending Phase 4 push |
+| GitHub Actions `sprint-02-verify` job | **Pass** — run `27890336405` on `3793211` |
 
 ## Pending before PR-final → `main`
 

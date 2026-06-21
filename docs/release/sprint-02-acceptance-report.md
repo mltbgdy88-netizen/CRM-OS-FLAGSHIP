@@ -21,7 +21,7 @@
 | Gate | Command / job | Status |
 |------|---------------|--------|
 | Sprint-01 workspace | `workspace-check` job — lint, typecheck, test, build | Pass (existing) |
-| Sprint-02 full | `sprint-02-verify` job — PostgreSQL 16 + `pnpm sprint:02:verify` | Pending push (DevOps) |
+| Sprint-02 full | `sprint-02-verify` job — PostgreSQL 16 + `pnpm sprint:02:verify` | **Pass** — run `27890336405` |
 | Prior PR CI | Run `27889880359` (frontend login PR) | Success |
 
 ## RLS evidence

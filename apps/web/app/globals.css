@@ -34,3 +34,58 @@ a {
   padding: 1.25rem;
   background: #121a2e;
 }
+
+.login-card form {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.login-card label {
+  font-size: 0.875rem;
+  color: #b8c4dc;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #24304d;
+  border-radius: 8px;
+  background: #0b1020;
+  color: #e8ecf5;
+}
+
+.login-card button {
+  margin-top: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #3b6cff;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.security-warning {
+  font-size: 0.8125rem;
+  color: #f0b429;
+  margin: 0 0 0.5rem;
+}
+
+.form-message {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+
+.form-message--error {
+  color: #ff8a8a;
+}
+
+.form-message--success {
+  color: #7ddea3;
+}

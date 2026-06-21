@@ -58,4 +58,4 @@
 
 ## Acceptance verdict
 
-**Conditional accept** — Sprint-02 Phases 0–3A complete. Ready for final PR to `main` after Phase 4 CI push confirms `sprint-02-verify` passes on GitHub Actions.
+**Accept** — Sprint-02 Phases 0–4 complete. Integration branch ready for final PR to `main` after human review sign-off.

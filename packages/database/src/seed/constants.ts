@@ -17,6 +17,16 @@ export const SEED_IDS = {
   permissionRoleManage: '10000000-0000-4000-8000-000000000004',
   auditDefault: '20000000-0000-4000-8000-000000000001',
   auditTenantB: '20000000-0000-4000-8000-000000000002',
+  permissionCustomerRead: '30000000-0000-4000-8000-000000000001',
+  permissionCustomerCreate: '30000000-0000-4000-8000-000000000002',
+  permissionCustomerUpdate: '30000000-0000-4000-8000-000000000003',
+  permissionCustomerDelete: '30000000-0000-4000-8000-000000000004',
+  customerDefault: '40000000-0000-4000-8000-000000000001',
+  customerTenantB: '40000000-0000-4000-8000-000000000002',
+  noteDefault: '41000000-0000-4000-8000-000000000001',
+  noteTenantB: '41000000-0000-4000-8000-000000000002',
+  fileDefault: '42000000-0000-4000-8000-000000000001',
+  fileTenantB: '42000000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -43,6 +53,33 @@ export const SEED_PERMISSIONS = [
     code: 'role.manage',
     module: 'role',
     description: 'Manage roles and permission bindings',
+  },
+] as const;
+
+export const SEED_CUSTOMER_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionCustomerRead,
+    code: 'customer.read',
+    module: 'customer',
+    description: 'Read customers and related aggregation data',
+  },
+  {
+    id: SEED_IDS.permissionCustomerCreate,
+    code: 'customer.create',
+    module: 'customer',
+    description: 'Create customers',
+  },
+  {
+    id: SEED_IDS.permissionCustomerUpdate,
+    code: 'customer.update',
+    module: 'customer',
+    description: 'Update customers',
+  },
+  {
+    id: SEED_IDS.permissionCustomerDelete,
+    code: 'customer.delete',
+    module: 'customer',
+    description: 'Soft-delete customers',
   },
 ] as const;
 

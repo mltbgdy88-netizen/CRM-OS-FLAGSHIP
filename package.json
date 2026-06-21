@@ -11,12 +11,14 @@
     "test:e2e": "echo e2e-not-configured-yet",
     "db:migrate": "pnpm --filter @crm-os/database migrate",
     "db:seed": "pnpm --filter @crm-os/database seed",
+    "db:test:rls": "pnpm --filter @crm-os/database test:rls",
     "generate:module": "echo generator-runtime-not-configured-yet",
     "validate:specs": "echo spec-validator-not-configured-yet",
     "openapi:validate": "echo openapi-validation-not-configured",
-    "db:migrate:check": "echo migration-check-not-configured",
+    "db:migrate:check": "pnpm sprint:02:verify",
     "ci:check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "sprint:01:verify": "pnpm run ci:check"
+    "sprint:01:verify": "pnpm run ci:check",
+    "sprint:02:verify": "pnpm --filter @crm-os/database prisma:generate && pnpm db:migrate && pnpm db:seed && pnpm db:test:rls && pnpm turbo build --filter=@crm-os/api... --filter=@crm-os/database... --filter=@crm-os/web... && pnpm --filter @crm-os/api test && pnpm --filter @crm-os/database test && pnpm --filter @crm-os/web test && pnpm sprint:01:verify"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

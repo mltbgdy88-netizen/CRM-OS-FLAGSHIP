@@ -1,9 +1,92 @@
+# File ownership locks for parallel agents
+# Source Status: SPRINT_02_ORCHESTRATION_ACTIVE_v1.1
+
 locks:
+  # Phase 1 — Database agent exclusive
+  - path: packages/database/prisma
+    owner: database-agent
+    phase: "1"
+    notes: Schema, migrations, RLS SQL, seeds
+
   - path: packages/database/migrations
     owner: database-agent
+    phase: "1"
+    notes: SQL migration band 002_iam
+
+  - path: packages/database/src
+    owner: database-agent
+    phase: "1"
+    shared_read: backend-agent
+    notes: Tenant context helpers; backend consumes after Phase 1 handoff
+
+  # Phase 2 — Backend agent exclusive
   - path: apps/api/src/modules
     owner: backend-agent
-  - path: apps/web/src/features
+    phase: "2"
+    notes: IAM module, auth, guards, audit, events
+
+  - path: apps/api/src/common
+    owner: backend-agent
+    phase: "2"
+    shared_read: architect-agent
+    notes: TenantContext, PermissionGuard, shared middleware
+
+  - path: apps/api/test
+    owner: backend-agent
+    phase: "2"
+    shared_read: qa-agent
+    notes: IAM integration and guard tests
+
+  - path: packages/permissions
+    owner: backend-agent
+    phase: "2"
+    notes: Global permission registry
+
+  - path: packages/events
+    owner: backend-agent
+    phase: "2"
+    notes: IAM domain event types
+
+  # Phase 3A — Frontend agent (Slice A only)
+  - path: apps/web/app
     owner: frontend-agent
+    phase: "3A"
+    notes: Login and auth routes only until Slice B enabled
+
+  - path: apps/web/__tests__
+    owner: frontend-agent
+    phase: "3A"
+    shared_read: qa-agent
+
+  # Phase 3B — DISABLED until backend IAM + RLS proof
+  - path: apps/web/app/(iam)
+    owner: frontend-agent
+    phase: "3B"
+    status: disabled
+    disabled_until:
+      - sprint-02-db-iam-schema
+      - sprint-02-backend-iam-core
+      - rls_cross_tenant_tests_pass
+      - security_agent_signoff
+
+  # QA exclusive
   - path: tests/e2e
     owner: qa-agent
+    phase: "4"
+
+  # Orchestration — Architect / release
+  - path: .ai/orchestration
+    owner: architect-agent
+    phase: "0-4"
+    shared_read: all-agents
+
+  - path: .cursor/rules
+    owner: architect-agent
+    phase: "0"
+    notes: Sprint guard updates only with explicit orchestration task
+
+  # Do not lock (read-only for agents)
+  read_only:
+    - canon/**
+    - specs/sprints/sprint-03*
+    - _archive/**

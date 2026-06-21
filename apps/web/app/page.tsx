@@ -16,6 +16,9 @@ export default function HomePage() {
         <p>
           <Link href="/health">View health/status placeholder</Link>
         </p>
+        <p>
+          <Link href="/login">Sign in (Sprint-02 Slice A)</Link>
+        </p>
       </div>
     </main>
   );

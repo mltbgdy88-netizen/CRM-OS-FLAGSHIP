@@ -1,23 +1,195 @@
+# CRM OS Agent Task Queue
+# Source Status: SPRINT_02_ORCHESTRATION_ACTIVE_v1.1
+
+sprint_01:
+  status: completed
+  verify_command: pnpm sprint:01:verify
+  integration_branch: main
+  notes: Bootstrap merged; CI green on CRM-OS-FLAGSHIP
+
+sprint_02:
+  status: orchestration_active
+  phase: "0.2"
+  integration_branch: agent/sprint-02-auth-tenant-iam
+  target_main: main
+  frontend_slice_b: disabled_until_backend_rls_proof
+  queue_runtime: redis_bullmq
+  rabbitmq: deferred
+
+  iam_data_ownership:
+    users: global_identity
+    tenants: tenant_business_account
+    tenant_members: user_to_tenant_membership
+    roles: tenant_owned
+    permissions: global_registry
+    role_permissions: mapping
+    member_roles: mapping
+    audit_logs: tenant_owned
+    sessions: user_owned_with_active_tenant_context
+    devices: user_owned_with_active_tenant_context
+
 tasks:
+  # --- Sprint-01 (completed) ---
   - id: sprint-01-repo-bootstrap
     sprint: 1
     module: foundation
     agent: devops
-    branch: agent/sprint-01-repo-bootstrap
-    status: ready
+    branch: main
+    status: completed
+
   - id: sprint-01-api-skeleton
     sprint: 1
     module: api
     agent: backend
-    branch: agent/sprint-01-api-skeleton
+    branch: main
     depends_on:
       - sprint-01-repo-bootstrap
-    status: backlog
+    status: completed
+
   - id: sprint-01-web-skeleton
     sprint: 1
     module: web
     agent: frontend
-    branch: agent/sprint-01-web-skeleton
+    branch: main
     depends_on:
       - sprint-01-repo-bootstrap
-    status: backlog
+    status: completed
+
+  # --- Sprint-02 Phase 0 (orchestration) ---
+  - id: sprint-02-orchestration-activation
+    sprint: 2
+    phase: "0.2"
+    module: orchestration
+    agent: architect
+    branch: agent/sprint-02-auth-tenant-iam
+    status: completed
+    outputs:
+      - .cursor/rules/00-sprint-02-hard-guard.md
+      - AGENTS.md
+      - .ai/orchestration/task-queue.yaml
+      - .ai/orchestration/locks.yaml
+      - .ai/orchestration/sprint-02-handoff-order.md
+      - .ai/orchestration/sprint-02-branch-plan.md
+
+  # --- Sprint-02 Phase 1 (blocked until orchestration complete) ---
+  - id: sprint-02-db-iam-schema
+    sprint: 2
+    phase: "1"
+    module: database
+    agent: database
+    branch: agent/sprint-02-db-iam-migration
+    depends_on:
+      - sprint-02-orchestration-activation
+    status: blocked
+    scope:
+      - prisma schema draft for IAM entities
+      - migration band 002_iam
+      - rls policies for tenant-owned tables
+      - seeds
+      - rls integration tests
+    forbidden_until_started:
+      - apps/api product modules
+      - frontend screens
+
+  # --- Sprint-02 Phase 2 (backend) ---
+  - id: sprint-02-backend-iam-core
+    sprint: 2
+    phase: "2"
+    module: iam
+    agent: backend
+    branch: agent/sprint-02-backend-iam-core
+    depends_on:
+      - sprint-02-db-iam-schema
+    status: blocked
+    scope:
+      - tenant context middleware
+      - jwt auth skeleton
+      - refresh token skeleton
+      - permission guard
+      - audit log base
+      - domain events UserInvited UserLoggedIn RoleChanged
+      - endpoints POST /auth/login POST /auth/refresh GET /users POST /roles
+
+  - id: sprint-02-permissions-events-registry
+    sprint: 2
+    phase: "2"
+    module: packages
+    agent: backend
+    branch: agent/sprint-02-backend-iam-core
+    depends_on:
+      - sprint-02-db-iam-schema
+    status: blocked
+    scope:
+      - packages/permissions registry
+      - packages/events registry
+
+  # --- Sprint-02 Phase 3 (frontend slice A only) ---
+  - id: sprint-02-frontend-login
+    sprint: 2
+    phase: "3A"
+    module: web-auth
+    agent: frontend
+    branch: agent/sprint-02-frontend-login
+    depends_on:
+      - sprint-02-backend-iam-core
+    status: blocked
+    scope:
+      - login screen
+      - auth session wiring
+      - loading error permission states
+
+  - id: sprint-02-frontend-iam-admin
+    sprint: 2
+    phase: "3B"
+    module: web-iam-admin
+    agent: frontend
+    branch: agent/sprint-02-frontend-iam-admin
+    depends_on:
+      - sprint-02-backend-iam-core
+    status: disabled
+    disabled_reason: backend_iam_rls_proof_not_passed
+    scope:
+      - user management
+      - role permission matrix
+      - session device panel
+
+  # --- Sprint-02 Phase 4 (validation) ---
+  - id: sprint-02-qa-gates
+    sprint: 2
+    phase: "4"
+    module: qa
+    agent: qa
+    branch: agent/sprint-02-auth-tenant-iam
+    depends_on:
+      - sprint-02-frontend-login
+    status: blocked
+
+  - id: sprint-02-security-review
+    sprint: 2
+    phase: "4"
+    module: security
+    agent: security
+    branch: agent/sprint-02-auth-tenant-iam
+    depends_on:
+      - sprint-02-qa-gates
+    status: blocked
+
+  - id: sprint-02-pr-review
+    sprint: 2
+    phase: "4"
+    module: review
+    agent: reviewer
+    branch: agent/sprint-02-auth-tenant-iam
+    depends_on:
+      - sprint-02-security-review
+    status: blocked
+
+  - id: sprint-02-merge-main
+    sprint: 2
+    phase: "4"
+    module: release
+    agent: release
+    branch: main
+    depends_on:
+      - sprint-02-pr-review
+    status: blocked

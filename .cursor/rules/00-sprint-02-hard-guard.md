@@ -1,19 +1,22 @@
 # 00 Cursor Sprint-02 Hard Guard
 
-Source Status: SPRINT_02_ORCHESTRATION_ACTIVE_v1.1
+Source Status: SPRINT_02_COMPLETE_SUPERSEDED_v1.1
 
-## Active Sprint
+> **Status: COMPLETE / SUPERSEDED**
+>
+> Sprint-02 merged to `main` @ `c6657a6`, tag `sprint-02-full-pass`.
+> Active guard: `.cursor/rules/00-sprint-03-hard-guard.md`
+>
+> This file is retained for historical reference. Do not re-activate Sprint-02
+> orchestration tasks. Preserve Sprint-02 IAM behavior — see Sprint-03 guard.
 
-Only Sprint-02 Auth + Tenant + IAM orchestration and approved slices are active.
+## Active Sprint (Historical)
+
+Sprint-02 Auth + Tenant + IAM — **COMPLETE**.
 
 Sprint-01 is complete. Do not regress bootstrap scope.
 
-## Before Product Code (Phase 1+)
-
-Each implementation slice must start with a plan and stop for approval unless the
-active task explicitly authorizes coding.
-
-## IAM Data Ownership (Canonical)
+## IAM Data Ownership (Canonical — preserved in production)
 
 ```text
 users              = global identity
@@ -32,45 +35,27 @@ RLS applies to tenant-owned tables. Global tables (`users`, `permissions`) use
 application-level access rules; tenant-owned tables must fail closed without
 `app.tenant_id`.
 
-## Sprint-02 Allowed (when slice is authorized)
+## Sprint-02 Delivered Scope (frozen)
 
 ```text
-- Phase 0 orchestration updates only (current phase)
-- Phase 1: packages/database Prisma schema draft + 002_iam migration + RLS + seeds
-- Phase 2: backend IAM module, tenant context, auth skeleton, guards, audit, events
-- Phase 3 Frontend Slice A only: login + auth wiring + UI states
-- OpenAPI, permission registry, event registry, tests for IAM scope
-- CI migration check scaffolding (no product behavior yet in Phase 0)
+- 002_iam migration band + RLS + seeds
+- IAM backend: auth login/refresh, users, roles, guards, audit, events
+- Frontend Slice A: login + auth wiring + UI states
+- sprint:02:verify green; CI PostgreSQL RLS gate on main
 ```
 
-## Sprint-02 Forbidden
+## Sprint-02 Forbidden (still applies as regression guard)
 
 ```text
-- Sprint-03+ CRM modules (customer, lead, quote, order, inventory, finance, etc.)
-- Frontend Slice B (user admin, role matrix, session/device panel) until backend IAM + RLS proof passes
-- AI Gateway, Ask CRM, workflow engine, generator runtime execution
-- RabbitMQ service or wiring
+- Modifying 002_iam migration SQL after Sprint-02 acceptance
+- Changing login/refresh/PermissionGuard semantics without explicit sprint
+- Sprint-03+ CRM modules without Sprint-03 orchestration
+- Frontend Slice B until explicitly scheduled in a future sprint
+- RabbitMQ, AI Gateway, workflow engine
 - Production secrets in repo
-- Prisma migrations before Phase 1 Database Agent task is explicitly started
-- Application/product code during Phase 0 orchestration
+- BYPASSRLS or tenant context bypass
 ```
 
 ## Queue Decision
 
 Redis + BullMQ is canon for queue/runtime planning. RabbitMQ remains deferred.
-
-## Prisma + RLS Decision
-
-Tenant-scoped operations must run through tenant-aware repository boundaries with
-transaction-local `app.tenant_id` / `app.user_id` context. No BYPASSRLS roles.
-
-## Frontend Gating
-
-Frontend Slice B is disabled until:
-
-```text
-[ ] 002_iam migration merged locally
-[ ] RLS cross-tenant proof tests pass
-[ ] Backend IAM endpoints + PermissionGuard integration tests pass
-[ ] Security agent sign-off on IAM data plane
-```

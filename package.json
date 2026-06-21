@@ -18,7 +18,8 @@
     "db:migrate:check": "pnpm sprint:02:verify",
     "ci:check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "sprint:01:verify": "pnpm run ci:check",
-    "sprint:02:verify": "pnpm --filter @crm-os/database prisma:generate && pnpm db:migrate && pnpm db:seed && pnpm db:test:rls && pnpm turbo build --filter=@crm-os/api... --filter=@crm-os/database... --filter=@crm-os/web... && pnpm --filter @crm-os/api test && pnpm --filter @crm-os/database test && pnpm --filter @crm-os/web test && pnpm sprint:01:verify"
+    "sprint:02:verify": "pnpm --filter @crm-os/database prisma:generate && pnpm db:migrate && pnpm db:seed && pnpm db:test:rls && pnpm turbo build --filter=@crm-os/api... --filter=@crm-os/database... --filter=@crm-os/web... && pnpm --filter @crm-os/api test && pnpm --filter @crm-os/database test && pnpm --filter @crm-os/web test && pnpm sprint:01:verify",
+    "sprint:03:verify": "pnpm sprint:02:verify"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

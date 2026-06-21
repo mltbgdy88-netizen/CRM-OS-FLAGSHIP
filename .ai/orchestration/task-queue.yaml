@@ -1,5 +1,5 @@
 # CRM OS Agent Task Queue
-# Source Status: SPRINT_02_ORCHESTRATION_ACTIVE_v1.1
+# Source Status: SPRINT_03_ORCHESTRATION_ACTIVE_v1.1
 
 sprint_01:
   status: completed
@@ -8,25 +8,46 @@ sprint_01:
   notes: Bootstrap merged; CI green on CRM-OS-FLAGSHIP
 
 sprint_02:
+  status: completed
+  verify_command: pnpm sprint:02:verify
+  integration_branch: main
+  tag: sprint-02-full-pass
+  baseline_commit: c6657a6
+  notes: Auth + Tenant + IAM merged; CI PostgreSQL RLS gate green
+
+sprint_03:
   status: orchestration_active
   phase: "0.2"
-  integration_branch: agent/sprint-02-auth-tenant-iam
+  integration_branch: agent/sprint-03-customer-core
   target_main: main
-  frontend_slice_b: disabled_until_backend_rls_proof
+  migration_band: 003_crm
+  frontend_iam_slice_b: disabled
   queue_runtime: redis_bullmq
   rabbitmq: deferred
+  verify_command: pnpm sprint:03:verify
+  verify_ci_required: false
+  verify_ci_wiring_phase: "4"
+  verify_ci_owner: devops
+  notes: >
+    sprint:03:verify is planned in package.json. Baseline extends sprint:02:verify.
+    Customer-specific RLS/API/frontend gates added in Phase 4 DevOps — not CI-required until then.
 
-  iam_data_ownership:
-    users: global_identity
-    tenants: tenant_business_account
-    tenant_members: user_to_tenant_membership
-    roles: tenant_owned
-    permissions: global_registry
-    role_permissions: mapping
-    member_roles: mapping
-    audit_logs: tenant_owned
-    sessions: user_owned_with_active_tenant_context
-    devices: user_owned_with_active_tenant_context
+  crm_data_ownership:
+    customers: tenant_owned_rls
+    customer_contacts: tenant_owned_read_aggregation_only
+    customer_addresses: tenant_owned_read_aggregation_only
+    customer_tags: tenant_owned_read_aggregation_only
+    customer_notes: tenant_owned_read_aggregation_only
+    customer_files: metadata_only_no_upload
+
+  api_lock:
+    allowed:
+      - "GET /api/v1/customers"
+      - "POST /api/v1/customers"
+      - "GET /api/v1/customers/{id}"
+      - "PATCH /api/v1/customers/{id}"
+    forbidden:
+      - separate CRUD for contacts addresses tags notes files
 
 tasks:
   # --- Sprint-01 (completed) ---
@@ -55,7 +76,7 @@ tasks:
       - sprint-01-repo-bootstrap
     status: completed
 
-  # --- Sprint-02 Phase 0 (orchestration) ---
+  # --- Sprint-02 (completed) ---
   - id: sprint-02-orchestration-activation
     sprint: 2
     phase: "0.2"
@@ -63,52 +84,22 @@ tasks:
     agent: architect
     branch: agent/sprint-02-auth-tenant-iam
     status: completed
-    outputs:
-      - .cursor/rules/00-sprint-02-hard-guard.md
-      - AGENTS.md
-      - .ai/orchestration/task-queue.yaml
-      - .ai/orchestration/locks.yaml
-      - .ai/orchestration/sprint-02-handoff-order.md
-      - .ai/orchestration/sprint-02-branch-plan.md
 
-  # --- Sprint-02 Phase 1 (blocked until orchestration complete) ---
   - id: sprint-02-db-iam-schema
     sprint: 2
     phase: "1"
     module: database
     agent: database
     branch: agent/sprint-02-db-iam-migration
-    depends_on:
-      - sprint-02-orchestration-activation
-    status: blocked
-    scope:
-      - prisma schema draft for IAM entities
-      - migration band 002_iam
-      - rls policies for tenant-owned tables
-      - seeds
-      - rls integration tests
-    forbidden_until_started:
-      - apps/api product modules
-      - frontend screens
+    status: completed
 
-  # --- Sprint-02 Phase 2 (backend) ---
   - id: sprint-02-backend-iam-core
     sprint: 2
     phase: "2"
     module: iam
     agent: backend
     branch: agent/sprint-02-backend-iam-core
-    depends_on:
-      - sprint-02-db-iam-schema
-    status: blocked
-    scope:
-      - tenant context middleware
-      - jwt auth skeleton
-      - refresh token skeleton
-      - permission guard
-      - audit log base
-      - domain events UserInvited UserLoggedIn RoleChanged
-      - endpoints POST /auth/login POST /auth/refresh GET /users POST /roles
+    status: completed
 
   - id: sprint-02-permissions-events-registry
     sprint: 2
@@ -116,73 +107,44 @@ tasks:
     module: packages
     agent: backend
     branch: agent/sprint-02-backend-iam-core
-    depends_on:
-      - sprint-02-db-iam-schema
-    status: blocked
-    scope:
-      - packages/permissions registry
-      - packages/events registry
+    status: completed
 
-  # --- Sprint-02 Phase 3 (frontend slice A only) ---
   - id: sprint-02-frontend-login
     sprint: 2
     phase: "3A"
     module: web-auth
     agent: frontend
     branch: agent/sprint-02-frontend-login
-    depends_on:
-      - sprint-02-backend-iam-core
-    status: blocked
-    scope:
-      - login screen
-      - auth session wiring
-      - loading error permission states
+    status: completed
 
   - id: sprint-02-frontend-iam-admin
     sprint: 2
     phase: "3B"
     module: web-iam-admin
     agent: frontend
-    branch: agent/sprint-02-frontend-iam-admin
-    depends_on:
-      - sprint-02-backend-iam-core
     status: disabled
-    disabled_reason: backend_iam_rls_proof_not_passed
-    scope:
-      - user management
-      - role permission matrix
-      - session device panel
+    disabled_reason: deferred_future_sprint
 
-  # --- Sprint-02 Phase 4 (validation) ---
   - id: sprint-02-qa-gates
     sprint: 2
     phase: "4"
     module: qa
     agent: qa
-    branch: agent/sprint-02-auth-tenant-iam
-    depends_on:
-      - sprint-02-frontend-login
-    status: blocked
+    status: completed
 
   - id: sprint-02-security-review
     sprint: 2
     phase: "4"
     module: security
     agent: security
-    branch: agent/sprint-02-auth-tenant-iam
-    depends_on:
-      - sprint-02-qa-gates
-    status: blocked
+    status: completed
 
   - id: sprint-02-pr-review
     sprint: 2
     phase: "4"
     module: review
     agent: reviewer
-    branch: agent/sprint-02-auth-tenant-iam
-    depends_on:
-      - sprint-02-security-review
-    status: blocked
+    status: completed
 
   - id: sprint-02-merge-main
     sprint: 2
@@ -190,6 +152,152 @@ tasks:
     module: release
     agent: release
     branch: main
+    status: completed
+
+  # --- Sprint-03 Phase 0 (orchestration) ---
+  - id: sprint-03-orchestration-activation
+    sprint: 3
+    phase: "0.2"
+    module: orchestration
+    agent: architect
+    branch: agent/sprint-03-customer-core
+    status: completed
+    outputs:
+      - .cursor/rules/00-sprint-03-hard-guard.md
+      - .cursor/rules/00-sprint-02-hard-guard.md
+      - AGENTS.md
+      - .ai/orchestration/task-queue.yaml
+      - .ai/orchestration/locks.yaml
+      - .ai/orchestration/sprint-03-handoff-order.md
+      - .ai/orchestration/sprint-03-branch-plan.md
+      - package.json sprint:03:verify planned definition
+
+  # --- Sprint-03 Phase 1 (blocked until orchestration complete) ---
+  - id: sprint-03-db-crm-schema
+    sprint: 3
+    phase: "1"
+    module: database
+    agent: database
+    branch: agent/sprint-03-db-crm-migration
     depends_on:
-      - sprint-02-pr-review
+      - sprint-03-orchestration-activation
+    status: blocked
+    scope:
+      - prisma schema for CRM customer entities
+      - migration band 003_crm only
+      - rls policies for tenant-owned CRM tables
+      - seeds for customer demo data
+      - rls integration tests for CRM tables
+    forbidden:
+      - packages/database/migrations/002_iam/**
+      - file upload storage cdn columns beyond metadata
+
+  # --- Sprint-03 Phase 2 (backend) ---
+  - id: sprint-03-backend-customer-core
+    sprint: 3
+    phase: "2"
+    module: crm-customer
+    agent: backend
+    branch: agent/sprint-03-backend-customer
+    depends_on:
+      - sprint-03-db-crm-schema
+    status: blocked
+    scope:
+      - customer module repository service controller
+      - PermissionGuard on all customer endpoints
+      - audit log for create update
+      - CustomerCreated CustomerUpdated events
+      - GET POST GET-by-id PATCH customer endpoints only
+      - read aggregation of contacts addresses tags notes file metadata in detail
+    forbidden:
+      - separate CRUD routes for related entities
+      - changes to apps/api/src/modules/iam/**
+      - changes to auth guards login refresh semantics
+
+  - id: sprint-03-permissions-events-registry
+    sprint: 3
+    phase: "2"
+    module: packages
+    agent: backend
+    branch: agent/sprint-03-backend-customer
+    depends_on:
+      - sprint-03-db-crm-schema
+    status: blocked
+    scope:
+      - customer.read customer.create customer.update customer.delete in packages/permissions
+      - CustomerCreated CustomerUpdated in packages/events
+
+  # --- Sprint-03 Phase 3 (frontend — minimal AppShell) ---
+  - id: sprint-03-frontend-customer
+    sprint: 3
+    phase: "3"
+    module: web-customer
+    agent: frontend
+    branch: agent/sprint-03-frontend-customer
+    depends_on:
+      - sprint-03-backend-customer-core
+    status: blocked
+    scope:
+      - minimal AppShell layout shell navigation
+      - customer list page with loading empty error permission states
+      - customer detail basic 360 read-only related sections
+    forbidden:
+      - IAM Slice B admin screens
+      - lead pipeline quote order inventory finance UI
+      - file upload UI
+
+  # --- Sprint-03 Phase 4 (validation) ---
+  - id: sprint-03-qa-gates
+    sprint: 3
+    phase: "4"
+    module: qa
+    agent: qa
+    branch: agent/sprint-03-customer-core
+    depends_on:
+      - sprint-03-frontend-customer
+    status: blocked
+
+  - id: sprint-03-security-review
+    sprint: 3
+    phase: "4"
+    module: security
+    agent: security
+    branch: agent/sprint-03-customer-core
+    depends_on:
+      - sprint-03-qa-gates
+    status: blocked
+
+  - id: sprint-03-devops-ci-verify
+    sprint: 3
+    phase: "4"
+    module: devops
+    agent: devops
+    branch: agent/sprint-03-customer-core
+    depends_on:
+      - sprint-03-backend-customer-core
+    status: blocked
+    scope:
+      - extend sprint:03:verify with customer RLS API frontend gates
+      - wire sprint-03-verify job in GitHub Actions
+    notes: sprint:03:verify planned in Phase 0; CI wiring only in this task
+
+  - id: sprint-03-pr-review
+    sprint: 3
+    phase: "4"
+    module: review
+    agent: reviewer
+    branch: agent/sprint-03-customer-core
+    depends_on:
+      - sprint-03-security-review
+      - sprint-03-devops-ci-verify
+    status: blocked
+
+  - id: sprint-03-merge-main
+    sprint: 3
+    phase: "4"
+    module: release
+    agent: release
+    branch: main
+    depends_on:
+      - sprint-03-pr-review
     status: blocked

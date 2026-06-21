@@ -15,9 +15,10 @@
     "generate:module": "echo generator-runtime-not-configured-yet",
     "validate:specs": "echo spec-validator-not-configured-yet",
     "openapi:validate": "echo openapi-validation-not-configured",
-    "db:migrate:check": "echo TODO(Sprint-02-DevOps): add CI job with PostgreSQL service running: pnpm db:migrate && pnpm db:seed && pnpm db:test:rls before PR-final",
+    "db:migrate:check": "pnpm sprint:02:verify",
     "ci:check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "sprint:01:verify": "pnpm run ci:check"
+    "sprint:01:verify": "pnpm run ci:check",
+    "sprint:02:verify": "pnpm db:migrate && pnpm db:seed && pnpm db:test:rls && pnpm --filter @crm-os/api test && pnpm --filter @crm-os/database test && pnpm --filter @crm-os/web test && pnpm sprint:01:verify"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

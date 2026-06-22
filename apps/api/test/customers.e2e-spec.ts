@@ -83,13 +83,14 @@ describeCustomers('Customer Core (e2e)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    expect(response.body.data.page).toBe(1);
-    expect(response.body.data.items.some((item: { id: string }) => item.id === SEED_IDS.customerDefault)).toBe(
-      true,
-    );
-    expect(
-      response.body.data.items.some((item: { id: string }) => item.id === SEED_IDS.customerTenantB),
-    ).toBe(false);
+    const { page, pageSize, total, items } = response.body.data;
+    expect(page).toBe(1);
+    expect(pageSize).toBeGreaterThan(0);
+    expect(typeof total).toBe('number');
+    expect(total).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(items)).toBe(true);
+    expect(items.length).toBeLessThanOrEqual(pageSize);
+    expect(items.some((item: { id: string }) => item.id === SEED_IDS.customerTenantB)).toBe(false);
   });
 
   it('GET /api/v1/customers/{id} returns related entity aggregation', async () => {

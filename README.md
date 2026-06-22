@@ -71,7 +71,34 @@ pnpm --filter @crm-os/web dev
 - Web root: `http://localhost:3000`
 - Web status placeholder: `http://localhost:3000/health`
 
-Copy `.env.example` to `.env` before running apps against local Docker services.
+Copy `.env.example` to `.env` before running apps against local services.
+
+## Local proof database
+
+Sprint-02/03 gates require CRM-OS proof Postgres on **port 5433**. `localhost:5432` often belongs to another project and causes `auth_failed`.
+
+```bash
+export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/crmos
+export DATABASE_APP_URL=postgresql://crmos_app:crmos_app@127.0.0.1:5433/crmos
+export JWT_SECRET=change-me-local-only
+```
+
+Start proof Postgres if needed:
+
+```bash
+docker run --name crmos-sprint03-proof-pg \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=crmos \
+  -p 5433:5432 -d postgres:16-alpine
+```
+
+```bash
+pnpm db:migrate
+pnpm db:seed
+pnpm sprint:03:verify
+```
+
+See `docs/api/sprint-02-environment.md` for full variable reference.
 
 ---
 

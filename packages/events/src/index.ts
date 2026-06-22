@@ -66,3 +66,44 @@ export function createRoleChangedEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const CRM_EVENT_TYPES = {
+  CUSTOMER_CREATED: 'CustomerCreated',
+  CUSTOMER_UPDATED: 'CustomerUpdated',
+} as const;
+
+export type CrmEventType = (typeof CRM_EVENT_TYPES)[keyof typeof CRM_EVENT_TYPES];
+
+export function createCustomerCreatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  customerId: string;
+  displayName: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'customer',
+    aggregateId: input.customerId,
+    eventType: CRM_EVENT_TYPES.CUSTOMER_CREATED,
+    payload: { displayName: input.displayName },
+    createdAt: new Date(),
+  };
+}
+
+export function createCustomerUpdatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  customerId: string;
+  changes: Record<string, unknown>;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'customer',
+    aggregateId: input.customerId,
+    eventType: CRM_EVENT_TYPES.CUSTOMER_UPDATED,
+    payload: { changes: input.changes },
+    createdAt: new Date(),
+  };
+}

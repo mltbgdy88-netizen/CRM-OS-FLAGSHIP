@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { getDatabaseConfigFromEnv } from './config';
 import { applyMigration } from './migrate';
 import { SEED_IDS } from './seed/constants';
-import { seedIamData } from './seed/index';
+import { seedCrmData, seedIamData } from './seed/index';
 import { getAppDatabaseUrlFromEnv } from './tenant-context';
 
 async function withRlsContext<T>(
@@ -39,6 +39,7 @@ describe.skipIf(!canRunIntegration)('Sprint-02 IAM RLS proof', () => {
     const seedClient = await adminPool.connect();
     try {
       await seedIamData(seedClient);
+      await seedCrmData(seedClient);
     } finally {
       seedClient.release();
     }

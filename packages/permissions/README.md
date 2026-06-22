@@ -10,6 +10,10 @@ Sprint-02 global IAM permission registry.
 | `tenant.manage` | `PERMISSIONS.TENANT_MANAGE` |
 | `user.manage` | `PERMISSIONS.USER_MANAGE` |
 | `role.manage` | `PERMISSIONS.ROLE_MANAGE` |
+| `customer.read` | `PERMISSIONS.CUSTOMER_READ` |
+| `customer.create` | `PERMISSIONS.CUSTOMER_CREATE` |
+| `customer.update` | `PERMISSIONS.CUSTOMER_UPDATE` |
+| `customer.delete` | `PERMISSIONS.CUSTOMER_DELETE` (registered; no DELETE route in Sprint-03) |
 
 Permissions are **global** — not tenant-owned. Authorization is resolved per tenant via roles and `member_roles` under RLS.
 
@@ -21,4 +25,5 @@ import { PERMISSIONS, ALL_PERMISSIONS, type PermissionCode } from '@crm-os/permi
 
 ## Documentation
 
-Full registry and guard semantics: `docs/security/sprint-02-permission-registry.md`
+Full registry and guard semantics: `docs/security/sprint-02-permission-registry.md`  
+Sprint-03 customer permissions: `docs/security/sprint-03-customer-permissions.md`

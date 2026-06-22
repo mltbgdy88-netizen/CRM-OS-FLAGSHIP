@@ -13,13 +13,24 @@ Variables required for local API + IAM integration tests.
 | `JWT_ACCESS_TTL_SECONDS` | No | Access token TTL. Default: `900` |
 | `JWT_REFRESH_TTL_SECONDS` | No | Refresh session TTL. Default: `604800` |
 
-## Local example
+## Local proof database
+
+Use port **5433** for CRM-OS proof Postgres. `localhost:5432` may map to an unrelated container and cause `auth_failed` during migrate/seed.
 
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/crmos
-DATABASE_APP_URL=postgresql://crmos_app:crmos_app@127.0.0.1:5433/crmos
-JWT_SECRET=change-me-local-only
-API_PORT=3001
+export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/crmos
+export DATABASE_APP_URL=postgresql://crmos_app:crmos_app@127.0.0.1:5433/crmos
+export JWT_SECRET=change-me-local-only
+export API_PORT=3001
+```
+
+Start proof Postgres if needed:
+
+```bash
+docker run --name crmos-sprint03-proof-pg \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=crmos \
+  -p 5433:5432 -d postgres:16-alpine
 ```
 
 ## Database setup sequence

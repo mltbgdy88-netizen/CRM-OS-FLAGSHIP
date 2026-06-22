@@ -6,6 +6,9 @@ import {
   SEED_PERMISSIONS,
 } from './constants';
 
+export { seedCrmData } from './crm';
+export { SEED_CUSTOMER_PERMISSIONS, SEED_IDS, SEED_PERMISSIONS } from './constants';
+
 function hashPassword(password: string): string {
   // Sprint-02 placeholder hash for local seed only; backend auth replaces with bcrypt.
   return createHash('sha256').update(password).digest('hex');

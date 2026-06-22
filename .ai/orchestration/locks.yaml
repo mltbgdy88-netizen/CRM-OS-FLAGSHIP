@@ -1,78 +1,123 @@
 # File ownership locks for parallel agents
-# Source Status: SPRINT_02_ORCHESTRATION_ACTIVE_v1.1
+# Source Status: SPRINT_03_ORCHESTRATION_ACTIVE_v1.1
 
 locks:
-  # Phase 1 — Database agent exclusive
+  # Sprint-02 frozen — no agent may edit
+  - path: packages/database/migrations/002_iam
+    owner: frozen
+    phase: n/a
+    status: read_only
+    notes: Sprint-02 complete; preserve IAM migration SQL
+
+  - path: apps/api/src/modules/iam
+    owner: frozen
+    phase: n/a
+    status: read_only
+    notes: Sprint-02 IAM module; use via guards/services only
+
+  - path: apps/api/src/common/auth
+    owner: frozen
+    phase: n/a
+    status: read_only
+    notes: login refresh PermissionGuard semantics frozen
+
+  - path: apps/web/app/login
+    owner: frozen
+    phase: n/a
+    status: read_only
+    notes: Sprint-02 login slice; do not regress
+
+  # Phase 1 — Database agent exclusive (003_crm)
+  - path: packages/database/migrations/003_crm
+    owner: database-agent
+    phase: "1"
+    notes: SQL migration band 003_crm only
+
   - path: packages/database/prisma
     owner: database-agent
     phase: "1"
-    notes: Schema, migrations, RLS SQL, seeds
-
-  - path: packages/database/migrations
-    owner: database-agent
-    phase: "1"
-    notes: SQL migration band 002_iam
+    shared_read: backend-agent
+    notes: CRM entity models; append only — do not remove IAM models
 
   - path: packages/database/src
     owner: database-agent
     phase: "1"
     shared_read: backend-agent
-    notes: Tenant context helpers; backend consumes after Phase 1 handoff
+    notes: Tenant context helpers; extend for CRM RLS tests only
 
-  # Phase 2 — Backend agent exclusive
-  - path: apps/api/src/modules
+  # Phase 2 — Backend agent exclusive (Customer module)
+  - path: apps/api/src/modules/crm
     owner: backend-agent
     phase: "2"
-    notes: IAM module, auth, guards, audit, events
+    notes: Customer module only; new directory
 
-  - path: apps/api/src/common
+  - path: apps/api/src/modules/customer
     owner: backend-agent
     phase: "2"
-    shared_read: architect-agent
-    notes: TenantContext, PermissionGuard, shared middleware
+    notes: Alternate customer module path if used instead of crm/
 
-  - path: apps/api/test
+  - path: apps/api/test/crm
     owner: backend-agent
     phase: "2"
     shared_read: qa-agent
-    notes: IAM integration and guard tests
+    notes: Customer integration permission RLS tests
 
   - path: packages/permissions
     owner: backend-agent
     phase: "2"
-    notes: Global permission registry
+    shared_read: architect-agent
+    notes: Append customer.* permissions; do not remove IAM codes
 
   - path: packages/events
     owner: backend-agent
     phase: "2"
-    notes: IAM domain event types
+    shared_read: architect-agent
+    notes: Append CustomerCreated CustomerUpdated; do not remove IAM events
 
-  # Phase 3A — Frontend agent (Slice A only)
-  - path: apps/web/app
+  # Phase 3 — Frontend agent (minimal AppShell + customer UI)
+  - path: apps/web/app/(app)
     owner: frontend-agent
-    phase: "3A"
-    notes: Login and auth routes only until Slice B enabled
+    phase: "3"
+    notes: Minimal AppShell layout and authenticated shell routes
+
+  - path: apps/web/app/customers
+    owner: frontend-agent
+    phase: "3"
+    notes: Customer list and detail pages
 
   - path: apps/web/__tests__
     owner: frontend-agent
-    phase: "3A"
+    phase: "3"
     shared_read: qa-agent
+    notes: Append customer UI tests; preserve login tests
 
-  # Phase 3B — DISABLED until backend IAM + RLS proof
+  # Phase 3B IAM admin — DISABLED (deferred)
   - path: apps/web/app/(iam)
     owner: frontend-agent
     phase: "3B"
     status: disabled
-    disabled_until:
-      - sprint-02-db-iam-schema
-      - sprint-02-backend-iam-core
-      - rls_cross_tenant_tests_pass
-      - security_agent_signoff
+    disabled_reason: deferred_future_sprint
 
   # QA exclusive
   - path: tests/e2e
     owner: qa-agent
     phase: "4"
+
+  - path: docs/qa
+    owner: qa-agent
+    phase: "4"
+    shared_read: security-agent
+
+  - path: docs/security
+    owner: security-agent
+    phase: "4"
+    shared_read: qa-agent
+
+  # DevOps — CI verify wiring Phase 4 only
+  - path: .github/workflows
+    owner: devops-agent
+    phase: "4"
+    notes: sprint-03-verify CI job; not in Phase 0-3
 
   # Orchestration — Architect / release
   - path: .ai/orchestration
@@ -89,4 +134,18 @@ locks:
   read_only:
     - canon/**
     - specs/sprints/sprint-03*
+    - docs/sprints/sprint-03.md
     - _archive/**
+
+  # Explicitly forbidden paths for Sprint-03 agents
+  forbidden:
+    - packages/database/migrations/002_iam/**
+    - apps/api/src/modules/iam/**
+    - lead/**
+    - pipeline/**
+    - quote/**
+    - order/**
+    - inventory/**
+    - finance/**
+    - rabbitmq/**
+    - ai-gateway/**

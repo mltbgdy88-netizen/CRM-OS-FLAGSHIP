@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import { getDatabaseConfigFromEnv } from '../index';
-import { applyMigration } from '../migrate';
-import { seedIamData } from './index';
+import { applyAllMigrations } from '../migrate';
+import { seedCrmData, seedIamData } from './index';
 
 async function main(): Promise<void> {
   const { url } = getDatabaseConfigFromEnv();
@@ -9,9 +9,11 @@ async function main(): Promise<void> {
   const client = await pool.connect();
 
   try {
-    await applyMigration(pool);
+    await applyAllMigrations(pool);
     await seedIamData(client);
+    await seedCrmData(client);
     console.log('Sprint-02 IAM seed completed');
+    console.log('Sprint-03 CRM seed completed');
   } finally {
     client.release();
     await pool.end();

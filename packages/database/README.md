@@ -43,6 +43,17 @@ pnpm --filter @crm-os/database test:rls    # RLS only; fails if DATABASE_URL uns
 `DATABASE_URL` — migration/admin connection (see `.env.example`).  
 `DATABASE_APP_URL` — optional override for RLS tests as `crmos_app` (defaults derived from `DATABASE_URL`).
 
+## Local proof database
+
+Port **5433** is the CRM-OS proof database. `localhost:5432` may belong to another project and cause `auth_failed`.
+
+```bash
+export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/crmos
+export DATABASE_APP_URL=postgresql://crmos_app:crmos_app@127.0.0.1:5433/crmos
+```
+
+See `docs/api/sprint-02-environment.md` for setup and gate commands.
+
 ## Sprint-02 DevOps CI gate (TODO — before PR-final / merge to main)
 
 RLS cross-tenant proof **must not be silently skipped** in final Sprint-02 acceptance.

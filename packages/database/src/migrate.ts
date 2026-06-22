@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { Pool } from 'pg';
 import { getDatabaseConfigFromEnv } from './config';
 
-export const MIGRATION_BANDS = ['002_iam', '003_crm'] as const;
+export const MIGRATION_BANDS = ['002_iam', '003_crm', '003_crm_360'] as const;
 export type MigrationBand = (typeof MIGRATION_BANDS)[number];
 
 /** @deprecated Use MIGRATION_BANDS — retained for Sprint-02 callers */
@@ -55,7 +55,7 @@ export async function applyAllMigrations(pool: Pool): Promise<boolean> {
   return anyApplied;
 }
 
-/** Applies all migration bands in order (002_iam then 003_crm). */
+/** Applies all migration bands in order (002_iam, 003_crm, 003_crm_360). */
 export async function applyMigration(pool: Pool): Promise<boolean> {
   return applyAllMigrations(pool);
 }

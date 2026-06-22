@@ -27,6 +27,16 @@ export const SEED_IDS = {
   noteTenantB: '41000000-0000-4000-8000-000000000002',
   fileDefault: '42000000-0000-4000-8000-000000000001',
   fileTenantB: '42000000-0000-4000-8000-000000000002',
+  timelineEventDefault: '43000000-0000-4000-8000-000000000001',
+  timelineEventTenantB: '43000000-0000-4000-8000-000000000002',
+  scoreDefault: '44000000-0000-4000-8000-000000000001',
+  scoreTenantB: '44000000-0000-4000-8000-000000000002',
+  riskScoreDefault: '45000000-0000-4000-8000-000000000001',
+  riskScoreTenantB: '45000000-0000-4000-8000-000000000002',
+  ltvDefault: '46000000-0000-4000-8000-000000000001',
+  ltvTenantB: '46000000-0000-4000-8000-000000000002',
+  permissionCustomerTimelineRead: '30000000-0000-4000-8000-000000000005',
+  permissionCustomerExport: '30000000-0000-4000-8000-000000000006',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -80,6 +90,21 @@ export const SEED_CUSTOMER_PERMISSIONS = [
     code: 'customer.delete',
     module: 'customer',
     description: 'Soft-delete customers',
+  },
+] as const;
+
+export const SEED_CUSTOMER_360_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionCustomerTimelineRead,
+    code: 'customer.timeline.read',
+    module: 'customer',
+    description: 'Read customer timeline events',
+  },
+  {
+    id: SEED_IDS.permissionCustomerExport,
+    code: 'customer.export',
+    module: 'customer',
+    description: 'Export customer 360 data',
   },
 ] as const;
 

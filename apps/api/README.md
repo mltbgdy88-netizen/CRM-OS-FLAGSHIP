@@ -27,6 +27,7 @@ Required env for IAM integration tests:
 - `DATABASE_APP_URL` — runtime API (`crmos_app`, RLS enforced)
 - `JWT_SECRET` — local dev only
 - `API_PORT` — optional, default `3001`
+- `CORS_ORIGIN` — local dev only (e.g. `http://localhost:3000`); required for browser login from the Next.js web app. Unset in production.
 
 Full environment reference: `docs/api/sprint-02-environment.md`  
 OpenAPI-style contract: `docs/api/sprint-02-iam-openapi.md`  

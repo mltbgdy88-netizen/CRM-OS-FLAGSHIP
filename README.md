@@ -70,6 +70,7 @@ pnpm --filter @crm-os/web dev
 - API health: `http://localhost:3001/health`
 - Web root: `http://localhost:3000`
 - Web status placeholder: `http://localhost:3000/health`
+- Browser login requires `CORS_ORIGIN=http://localhost:3000` on the API (see `.env.example`). Without it, terminal/API calls work but the web login form shows a network error.
 
 Copy `.env.example` to `.env` before running apps against local services.
 

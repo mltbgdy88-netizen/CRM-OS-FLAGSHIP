@@ -52,6 +52,10 @@ model Customer {
   tags      CustomerTag[]
   notes     CustomerNote[]
   files     CustomerFile[]
+  timelineEvents CustomerTimelineEvent[]
+  scores    CustomerScore[]
+  riskScores CustomerRiskScore[]
+  lifetimeValues CustomerLifetimeValue[]
 
   @@index([tenantId], map: "idx_customers_tenant_id")
   @@index([tenantId, deletedAt], map: "idx_customers_tenant_deleted")
@@ -181,6 +185,104 @@ model CustomerFile {
   @@index([tenantId, deletedAt], map: "idx_customer_files_tenant_deleted")
   @@index([customerId], map: "idx_customer_files_customer_id")
   @@map("customer_files")
+}
+
+/// Tenant-owned customer timeline event for Customer 360.
+model CustomerTimelineEvent {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  customerId String    @map("customer_id") @db.Uuid
+  eventType  String    @map("event_type") @db.VarChar(80)
+  title      String    @db.VarChar(255)
+  summary    String?
+  occurredAt DateTime  @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_customer_timeline_events_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_customer_timeline_events_tenant_deleted")
+  @@index([customerId], map: "idx_customer_timeline_events_customer_id")
+  @@index([tenantId, occurredAt], map: "idx_customer_timeline_events_occurred_at")
+  @@map("customer_timeline_events")
+}
+
+/// Tenant-owned customer engagement/health score.
+model CustomerScore {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  customerId String    @map("customer_id") @db.Uuid
+  metricCode String    @map("metric_code") @db.VarChar(80)
+  scoreValue Decimal   @map("score_value") @db.Decimal(12, 4)
+  recordedAt DateTime  @default(now()) @map("recorded_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_customer_scores_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_customer_scores_tenant_deleted")
+  @@index([customerId], map: "idx_customer_scores_customer_id")
+  @@map("customer_scores")
+}
+
+/// Tenant-owned customer risk assessment snapshot.
+model CustomerRiskScore {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  customerId String    @map("customer_id") @db.Uuid
+  riskLevel  String    @map("risk_level") @db.VarChar(40)
+  riskScore  Decimal   @map("risk_score") @db.Decimal(12, 4)
+  assessedAt DateTime  @default(now()) @map("assessed_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_customer_risk_scores_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_customer_risk_scores_tenant_deleted")
+  @@index([customerId], map: "idx_customer_risk_scores_customer_id")
+  @@map("customer_risk_scores")
+}
+
+/// Tenant-owned customer lifetime value snapshot.
+model CustomerLifetimeValue {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  customerId   String    @map("customer_id") @db.Uuid
+  currency     String    @default("TRY") @db.VarChar(3)
+  ltvValue     Decimal   @map("ltv_value") @db.Decimal(14, 2)
+  calculatedAt DateTime  @default(now()) @map("calculated_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy    String?   @map("created_by") @db.Uuid
+  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy    String?   @map("updated_by") @db.Uuid
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy    String?   @map("deleted_by") @db.Uuid
+  version      Int       @default(1)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_customer_lifetime_values_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_customer_lifetime_values_tenant_deleted")
+  @@index([customerId], map: "idx_customer_lifetime_values_customer_id")
+  @@map("customer_lifetime_values")
 }
 
 /// Global identity — not tenant-scoped.

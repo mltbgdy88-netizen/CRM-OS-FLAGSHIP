@@ -40,6 +40,32 @@ Domain sprints must not perform full UI visual design. Frontend work is **functi
 - `canon/ui/*` and `.cursor/rules/08-ui-design.md` describe the **target** UX; they are not Sprint-04+ implementation requirements.
 - Sprint-03 minimal customer UI on `main` is the baseline; extend, do not restyle.
 
+## 2026-06-22 — Verify gates must not kill dev servers
+
+**Status:** Accepted  
+**Applies to:** Local development and agent-operated `pnpm sprint:*:verify` runs
+
+### Decision
+
+Sprint verify scripts (`sprint:02:verify`, `sprint:03:verify`, `sprint:04:verify`) do **not** stop API or Web dev servers. Dev servers are **not required** for verify gates.
+
+### Prohibited during verify (agents and operators)
+
+- `taskkill /F /IM node.exe`
+- `Stop-Process -Name node -Force` (broad kill)
+- `pkill node` / `killall node`
+- Any "kill all Node before Prisma" workaround
+
+### Correct practice
+
+- Run API/Web dev servers in **separate terminals** from verify commands.
+- If Windows `prisma generate` fails with EPERM (DLL locked by a running dev server), **retry** or **manually stop** the dev server in its terminal — do not kill all Node processes.
+- Dev server exit during verify is **not** a product or gate failure unless build/tests fail.
+
+### Root cause note
+
+No repo script performs broad Node kills. Repeated dev server termination during verify was caused by **agent/operator** `Stop-Process node` before Prisma, not by `package.json` gate semantics.
+
 ## 2026-06-22 — Sprint-04 migration band `003_crm_360`
 
 **Status:** Accepted  

@@ -83,6 +83,15 @@ GET  /api/v1/customers/{id}/timeline
 - Queue runtime: Redis + BullMQ only; RabbitMQ deferred.
 - Do not modify frozen migration bands or Sprint-03 customer API contracts.
 
+## Local Verify Gates and Dev Servers
+
+- `pnpm sprint:*:verify` does **not** require API/Web dev servers; gates pass with or without them running.
+- **Never** run broad Node process kills before or during verify (`taskkill /F /IM node.exe`, `Stop-Process -Name node -Force`, `pkill node`, `killall node`).
+- Repo verify scripts do not kill processes — if dev servers stop during verify, an agent or operator ran broad Node cleanup (incorrect).
+- Use **separate terminals** for API/Web dev servers vs verify commands.
+- On Windows, if `prisma generate` hits EPERM, retry once or manually stop dev servers in their terminals — do not kill all Node processes.
+- See `docs/DECISIONS.md` (2026-06-22 — verify gates and dev servers).
+
 ## Required Output Per Task
 
 - Source code (when slice authorized)

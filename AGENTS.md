@@ -1,4 +1,4 @@
-# CRM OS Agent Operating Manual v8
+# CRM OS Agent Operating Manual v9
 
 ## Mission
 
@@ -6,34 +6,46 @@ Build CRM OS using spec-driven, test-first, tenant-safe and permission-aware dev
 
 ## Active Sprint
 
-**Sprint-03 — Customer Core** (Phase 0.2 orchestration active)
+**Sprint-04 — Customer 360** (Phase 0.2 orchestration active)
 
-Active guard: `.cursor/rules/00-sprint-03-hard-guard.md`
+Active guard: `.cursor/rules/00-sprint-04-hard-guard.md`
 
 Read before any Phase 1+ coding:
 
-- `docs/sprints/sprint-03.md`
-- `specs/sprints/sprint-03-customer-core.yaml`
-- `.ai/orchestration/sprint-03-handoff-order.md`
-- `.ai/orchestration/sprint-03-branch-plan.md`
+- `docs/sprints/sprint-04.md`
+- `specs/sprints/sprint-04-customer-360.yaml`
+- `docs/DECISIONS.md`
+- `.ai/orchestration/sprint-04-handoff-order.md`
+- `.ai/orchestration/sprint-04-branch-plan.md`
 
-## Sprint-02 Preservation
+## Sprint-02 / Sprint-03 Preservation
 
-Sprint-02 is complete (`main` @ `c6657a6`, tag `sprint-02-full-pass`). Do **not**
-modify `002_iam`, login/refresh semantics, or PermissionGuard behavior in Sprint-03.
+Sprint-02 complete (`sprint-02-full-pass`). Sprint-03 complete (`main` @ `92595b0`, tag `sprint-03-full-pass`).
 
-## CRM Data Ownership (Sprint-03)
+Do **not** modify `002_iam`, `003_crm`, login/refresh semantics, PermissionGuard behavior, or Sprint-03 four customer endpoints.
+
+## Domain Sprint Frontend Policy (Sprint-04+)
+
+Functional proof only — see `docs/DECISIONS.md` (2026-06-22).
+
+- Minimum routes to verify APIs; required UI states (loading, empty, error, permission).
+- Simple styling; reuse existing minimal AppShell — no redesign.
+- **Defer:** final AppShell, navigation, dashboard, design system, tokens, visual polish.
+- **Priority:** database, RLS, permissions, backend APIs, tests, CI, domain correctness.
+
+## Sprint-04 Customer 360 Locks
+
+Migration band: **`003_crm_360`** (`004_lead` reserved for Sprint-05).
 
 ```text
-customers            = tenant-owned (RLS)
-customer_contacts    = read aggregation in customer detail
-customer_addresses   = read aggregation in customer detail
-customer_tags        = read aggregation in customer detail
-customer_notes       = read aggregation in customer detail
-customer_files       = metadata only; no upload/storage/CDN
+NEW tables:
+  customer_timeline_events, customer_scores, customer_risk_scores, customer_lifetime_values
+
+FROZEN (003_crm):
+  customers, customer_contacts, customer_addresses, customer_tags, customer_notes, customer_files
 ```
 
-Customer API lock — four endpoints only:
+API — Sprint-03 frozen:
 
 ```text
 GET  /api/v1/customers
@@ -42,12 +54,19 @@ GET  /api/v1/customers/{id}
 PATCH /api/v1/customers/{id}
 ```
 
+API — Sprint-04 additive:
+
+```text
+GET  /api/v1/customers/{id}/360
+GET  /api/v1/customers/{id}/timeline
+```
+
 ## Required Reading Before Coding
 
 1. `MASTER-SOURCE-OF-TRUTH-v9.md`
-2. `.cursor/rules/*` (including `00-sprint-03-hard-guard.md`)
-3. Active `docs/sprints/sprint-03.md`
-4. Active `specs/sprints/sprint-03-customer-core.yaml`
+2. `.cursor/rules/*` (including `00-sprint-04-hard-guard.md`)
+3. Active `docs/sprints/sprint-04.md`
+4. Active `specs/sprints/sprint-04-customer-360.yaml`
 5. Relevant canon: `/canon/database`, `/canon/security-compliance`, `/canon/api`
 6. `.ai/agents/*` and `.ai/orchestration/*`
 
@@ -62,7 +81,7 @@ PATCH /api/v1/customers/{id}
 - No secrets in code, logs, commits or images.
 - No unrelated module changes.
 - Queue runtime: Redis + BullMQ only; RabbitMQ deferred.
-- Do not modify Sprint-02 IAM migration or auth behavior.
+- Do not modify frozen migration bands or Sprint-03 customer API contracts.
 
 ## Required Output Per Task
 
@@ -83,11 +102,11 @@ PATCH /api/v1/customers/{id}
 - Missing audit trail
 - Broken tests
 - Secret leakage
-- Unreviewed AI data mutation
-- Sprint-02 IAM regression
-- Customer API beyond the four-endpoint lock
-- File upload/storage/CDN in Sprint-03
-- Separate related-entity CRUD endpoints without explicit approval
+- Sprint-02/03 IAM or customer API regression
+- File upload/storage/CDN in Sprint-04
+- Final visual UI / AppShell redesign
+- CustomerMerged without merge API
+- Use of `004_lead` band before Sprint-05
 
 ## Sprint Status
 
@@ -95,4 +114,5 @@ PATCH /api/v1/customers/{id}
 |--------|--------|
 | Sprint-01 Repository Bootstrap | COMPLETE |
 | Sprint-02 Auth + Tenant + IAM | COMPLETE (`sprint-02-full-pass`) |
-| Sprint-03 Customer Core | ORCHESTRATION ACTIVE (Phase 0.2) |
+| Sprint-03 Customer Core | COMPLETE (`sprint-03-full-pass`) |
+| Sprint-04 Customer 360 | ORCHESTRATION ACTIVE (Phase 0.2) |

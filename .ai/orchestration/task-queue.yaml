@@ -1,5 +1,5 @@
 # CRM OS Agent Task Queue
-# Source Status: SPRINT_03_ORCHESTRATION_ACTIVE_v1.1
+# Source Status: SPRINT_04_ORCHESTRATION_ACTIVE_v1.1
 
 sprint_01:
   status: completed
@@ -16,38 +16,55 @@ sprint_02:
   notes: Auth + Tenant + IAM merged; CI PostgreSQL RLS gate green
 
 sprint_03:
+  status: completed
+  verify_command: pnpm sprint:03:verify
+  integration_branch: main
+  tag: sprint-03-full-pass
+  baseline_commit: 92595b0
+  migration_band: 003_crm
+  notes: Customer Core merged; CI green; four-endpoint API lock preserved on main
+
+sprint_04:
   status: orchestration_active
   phase: "0.2"
-  integration_branch: agent/sprint-03-customer-core
+  integration_branch: agent/sprint-04-customer-360
   target_main: main
-  migration_band: 003_crm
+  baseline_commit: 92595b0
+  migration_band: 003_crm_360
+  reserved_band: 004_lead
+  reserved_for: sprint_05_lead
   frontend_iam_slice_b: disabled
+  frontend_ui_policy: functional_proof_only
   queue_runtime: redis_bullmq
   rabbitmq: deferred
-  verify_command: pnpm sprint:03:verify
+  verify_command: pnpm sprint:04:verify
   verify_ci_required: false
   verify_ci_wiring_phase: "4"
   verify_ci_owner: devops
   notes: >
-    sprint:03:verify is planned in package.json. Baseline extends sprint:02:verify.
-    Customer-specific RLS/API/frontend gates added in Phase 4 DevOps — not CI-required until then.
+    sprint:04:verify planned in package.json. Baseline chains sprint:03:verify.
+    Customer 360 RLS/API/frontend gates added in Phase 4 DevOps.
 
-  crm_data_ownership:
-    customers: tenant_owned_rls
-    customer_contacts: tenant_owned_read_aggregation_only
-    customer_addresses: tenant_owned_read_aggregation_only
-    customer_tags: tenant_owned_read_aggregation_only
-    customer_notes: tenant_owned_read_aggregation_only
+  crm_360_data_ownership:
+    customer_timeline_events: tenant_owned_rls_new
+    customer_scores: tenant_owned_rls_new
+    customer_risk_scores: tenant_owned_rls_new
+    customer_lifetime_values: tenant_owned_rls_new
+    customer_notes: frozen_003_crm_no_comments_table
     customer_files: metadata_only_no_upload
 
   api_lock:
-    allowed:
+    sprint_03_frozen:
       - "GET /api/v1/customers"
       - "POST /api/v1/customers"
       - "GET /api/v1/customers/{id}"
       - "PATCH /api/v1/customers/{id}"
+    sprint_04_additive:
+      - "GET /api/v1/customers/{id}/360"
+      - "GET /api/v1/customers/{id}/timeline"
     forbidden:
       - separate CRUD for contacts addresses tags notes files
+      - CustomerMerged event without merge API
 
 tasks:
   # --- Sprint-01 (completed) ---
@@ -181,16 +198,7 @@ tasks:
     branch: agent/sprint-03-db-crm-migration
     depends_on:
       - sprint-03-orchestration-activation
-    status: blocked
-    scope:
-      - prisma schema for CRM customer entities
-      - migration band 003_crm only
-      - rls policies for tenant-owned CRM tables
-      - seeds for customer demo data
-      - rls integration tests for CRM tables
-    forbidden:
-      - packages/database/migrations/002_iam/**
-      - file upload storage cdn columns beyond metadata
+    status: completed
 
   # --- Sprint-03 Phase 2 (backend) ---
   - id: sprint-03-backend-customer-core
@@ -201,18 +209,7 @@ tasks:
     branch: agent/sprint-03-backend-customer
     depends_on:
       - sprint-03-db-crm-schema
-    status: blocked
-    scope:
-      - customer module repository service controller
-      - PermissionGuard on all customer endpoints
-      - audit log for create update
-      - CustomerCreated CustomerUpdated events
-      - GET POST GET-by-id PATCH customer endpoints only
-      - read aggregation of contacts addresses tags notes file metadata in detail
-    forbidden:
-      - separate CRUD routes for related entities
-      - changes to apps/api/src/modules/iam/**
-      - changes to auth guards login refresh semantics
+    status: completed
 
   - id: sprint-03-permissions-events-registry
     sprint: 3
@@ -222,10 +219,7 @@ tasks:
     branch: agent/sprint-03-backend-customer
     depends_on:
       - sprint-03-db-crm-schema
-    status: blocked
-    scope:
-      - customer.read customer.create customer.update customer.delete in packages/permissions
-      - CustomerCreated CustomerUpdated in packages/events
+    status: completed
 
   # --- Sprint-03 Phase 3 (frontend — minimal AppShell) ---
   - id: sprint-03-frontend-customer
@@ -236,15 +230,7 @@ tasks:
     branch: agent/sprint-03-frontend-customer
     depends_on:
       - sprint-03-backend-customer-core
-    status: blocked
-    scope:
-      - minimal AppShell layout shell navigation
-      - customer list page with loading empty error permission states
-      - customer detail basic 360 read-only related sections
-    forbidden:
-      - IAM Slice B admin screens
-      - lead pipeline quote order inventory finance UI
-      - file upload UI
+    status: completed
 
   # --- Sprint-03 Phase 4 (validation) ---
   - id: sprint-03-qa-gates
@@ -255,7 +241,7 @@ tasks:
     branch: agent/sprint-03-customer-core
     depends_on:
       - sprint-03-frontend-customer
-    status: blocked
+    status: completed
 
   - id: sprint-03-security-review
     sprint: 3
@@ -265,7 +251,7 @@ tasks:
     branch: agent/sprint-03-customer-core
     depends_on:
       - sprint-03-qa-gates
-    status: blocked
+    status: completed
 
   - id: sprint-03-devops-ci-verify
     sprint: 3
@@ -275,11 +261,7 @@ tasks:
     branch: agent/sprint-03-customer-core
     depends_on:
       - sprint-03-backend-customer-core
-    status: blocked
-    scope:
-      - extend sprint:03:verify with customer RLS API frontend gates
-      - wire sprint-03-verify job in GitHub Actions
-    notes: sprint:03:verify planned in Phase 0; CI wiring only in this task
+    status: completed
 
   - id: sprint-03-pr-review
     sprint: 3
@@ -290,7 +272,7 @@ tasks:
     depends_on:
       - sprint-03-security-review
       - sprint-03-devops-ci-verify
-    status: blocked
+    status: completed
 
   - id: sprint-03-merge-main
     sprint: 3
@@ -300,4 +282,171 @@ tasks:
     branch: main
     depends_on:
       - sprint-03-pr-review
+    status: completed
+
+  # --- Sprint-04 Phase 0 (orchestration) ---
+  - id: sprint-04-orchestration-activation
+    sprint: 4
+    phase: "0.2"
+    module: orchestration
+    agent: architect
+    branch: agent/sprint-04-customer-360
+    status: completed
+    outputs:
+      - .cursor/rules/00-sprint-04-hard-guard.md
+      - .cursor/rules/00-sprint-03-hard-guard.md
+      - AGENTS.md
+      - docs/DECISIONS.md
+      - .ai/orchestration/task-queue.yaml
+      - .ai/orchestration/locks.yaml
+      - .ai/orchestration/sprint-04-handoff-order.md
+      - .ai/orchestration/sprint-04-branch-plan.md
+      - docs/sprints/sprint-04-status.md
+      - package.json sprint:04:verify planned definition
+
+  # --- Sprint-04 Phase 1 (blocked until orchestration complete) ---
+  - id: sprint-04-db-crm-360
+    sprint: 4
+    phase: "1"
+    module: database
+    agent: database
+    branch: agent/sprint-04-db-crm-360
+    depends_on:
+      - sprint-04-orchestration-activation
+    status: blocked
+    scope:
+      - prisma models for 360 entities
+      - migration band 003_crm_360 only
+      - rls policies for new tenant-owned tables
+      - seeds for timeline scores risk ltv demo data
+      - rls integration tests for 360 tables
+    forbidden:
+      - packages/database/migrations/002_iam/**
+      - packages/database/migrations/003_crm/**
+      - packages/database/migrations/004_lead/**
+      - comments table duplicating customer_notes
+      - file upload storage cdn
+
+  # --- Sprint-04 Phase 2 (backend) ---
+  - id: sprint-04-backend-customer-360
+    sprint: 4
+    phase: "2"
+    module: crm-customer-360
+    agent: backend
+    branch: agent/sprint-04-backend-customer-360
+    depends_on:
+      - sprint-04-db-crm-360
+    status: blocked
+    scope:
+      - customer 360 and timeline read endpoints
+      - PermissionGuard on all new routes
+      - audit log for 360 writes
+      - CustomerUpdated event on score risk ltv writes
+      - GET /customers/{id}/360 GET /customers/{id}/timeline only
+    forbidden:
+      - changes to Sprint-03 four customer endpoints
+      - CustomerMerged emission
+      - changes to apps/api/src/modules/iam/**
+
+  - id: sprint-04-permissions-events-registry
+    sprint: 4
+    phase: "2"
+    module: packages
+    agent: backend
+    branch: agent/sprint-04-backend-customer-360
+    depends_on:
+      - sprint-04-db-crm-360
+    status: blocked
+    scope:
+      - customer.timeline.read customer.export in packages/permissions
+      - CustomerUpdated in packages/events
+      - CustomerMerged documented future-only not registered for emission
+
+  # --- Sprint-04 Phase 3 (frontend — functional proof) ---
+  - id: sprint-04-frontend-customer-360
+    sprint: 4
+    phase: "3"
+    module: web-customer-360
+    agent: frontend
+    branch: agent/sprint-04-frontend-customer-360
+    depends_on:
+      - sprint-04-backend-customer-360
+    status: blocked
+    scope:
+      - functional 360 view route
+      - functional timeline view
+      - loading empty error permission states
+      - reuse existing minimal AppShell unchanged
+    forbidden:
+      - AppShell redesign navigation dashboard polish
+      - design system tokens visual redesign
+      - IAM Slice B lead pipeline quote order UI
+      - file upload UI
+
+  - id: sprint-04-docs-customer-360
+    sprint: 4
+    phase: "3.5"
+    module: documentation
+    agent: documentation
+    branch: agent/sprint-04-docs-customer-360
+    depends_on:
+      - sprint-04-backend-customer-360
+    status: blocked
+    scope:
+      - OpenAPI for 360 and timeline endpoints
+      - permission event audit handoff docs
+
+  # --- Sprint-04 Phase 4 (validation) ---
+  - id: sprint-04-qa-gates
+    sprint: 4
+    phase: "4"
+    module: qa
+    agent: qa
+    branch: agent/sprint-04-customer-360
+    depends_on:
+      - sprint-04-frontend-customer-360
+    status: blocked
+
+  - id: sprint-04-security-review
+    sprint: 4
+    phase: "4"
+    module: security
+    agent: security
+    branch: agent/sprint-04-customer-360
+    depends_on:
+      - sprint-04-qa-gates
+    status: blocked
+
+  - id: sprint-04-devops-ci-verify
+    sprint: 4
+    phase: "4"
+    module: devops
+    agent: devops
+    branch: agent/sprint-04-customer-360
+    depends_on:
+      - sprint-04-backend-customer-360
+    status: blocked
+    scope:
+      - extend sprint:04:verify with CRM 360 RLS API frontend gates
+      - wire sprint-04-verify job in GitHub Actions
+
+  - id: sprint-04-pr-review
+    sprint: 4
+    phase: "4"
+    module: review
+    agent: reviewer
+    branch: agent/sprint-04-customer-360
+    depends_on:
+      - sprint-04-security-review
+      - sprint-04-devops-ci-verify
+    status: blocked
+
+  - id: sprint-04-merge-main
+    sprint: 4
+    phase: "4"
+    module: release
+    agent: release
+    branch: main
+    depends_on:
+      - sprint-04-pr-review
     status: blocked

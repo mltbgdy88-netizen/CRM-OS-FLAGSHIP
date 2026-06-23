@@ -74,6 +74,7 @@ Use **separate terminals** for dev servers vs sprint verify gates. Verify does n
 - API health: `http://localhost:3001/health`
 - Web root: `http://localhost:3000`
 - Web status placeholder: `http://localhost:3000/health`
+- Set `CORS_ORIGIN=http://localhost:3000` when running the API so the browser web app can call it cross-origin during local proof.
 
 Copy `.env.example` to `.env` before running apps against local services.
 

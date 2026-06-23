@@ -12,7 +12,7 @@ export function resolveCorsOrigins(corsOriginEnv?: string): string[] {
     .filter((origin) => origin.length > 0);
 }
 
-export function buildCorsOptions(corsOriginEnv?: string): CorsOptions {
+export function resolveCorsOptions(corsOriginEnv?: string): CorsOptions {
   const origins = resolveCorsOrigins(corsOriginEnv);
 
   return {
@@ -22,6 +22,7 @@ export function buildCorsOptions(corsOriginEnv?: string): CorsOptions {
   };
 }
 
-export function enableLocalCors(app: INestApplication): void {
-  app.enableCors(buildCorsOptions(process.env.CORS_ORIGIN));
+export function configureCors(app: INestApplication, corsOriginEnv?: string): void {
+  const envValue = corsOriginEnv ?? process.env.CORS_ORIGIN;
+  app.enableCors(resolveCorsOptions(envValue));
 }

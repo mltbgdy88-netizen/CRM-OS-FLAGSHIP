@@ -2,11 +2,11 @@ import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { enableLocalCors } from './cors.config';
+import { configureCors } from './common/http/cors.config';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-  enableLocalCors(app);
+  configureCors(app);
   app.setGlobalPrefix('api/v1', { exclude: ['health'] });
   app.useGlobalPipes(
     new ValidationPipe({

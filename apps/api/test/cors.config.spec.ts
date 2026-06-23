@@ -1,9 +1,13 @@
-import { DEFAULT_CORS_ORIGIN, buildCorsOptions, resolveCorsOrigins } from '../src/cors.config';
+import {
+  DEFAULT_CORS_ORIGIN,
+  resolveCorsOptions,
+  resolveCorsOrigins,
+} from '../src/common/http/cors.config';
 
 describe('cors.config', () => {
   it('defaults to localhost web origin when env is absent', () => {
     expect(resolveCorsOrigins(undefined)).toEqual([DEFAULT_CORS_ORIGIN]);
-    expect(buildCorsOptions(undefined).origin).toBe(DEFAULT_CORS_ORIGIN);
+    expect(resolveCorsOptions(undefined).origin).toBe(DEFAULT_CORS_ORIGIN);
   });
 
   it('parses comma-separated origins', () => {
@@ -14,7 +18,7 @@ describe('cors.config', () => {
   });
 
   it('allows POST and Authorization for browser clients', () => {
-    const options = buildCorsOptions('http://localhost:3000');
+    const options = resolveCorsOptions('http://localhost:3000');
     expect(options.methods).toEqual(expect.arrayContaining(['POST', 'OPTIONS']));
     expect(options.allowedHeaders).toEqual(
       expect.arrayContaining(['Content-Type', 'Authorization']),

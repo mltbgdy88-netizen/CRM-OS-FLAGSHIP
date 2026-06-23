@@ -1,28 +1,52 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Controller, INestApplication, Module, Post } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { enableLocalCors } from '../src/cors.config';
+import { configureCors } from '../src/common/http/cors.config';
+
+@Controller('auth')
+class CorsProbeAuthController {
+  @Post('login')
+  probeLogin(): { ok: boolean } {
+    return { ok: true };
+  }
+}
+
+@Module({
+  controllers: [CorsProbeAuthController],
+})
+class CorsProbeModule {}
 
 describe('CORS (e2e)', () => {
   let app: INestApplication;
+  const previousDatabaseUrl = process.env.DATABASE_URL;
+  const previousDatabaseAppUrl = process.env.DATABASE_APP_URL;
 
   beforeAll(async () => {
-    process.env.CORS_ORIGIN = 'http://localhost:3000';
+    delete process.env.DATABASE_URL;
+    delete process.env.DATABASE_APP_URL;
 
     const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule],
+      imports: [CorsProbeModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    enableLocalCors(app);
+    configureCors(app, 'http://localhost:3000');
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
   });
 
   afterAll(async () => {
     await app?.close();
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = previousDatabaseUrl;
+    }
+    if (previousDatabaseAppUrl === undefined) {
+      delete process.env.DATABASE_APP_URL;
+    } else {
+      process.env.DATABASE_APP_URL = previousDatabaseAppUrl;
+    }
   });
 
   it('OPTIONS /api/v1/auth/login returns CORS headers for localhost web origin', async () => {

@@ -21,6 +21,12 @@ vi.mock('../lib/auth/token-storage', () => ({
   storeAccessToken: vi.fn(),
 }));
 
+const push = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push }),
+}));
+
 import { login } from '../lib/api/auth-client';
 import { storeAccessToken } from '../lib/auth/token-storage';
 
@@ -28,6 +34,7 @@ describe('LoginForm', () => {
   beforeEach(() => {
     vi.mocked(login).mockReset();
     vi.mocked(storeAccessToken).mockReset();
+    push.mockReset();
   });
 
   it('renders login form fields', () => {
@@ -117,7 +124,7 @@ describe('LoginForm', () => {
     );
   });
 
-  it('shows success state and stores access token', async () => {
+  it('redirects to customers and stores access token on success', async () => {
     vi.mocked(login).mockResolvedValue({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
@@ -138,8 +145,9 @@ describe('LoginForm', () => {
     await user.type(screen.getByTestId('login-password'), 'Admin123!');
     await user.click(screen.getByTestId('login-submit'));
 
-    expect(await screen.findByTestId('login-success')).toBeInTheDocument();
-    expect(screen.getByTestId('login-token-received')).toHaveTextContent('Token received.');
-    expect(storeAccessToken).toHaveBeenCalledWith('access-token');
+    await waitFor(() => {
+      expect(storeAccessToken).toHaveBeenCalledWith('access-token');
+      expect(push).toHaveBeenCalledWith('/customers');
+    });
   });
 });

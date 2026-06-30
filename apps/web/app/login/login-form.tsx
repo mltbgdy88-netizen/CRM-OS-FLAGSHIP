@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { AuthClientError, login } from '../../lib/api/auth-client';
 import { storeAccessToken } from '../../lib/auth/token-storage';
@@ -7,6 +8,7 @@ import { storeAccessToken } from '../../lib/auth/token-storage';
 type FormStatus = 'idle' | 'loading' | 'validation_error' | 'auth_error' | 'network_error' | 'success';
 
 export function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [tenantSlug, setTenantSlug] = useState('default');
@@ -32,6 +34,7 @@ export function LoginForm() {
       setSuccessEmail(result.user.email);
       setTokenReceived(Boolean(result.accessToken));
       setStatus('success');
+      router.push('/customers');
     } catch (error) {
       if (error instanceof AuthClientError) {
         setStatus(error.kind === 'network' ? 'network_error' : 'auth_error');

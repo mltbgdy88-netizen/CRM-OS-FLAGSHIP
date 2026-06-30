@@ -1,6 +1,6 @@
 # Sprint-04 Integration Status
 
-Last updated: Phase 4 complete on `agent/sprint-04-customer-360` @ `7b5c8ec` (2026-06-30).
+Last updated: Sprint-04 merged to `main` @ `f49d0b7`; UI shell merged @ `c2cfca2` (2026-06-30).
 
 ## Phase checklist
 
@@ -16,9 +16,8 @@ Last updated: Phase 4 complete on `agent/sprint-04-customer-360` @ `7b5c8ec` (20
 ## Integration branch
 
 ```text
-Branch: agent/sprint-04-customer-360
-HEAD:   7b5c8ec ci(sprint-04): add Sprint-04 verify job (#24)
-Base:   main @ 92595b0 (Sprint-03) — main merge pending
+Branch: main (Sprint-04 release merged via PR #29 @ f49d0b7)
+UI:     Bitrix Space+ shell merged via PR #30 @ c2cfca2
 ```
 
 ## Merged delivery PRs
@@ -35,6 +34,8 @@ Base:   main @ 92595b0 (Sprint-03) — main merge pending
 | #25 | Phase 4 | Review gate report |
 | #26 | Phase 4 | Acceptance report |
 | #24 | Phase 4 | Sprint-04 verify CI job |
+| #29 | Release | Sprint-04 Customer 360 → main |
+| #30 | UI | Bitrix Space+ shell and customer workspace |
 
 ## Local verification (latest)
 
@@ -64,5 +65,5 @@ Base:   main @ 92595b0 (Sprint-03) — main merge pending
 
 ## Next gate
 
-- Open PR: `agent/sprint-04-customer-360` → `main` (Sprint-04 release)
-- Sprint-05 (Lead) **blocked** until main merge + sign-off
+- Sprint-04 **complete on `main`**
+- Sprint-05 (Lead) **blocked** until explicit product sign-off

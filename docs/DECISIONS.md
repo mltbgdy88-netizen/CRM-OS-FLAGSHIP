@@ -40,6 +40,33 @@ Domain sprints must not perform full UI visual design. Frontend work is **functi
 - `canon/ui/*` and `.cursor/rules/08-ui-design.md` describe the **target** UX; they are not Sprint-04+ implementation requirements.
 - Sprint-03 minimal customer UI on `main` is the baseline; extend, do not restyle.
 
+## 2026-06-30 — Visual System v3 (Bitrix Space+ inspired)
+
+**Status:** Accepted  
+**Applies to:** Dedicated UI implementation track (parallel to domain sprint functional proof)
+
+### Decision
+
+Adopt **Bitrix24 Space+ workspace layout** (left section menu, top section toolbar, right utility rail, customizable background) for CRM OS — with a **premium dark palette** and CRM OS content from `crm-os-ui-screen-inventory-master.md`. This supersedes NEXORA/coral as the active visual direction for new UI work.
+
+### In scope
+
+- `docs/ux/crm-os-visual-system-v3-bitrix-inspired.md`
+- CSS design tokens in `apps/web/app/globals.css`
+- `AppShell`, `UtilityRail`, login split layout
+- Per-module screen rollout per inventory (phased)
+
+### Out of scope (unchanged)
+
+- API/RBAC/data field names
+- Export, bulk, merge, delete UI
+- Sprint-05+ backend until respective sprints ship
+
+### Notes
+
+- Bitrix colors/branding are **not** copied; layout pattern only.
+- Domain sprint gate policy unchanged until UI phases merge behind billing/CI.
+
 ## 2026-06-22 — Verify gates must not kill dev servers
 
 **Status:** Accepted  

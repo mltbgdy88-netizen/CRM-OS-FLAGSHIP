@@ -86,8 +86,8 @@ export function LoginForm() {
           data-testid="login-tenant-slug"
         />
 
-        <button type="submit" disabled={isLoading} data-testid="login-submit">
-          {isLoading ? 'Signing in…' : 'Sign in'}
+        <button type="submit" disabled={isLoading} className="btn-primary btn-primary--full" data-testid="login-submit">
+          {isLoading ? 'Signing in…' : 'Giriş Yap'}
         </button>
       </form>
 

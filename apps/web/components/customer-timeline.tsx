@@ -9,11 +9,23 @@ import {
 
 interface CustomerTimelineSectionProps {
   customerId: string;
+  variant?: 'card' | 'feed';
 }
 
 type TimelineState = 'loading' | 'error' | 'forbidden' | 'empty' | 'success';
 
-export function CustomerTimelineSection({ customerId }: CustomerTimelineSectionProps) {
+function eventIcon(eventType: string) {
+  if (eventType.includes('call')) return '📞';
+  if (eventType.includes('email')) return '✉';
+  if (eventType.includes('meeting')) return '📅';
+  if (eventType.includes('created')) return '✦';
+  return '•';
+}
+
+export function CustomerTimelineSection({
+  customerId,
+  variant = 'card',
+}: CustomerTimelineSectionProps) {
   const [state, setState] = useState<TimelineState>('loading');
   const [events, setEvents] = useState<CustomerTimelineEventView[]>([]);
   const [page, setPage] = useState(1);
@@ -54,9 +66,10 @@ export function CustomerTimelineSection({ customerId }: CustomerTimelineSectionP
   }, [customerId, page, pageSize]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const sectionClass = variant === 'feed' ? 'timeline-feed' : 'card timeline-card';
 
   return (
-    <section className="card" data-testid="customer-timeline-section">
+    <section className={sectionClass} data-testid="customer-timeline-section">
       <h2>Timeline</h2>
 
       {state === 'loading' && (
@@ -85,14 +98,22 @@ export function CustomerTimelineSection({ customerId }: CustomerTimelineSectionP
 
       {state === 'success' && (
         <>
-          <ul data-testid="customer-timeline-list">
+          <ol className="timeline-feed__list" data-testid="customer-timeline-list">
             {events.map((event) => (
-              <li key={event.id} data-testid="customer-timeline-row">
-                <strong>{event.title}</strong> · {event.eventType} · {event.occurredAt}
-                {event.summary ? <p>{event.summary}</p> : null}
+              <li key={event.id} className="timeline-feed__item" data-testid="customer-timeline-row">
+                <span className="timeline-feed__icon" aria-hidden>
+                  {eventIcon(event.eventType)}
+                </span>
+                <div className="timeline-feed__body">
+                  <p className="timeline-feed__title">{event.title}</p>
+                  <p className="timeline-feed__meta">
+                    {event.eventType} · {new Date(event.occurredAt).toLocaleString()}
+                  </p>
+                  {event.summary ? <p className="timeline-feed__summary">{event.summary}</p> : null}
+                </div>
               </li>
             ))}
-          </ul>
+          </ol>
           <div className="pagination" data-testid="customer-timeline-pagination">
             <button
               type="button"

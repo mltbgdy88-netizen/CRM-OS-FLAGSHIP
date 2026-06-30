@@ -13,11 +13,19 @@ import { CustomerTimelineSection } from './customer-timeline';
 
 interface CustomerDetailViewProps {
   customerId: string;
+  variant?: 'page' | 'slide-over';
+  onClose?: () => void;
+  onLoaded?: (customer: CustomerDetail) => void;
 }
 
 type View360State = 'loading' | 'error' | 'forbidden' | 'empty' | 'success';
 
-export function CustomerDetailView({ customerId }: CustomerDetailViewProps) {
+export function CustomerDetailView({
+  customerId,
+  variant = 'page',
+  onClose,
+  onLoaded,
+}: CustomerDetailViewProps) {
   const [state, setState] = useState<'loading' | 'error' | 'forbidden' | 'success'>('loading');
   const [view360State, setView360State] = useState<View360State>('loading');
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
@@ -54,6 +62,7 @@ export function CustomerDetailView({ customerId }: CustomerDetailViewProps) {
         }
 
         setCustomer(coreResult.value);
+        onLoaded?.(coreResult.value);
         setState('success');
 
         if (view360Result.status === 'fulfilled') {
@@ -90,7 +99,7 @@ export function CustomerDetailView({ customerId }: CustomerDetailViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [customerId]);
+  }, [customerId, onLoaded]);
 
   if (state === 'loading') {
     return (
@@ -119,8 +128,123 @@ export function CustomerDetailView({ customerId }: CustomerDetailViewProps) {
   const notes = customer360?.notes ?? customer.notes;
   const files = customer360?.files ?? customer.files;
 
+  const layoutClass =
+    variant === 'slide-over'
+      ? 'customer-detail-layout customer-detail-layout--bitrix360'
+      : 'customer-detail-layout';
+
+  if (variant === 'slide-over') {
+    return (
+      <section className={layoutClass} data-testid="customer-detail">
+        <aside className="customer-360__left" data-testid="customer-360-contacts">
+          <h2 className="customer-360__name">{customer.displayName}</h2>
+          <dl className="customer-360__facts">
+            <div>
+              <dt>Email</dt>
+              <dd>{customer.email ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Phone</dt>
+              <dd>{customer.phone ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                <span
+                  className={
+                    customer.status === 'active'
+                      ? 'status-pill status-pill--success'
+                      : 'status-pill status-pill--muted'
+                  }
+                >
+                  {customer.status}
+                </span>
+              </dd>
+            </div>
+          </dl>
+          <section className="customer-360__block" data-testid="customer-360-tags">
+            <h3>Tags</h3>
+            {customer.tags.length === 0 ? (
+              <p className="customer-360__empty">No tags</p>
+            ) : (
+              <div className="tag-list">
+                {customer.tags.map((tag) => (
+                  <span key={tag.id} className="tag-list__item">
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
+          <section className="customer-360__block" data-testid="customer-360-notes">
+            <h3>Notes</h3>
+            {notes.length === 0 ? (
+              <p className="customer-360__empty">No notes</p>
+            ) : (
+              <ul className="customer-360__list">
+                {notes.map((note) => (
+                  <li key={note.id}>
+                    <strong>{note.title ?? 'Note'}</strong>
+                    <p>{note.body}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </aside>
+
+        <div className="customer-360__center">
+          <CustomerTimelineSection customerId={customerId} variant="feed" />
+        </div>
+
+        <aside className="customer-360__right">
+          <section className="card customer-360__insights" data-testid="customer-360-panel">
+            <h3>Customer 360</h3>
+            {view360State === 'success' && customer360 ? (
+              <ul className="insight-list">
+                {customer360.scores.map((score) => (
+                  <li key={score.id} data-testid="customer-360-scores">
+                    <span>{score.metricCode}</span>
+                    <strong>{score.scoreValue}</strong>
+                  </li>
+                ))}
+                {customer360.riskScore ? (
+                  <li data-testid="customer-360-risk">
+                    <span>Risk</span>
+                    <strong>
+                      {customer360.riskScore.riskLevel} · {customer360.riskScore.riskScore}
+                    </strong>
+                  </li>
+                ) : null}
+                {customer360.lifetimeValue ? (
+                  <li data-testid="customer-360-ltv">
+                    <span>LTV</span>
+                    <strong>
+                      {customer360.lifetimeValue.ltvValue}{' '}
+                      {customer360.lifetimeValue.currency}
+                    </strong>
+                  </li>
+                ) : null}
+              </ul>
+            ) : (
+              <p className="customer-360__empty" data-testid="customer-360-empty">
+                No analytics yet.
+              </p>
+            )}
+          </section>
+          <AiAssistDock />
+          {onClose ? (
+            <button type="button" className="btn-ghost btn-ghost--full" onClick={onClose}>
+              Back to list
+            </button>
+          ) : null}
+        </aside>
+      </section>
+    );
+  }
+
   return (
-    <section className="customer-detail-layout" data-testid="customer-detail">
+    <section className={layoutClass} data-testid="customer-detail">
       <div className="customer-detail-layout__workspace">
         <p className="customer-detail-layout__breadcrumb">
           <Link href="/customers">Customers</Link> / {customer.displayName}

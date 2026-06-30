@@ -1,5 +1,5 @@
-import { CustomerListView } from '../../../components/customer-list';
+import { CustomersWorkspace } from '../../../components/customers-workspace';
 
 export default function CustomersPage() {
-  return <CustomerListView />;
+  return <CustomersWorkspace />;
 }

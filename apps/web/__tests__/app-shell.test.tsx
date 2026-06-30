@@ -4,6 +4,7 @@ import { AppShell } from '../components/app-shell';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/customers',
 }));
 
 vi.mock('../lib/auth/token-storage', () => ({

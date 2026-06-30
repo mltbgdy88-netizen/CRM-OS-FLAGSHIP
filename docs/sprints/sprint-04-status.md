@@ -49,3 +49,10 @@ main:   unchanged until final PR merge
 | Handoff | `.ai/orchestration/sprint-04-handoff-order.md` |
 | Branch plan | `.ai/orchestration/sprint-04-branch-plan.md` |
 | UI policy | `docs/DECISIONS.md` |
+| UI canon (Customer) | `docs/ux/crm-os-ui-canon-vfinal-customer-module.md` |
+| Local smoke | `docs/qa/sprint-04-local-smoke-checklist.md` |
+| Merge runbook | `docs/release/sprint-04-merge-runbook.md` |
+
+## Billing wait (2026-06)
+
+Phase 4 PRs (#21–#26) remain **open**; CI blocked by GitHub Actions billing (`runner_id: 0`). Local `pnpm sprint:04:verify` and API smoke may continue on `docs/ui-canon-customer-module` / integration. **No merge** until representative PR #22 CI is green.

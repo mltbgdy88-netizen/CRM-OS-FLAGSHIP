@@ -113,6 +113,14 @@ export function AppShell({ children }: AppShellProps) {
     >
       <div className="app-shell__space-bg" aria-hidden />
       <aside className="app-shell__sidebar" aria-label="Primary navigation">
+        {!sidebarCollapsed ? (
+          <div className="app-shell__brand" data-testid="app-shell-brand">
+            <span className="app-shell__brand-mark" aria-hidden>
+              C
+            </span>
+            <span>CRM OS</span>
+          </div>
+        ) : null}
         <button
           type="button"
           className="app-shell__collapse-btn"
@@ -183,7 +191,7 @@ export function AppShell({ children }: AppShellProps) {
             {showCrmNav ? (
               <CrmSectionNav />
             ) : (
-              <span className="app-shell__topbar-title app-shell__topbar-title--solo">NEXORA</span>
+              <span className="app-shell__topbar-title app-shell__topbar-title--solo">CRM OS</span>
             )}
             <div className="app-shell__topbar-utils">
             <input
@@ -224,7 +232,7 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         <footer className="app-shell__footer">
-          <span>NEXORA CRM OS</span>
+          <span>CRM OS</span>
           <span>© 2026</span>
           <button type="button" disabled>
             Themes

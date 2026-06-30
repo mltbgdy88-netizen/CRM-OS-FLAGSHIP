@@ -1,4 +1,4 @@
-import { CustomerDetailView } from '../../../../components/customer-detail';
+import { CustomersWorkspace } from '../../../../components/customers-workspace';
 
 interface CustomerDetailPageProps {
   params: Promise<{ id: string }>;
@@ -6,5 +6,5 @@ interface CustomerDetailPageProps {
 
 export default async function CustomerDetailPage({ params }: CustomerDetailPageProps) {
   const { id } = await params;
-  return <CustomerDetailView customerId={id} />;
+  return <CustomersWorkspace selectedCustomerId={id} />;
 }

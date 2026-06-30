@@ -5,7 +5,17 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCustomer } from '../lib/api/customers-client';
 
-export function CustomerCreateForm() {
+interface CustomerCreateFormProps {
+  variant?: 'page' | 'modal';
+  onCancel?: () => void;
+  onSuccess?: (customerId: string) => void;
+}
+
+export function CustomerCreateForm({
+  variant = 'page',
+  onCancel,
+  onSuccess,
+}: CustomerCreateFormProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,6 +31,10 @@ export function CustomerCreateForm() {
         displayName,
         email: email || undefined,
       });
+      if (onSuccess) {
+        onSuccess(customer.id);
+        return;
+      }
       router.push(`/customers/${customer.id}`);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Create failed');
@@ -28,13 +42,9 @@ export function CustomerCreateForm() {
     }
   }
 
-  return (
-    <section className="card" data-testid="customer-create-form">
-      <h1>New customer</h1>
-      <p>
-        <Link href="/customers">← Back to customers</Link>
-      </p>
-      <form onSubmit={handleSubmit}>
+  const formBody = (
+  <>
+      <form onSubmit={handleSubmit} className="customer-create-form">
         <label htmlFor="create-display-name">Display name</label>
         <input
           id="create-display-name"
@@ -51,15 +61,40 @@ export function CustomerCreateForm() {
           onChange={(event) => setEmail(event.target.value)}
           data-testid="customer-create-email"
         />
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Creating…' : 'Create customer'}
-        </button>
+        <div className="form-actions">
+          {variant === 'modal' && onCancel ? (
+            <button type="button" className="btn-ghost" onClick={onCancel}>
+              Cancel
+            </button>
+          ) : null}
+          <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting ? 'Creating…' : 'Create customer'}
+          </button>
+        </div>
       </form>
       {errorMessage && (
         <p className="form-message form-message--error" data-testid="customer-create-error">
           {errorMessage}
         </p>
       )}
+  </>
+  );
+
+  if (variant === 'modal') {
+    return (
+      <div data-testid="customer-create-form">
+        {formBody}
+      </div>
+    );
+  }
+
+  return (
+    <section className="card crm-page" data-testid="customer-create-form">
+      <h1>New customer</h1>
+      <p>
+        <Link href="/customers">← Back to customers</Link>
+      </p>
+      {formBody}
     </section>
   );
 }

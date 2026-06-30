@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { getDatabaseConfigFromEnv } from '../index';
 import { applyAllMigrations } from '../migrate';
+import { cleanupProofSeedOrphans, shouldCleanupProofSeedOrphans } from './cleanup';
 import { seedCrm360Data, seedCrmData, seedIamData } from './index';
 
 async function main(): Promise<void> {
@@ -10,6 +11,14 @@ async function main(): Promise<void> {
 
   try {
     await applyAllMigrations(pool);
+
+    if (shouldCleanupProofSeedOrphans(url)) {
+      const removed = await cleanupProofSeedOrphans(client);
+      if (removed > 0) {
+        console.log(`Proof seed cleanup removed ${removed} orphan customer row(s)`);
+      }
+    }
+
     await seedIamData(client);
     await seedCrmData(client);
     await seedCrm360Data(client);

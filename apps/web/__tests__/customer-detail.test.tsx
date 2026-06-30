@@ -103,6 +103,7 @@ describe('CustomerDetailView', () => {
     expect(screen.getByTestId('customer-360-risk')).toHaveTextContent('low');
     expect(screen.getByTestId('customer-360-ltv')).toHaveTextContent('125000');
     expect(screen.getByTestId('customer-360-timeline-preview')).toHaveTextContent('Customer onboarded');
+    expect(screen.getByTestId('ai-assist-dock')).toBeInTheDocument();
     expect(screen.getByTestId('no-file-upload-control')).toBeInTheDocument();
     expect(screen.queryByTestId('file-upload-input')).not.toBeInTheDocument();
   });

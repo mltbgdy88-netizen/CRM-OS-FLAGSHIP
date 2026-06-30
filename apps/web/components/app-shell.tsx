@@ -44,18 +44,25 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="app-shell" data-testid="app-shell">
-      <header className="app-shell__header">
+      <aside className="app-shell__sidebar" aria-label="Primary navigation">
         <div className="app-shell__brand">CRM OS</div>
-        <nav className="app-shell__nav" aria-label="Main">
+        <nav className="app-shell__sidebar-nav">
           <Link href="/customers">Customers</Link>
           <Link href="/health">Health</Link>
-          <Link href="/login">Login</Link>
-          <button type="button" onClick={handleSignOut} data-testid="app-shell-sign-out">
-            Sign out
-          </button>
         </nav>
-      </header>
-      <div className="app-shell__content">{children}</div>
+      </aside>
+      <div className="app-shell__main">
+        <header className="app-shell__topbar">
+          <div className="app-shell__topbar-title">Workspace</div>
+          <div className="app-shell__topbar-actions">
+            <span className="app-shell__tenant">default</span>
+            <button type="button" onClick={handleSignOut} data-testid="app-shell-sign-out">
+              Sign out
+            </button>
+          </div>
+        </header>
+        <div className="app-shell__content">{children}</div>
+      </div>
     </div>
   );
 }

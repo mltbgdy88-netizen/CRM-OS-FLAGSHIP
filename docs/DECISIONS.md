@@ -40,21 +40,21 @@ Domain sprints must not perform full UI visual design. Frontend work is **functi
 - `canon/ui/*` and `.cursor/rules/08-ui-design.md` describe the **target** UX; they are not Sprint-04+ implementation requirements.
 - Sprint-03 minimal customer UI on `main` is the baseline; extend, do not restyle.
 
-## 2026-06-30 — Visual System v3 (Bitrix Space+ inspired)
+## 2026-06-30 — Visual System v4 (Premium Dark — product mockups)
 
 **Status:** Accepted  
 **Applies to:** Dedicated UI implementation track (parallel to domain sprint functional proof)
 
 ### Decision
 
-Adopt **Bitrix24 Space+ workspace layout** (left section menu, top section toolbar, right utility rail, customizable background) for CRM OS — with a **premium dark palette** and CRM OS content from `crm-os-ui-screen-inventory-master.md`. This supersedes NEXORA/coral as the active visual direction for new UI work.
+Adopt **Premium Dark CRM OS** visual language from product owner mockups: deep navy `#0F172A`, surface `#1E293B`, **orange primary** `#FF6A00`, glass panels, Turkish auth copy. Supersedes v3 (Bitrix Space+ / NEXORA pink-violet / light workspace card).
 
 ### In scope
 
-- `docs/ux/crm-os-visual-system-v3-bitrix-inspired.md`
+- `docs/ux/crm-os-visual-system-v4-premium-dark.md`
 - CSS design tokens in `apps/web/app/globals.css`
-- `AppShell`, `UtilityRail`, login split layout
-- Per-module screen rollout per inventory (phased)
+- `AppShell`, login split layout, LIVE customer screens
+- Phased MOCK screens per inventory
 
 ### Out of scope (unchanged)
 
@@ -64,8 +64,13 @@ Adopt **Bitrix24 Space+ workspace layout** (left section menu, top section toolb
 
 ### Notes
 
-- Bitrix colors/branding are **not** copied; layout pattern only.
-- Domain sprint gate policy unchanged until UI phases merge behind billing/CI.
+- v3 doc retained for history; v4 is active reference.
+- Optional login hero: `public/images/crm-os-login-hero.png`.
+
+## 2026-06-30 — Visual System v3 (Bitrix Space+ inspired)
+
+**Status:** Superseded by v4  
+**Applies to:** Historical reference only
 
 ## 2026-06-22 — Verify gates must not kill dev servers
 

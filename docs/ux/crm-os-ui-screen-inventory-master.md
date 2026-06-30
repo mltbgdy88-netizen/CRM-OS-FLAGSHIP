@@ -1,7 +1,7 @@
 # CRM OS — UI Sayfa ve Katman Envanteri (Master)
 
 **Ürün:** CRM OS (multi-tenant B2B CRM)  
-**Görsel referans:** NEXORA tarzı mockup = yalnızca başlangıç örneği; içerik bu envanter + API’ye bağlıdır  
+**Görsel referans:** Premium Dark mockups (v4) — turuncu accent, glass panels; içerik bu envanter + API’ye bağlıdır  
 **Viewport hedefi:** 1440×900 desktop-first (canon)  
 **Son güncelleme:** 2026-06-30
 

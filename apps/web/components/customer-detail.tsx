@@ -1,17 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiClientError } from '../lib/api/authenticated-fetch';
 import {
   getCustomer360,
   type Customer360View,
 } from '../lib/api/customer-360-client';
-import {
-  getCustomer,
-  updateCustomer,
-  type CustomerDetail,
-} from '../lib/api/customers-client';
+import { getCustomer, type CustomerDetail } from '../lib/api/customers-client';
+import { AiAssistDock } from './ai-assist-dock';
 import { CustomerTimelineSection } from './customer-timeline';
 
 interface CustomerDetailViewProps {
@@ -27,8 +24,6 @@ export function CustomerDetailView({ customerId }: CustomerDetailViewProps) {
   const [customer360, setCustomer360] = useState<Customer360View | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [view360Error, setView360Error] = useState('');
-  const [editName, setEditName] = useState('');
-  const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -59,7 +54,6 @@ export function CustomerDetailView({ customerId }: CustomerDetailViewProps) {
         }
 
         setCustomer(coreResult.value);
-        setEditName(coreResult.value.displayName);
         setState('success');
 
         if (view360Result.status === 'fulfilled') {
@@ -98,19 +92,6 @@ export function CustomerDetailView({ customerId }: CustomerDetailViewProps) {
     };
   }, [customerId]);
 
-  async function handleUpdate(event: FormEvent) {
-    event.preventDefault();
-    setSaveMessage('');
-    try {
-      const updated = await updateCustomer(customerId, { displayName: editName });
-      setCustomer((current) => (current ? { ...current, ...updated } : current));
-      setCustomer360((current) => (current ? { ...current, ...updated } : current));
-      setSaveMessage('Customer updated.');
-    } catch (error) {
-      setSaveMessage(error instanceof Error ? error.message : 'Update failed');
-    }
-  }
-
   if (state === 'loading') {
     return (
       <p className="state-message" data-testid="customer-detail-loading">
@@ -139,27 +120,15 @@ export function CustomerDetailView({ customerId }: CustomerDetailViewProps) {
   const files = customer360?.files ?? customer.files;
 
   return (
-    <section data-testid="customer-detail">
-      <p>
-        <Link href="/customers">← Back to customers</Link>
-      </p>
-      <h1>{customer.displayName}</h1>
-      <p>
-        {customer.email ?? '—'} · {customer.phone ?? '—'} · {customer.status}
-      </p>
-
-      <form className="card edit-form" onSubmit={handleUpdate} data-testid="customer-edit-form">
-        <h2>Edit core fields</h2>
-        <label htmlFor="customer-display-name">Display name</label>
-        <input
-          id="customer-display-name"
-          value={editName}
-          onChange={(event) => setEditName(event.target.value)}
-          data-testid="customer-edit-display-name"
-        />
-        <button type="submit">Save</button>
-        {saveMessage && <p className="form-message">{saveMessage}</p>}
-      </form>
+    <section className="customer-detail-layout" data-testid="customer-detail">
+      <div className="customer-detail-layout__workspace">
+        <p className="customer-detail-layout__breadcrumb">
+          <Link href="/customers">Customers</Link> / {customer.displayName}
+        </p>
+        <h1>{customer.displayName}</h1>
+        <p>
+          {customer.email ?? '—'} · {customer.phone ?? '—'} · {customer.status}
+        </p>
 
       <section className="card" data-testid="customer-360-panel">
         <h2>Customer 360</h2>
@@ -320,6 +289,8 @@ export function CustomerDetailView({ customerId }: CustomerDetailViewProps) {
       </section>
 
       <CustomerTimelineSection customerId={customerId} />
+      </div>
+      <AiAssistDock />
     </section>
   );
 }

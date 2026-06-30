@@ -1,7 +1,8 @@
 import { Pool } from 'pg';
 import { getDatabaseConfigFromEnv } from '../index';
 import { applyAllMigrations } from '../migrate';
-import { seedCrmData, seedIamData } from './index';
+import { cleanupProofSeedOrphans, shouldCleanupProofSeedOrphans } from './cleanup';
+import { seedCrm360Data, seedCrmData, seedIamData } from './index';
 
 async function main(): Promise<void> {
   const { url } = getDatabaseConfigFromEnv();
@@ -10,10 +11,20 @@ async function main(): Promise<void> {
 
   try {
     await applyAllMigrations(pool);
+
+    if (shouldCleanupProofSeedOrphans(url)) {
+      const removed = await cleanupProofSeedOrphans(client);
+      if (removed > 0) {
+        console.log(`Proof seed cleanup removed ${removed} orphan customer row(s)`);
+      }
+    }
+
     await seedIamData(client);
     await seedCrmData(client);
+    await seedCrm360Data(client);
     console.log('Sprint-02 IAM seed completed');
     console.log('Sprint-03 CRM seed completed');
+    console.log('Sprint-04 Customer 360 seed completed');
   } finally {
     client.release();
     await pool.end();

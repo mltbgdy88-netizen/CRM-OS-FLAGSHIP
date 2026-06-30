@@ -67,9 +67,14 @@ pnpm --filter @crm-os/api dev
 pnpm --filter @crm-os/web dev
 ```
 
+Use **separate terminals** for dev servers vs sprint verify gates. Verify does not require dev servers running.
+
+**Do not** run broad Node kills (`taskkill /F /IM node.exe`, `Stop-Process -Name node -Force`) before `pnpm sprint:*:verify`. Repo scripts do not kill dev servers; if they stop during verify, an agent ran incorrect cleanup. See `docs/DECISIONS.md` and `AGENTS.md`.
+
 - API health: `http://localhost:3001/health`
 - Web root: `http://localhost:3000`
 - Web status placeholder: `http://localhost:3000/health`
+- Set `CORS_ORIGIN=http://localhost:3000` when running the API so the browser web app can call it cross-origin during local proof.
 
 Copy `.env.example` to `.env` before running apps against local services.
 

@@ -1,12 +1,14 @@
 # 00 Cursor Sprint-03 Hard Guard
 
-Source Status: SPRINT_03_ORCHESTRATION_ACTIVE_v1.1
+Source Status: **COMPLETE / SUPERSEDED** — Sprint-03 merged to `main` @ `92595b0` (tag `sprint-03-full-pass`).
 
-## Active Sprint
+Active guard: `.cursor/rules/00-sprint-04-hard-guard.md`
 
-Only Sprint-03 Customer Core orchestration and approved slices are active.
+Preserved below for historical reference and regression context. Do not weaken Sprint-03 locks when working on Sprint-04+.
 
-Sprint-01 and Sprint-02 are complete. Do not regress bootstrap or IAM scope.
+## Active Sprint (historical)
+
+Sprint-03 Customer Core — **COMPLETE**.
 
 ## Before Product Code (Phase 1+)
 

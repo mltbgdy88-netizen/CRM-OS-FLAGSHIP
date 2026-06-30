@@ -12,7 +12,7 @@ export function CustomerListView() {
   const [items, setItems] = useState<CustomerSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize] = useState(8);
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {

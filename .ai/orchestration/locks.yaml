@@ -1,13 +1,19 @@
 # File ownership locks for parallel agents
-# Source Status: SPRINT_03_ORCHESTRATION_ACTIVE_v1.1
+# Source Status: SPRINT_04_ORCHESTRATION_ACTIVE_v1.1
 
 locks:
-  # Sprint-02 frozen — no agent may edit
+  # Sprint-02 / Sprint-03 frozen — no agent may edit
   - path: packages/database/migrations/002_iam
     owner: frozen
     phase: n/a
     status: read_only
     notes: Sprint-02 complete; preserve IAM migration SQL
+
+  - path: packages/database/migrations/003_crm
+    owner: frozen
+    phase: n/a
+    status: read_only
+    notes: Sprint-03 complete; preserve CRM core migration SQL
 
   - path: apps/api/src/modules/iam
     owner: frozen
@@ -27,82 +33,92 @@ locks:
     status: read_only
     notes: Sprint-02 login slice; do not regress
 
-  # Phase 1 — Database agent exclusive (003_crm)
-  - path: packages/database/migrations/003_crm
+  - path: apps/api/src/modules/crm/customers/customers.controller.ts
+    owner: frozen
+    phase: n/a
+    status: read_only
+    notes: Sprint-03 four-endpoint API lock; extend via new controllers only
+
+  - path: apps/api/test/customers.e2e-spec.ts
+    owner: frozen
+    phase: n/a
+    status: read_only
+    notes: Sprint-03 customer API contract tests; append new spec files for 360
+
+  # Phase 1 — Database agent exclusive (003_crm_360)
+  - path: packages/database/migrations/003_crm_360
     owner: database-agent
     phase: "1"
-    notes: SQL migration band 003_crm only
+    notes: SQL migration band 003_crm_360 only; 004_lead reserved for Sprint-05
 
   - path: packages/database/prisma
     owner: database-agent
     phase: "1"
     shared_read: backend-agent
-    notes: CRM entity models; append only — do not remove IAM models
+    notes: Append 360 entity models; do not alter 003_crm model semantics
 
-  - path: packages/database/src
+  - path: packages/database/src/rls-crm-360.test.ts
     owner: database-agent
     phase: "1"
-    shared_read: backend-agent
-    notes: Tenant context helpers; extend for CRM RLS tests only
+    shared_read: qa-agent
+    notes: New RLS proof for 360 tables
 
-  # Phase 2 — Backend agent exclusive (Customer module)
+  # Phase 2 — Backend agent (Customer 360 — additive)
+  - path: apps/api/src/modules/crm/customers-360
+    owner: backend-agent
+    phase: "2"
+    notes: New 360/timeline module directory preferred
+
   - path: apps/api/src/modules/crm
     owner: backend-agent
     phase: "2"
-    notes: Customer module only; new directory
+    shared_read: frontend-agent
+    notes: Append only; customers.controller.ts frozen
 
-  - path: apps/api/src/modules/customer
-    owner: backend-agent
-    phase: "2"
-    notes: Alternate customer module path if used instead of crm/
-
-  - path: apps/api/test/crm
+  - path: apps/api/test/customer-360
     owner: backend-agent
     phase: "2"
     shared_read: qa-agent
-    notes: Customer integration permission RLS tests
+    notes: 360 API integration permission RLS tests
 
   - path: packages/permissions
     owner: backend-agent
     phase: "2"
     shared_read: architect-agent
-    notes: Append customer.* permissions; do not remove IAM codes
+    notes: Append customer.timeline.read customer.export
 
   - path: packages/events
     owner: backend-agent
     phase: "2"
     shared_read: architect-agent
-    notes: Append CustomerCreated CustomerUpdated; do not remove IAM events
+    notes: CustomerUpdated only; CustomerMerged deferred
 
-  # Phase 3 — Frontend agent (minimal AppShell + customer UI)
-  - path: apps/web/app/(app)
+  # Phase 3 — Frontend agent (functional proof)
+  - path: apps/web/app/(app)/customers
     owner: frontend-agent
     phase: "3"
-    notes: Minimal AppShell layout and authenticated shell routes
+    notes: Append 360/timeline routes; do not redesign list/detail
 
-  - path: apps/web/app/customers
-    owner: frontend-agent
-    phase: "3"
-    notes: Customer list and detail pages
+  - path: apps/web/components/app-shell.tsx
+    owner: frozen
+    phase: n/a
+    status: read_only
+    notes: Reuse as-is per docs/DECISIONS.md
 
   - path: apps/web/__tests__
     owner: frontend-agent
     phase: "3"
     shared_read: qa-agent
-    notes: Append customer UI tests; preserve login tests
+    notes: Append 360 UI tests; preserve login/customer tests
 
-  # Phase 3B IAM admin — DISABLED (deferred)
+  # Phase 3B IAM admin — DISABLED
   - path: apps/web/app/(iam)
     owner: frontend-agent
     phase: "3B"
     status: disabled
     disabled_reason: deferred_future_sprint
 
-  # QA exclusive
-  - path: tests/e2e
-    owner: qa-agent
-    phase: "4"
-
+  # QA / Security / DevOps Phase 4
   - path: docs/qa
     owner: qa-agent
     phase: "4"
@@ -113,13 +129,12 @@ locks:
     phase: "4"
     shared_read: qa-agent
 
-  # DevOps — CI verify wiring Phase 4 only
   - path: .github/workflows
     owner: devops-agent
     phase: "4"
-    notes: sprint-03-verify CI job; not in Phase 0-3
+    notes: sprint-04-verify CI job; not in Phase 0-3
 
-  # Orchestration — Architect / release
+  # Orchestration
   - path: .ai/orchestration
     owner: architect-agent
     phase: "0-4"
@@ -130,16 +145,22 @@ locks:
     phase: "0"
     notes: Sprint guard updates only with explicit orchestration task
 
-  # Do not lock (read-only for agents)
+  - path: docs/DECISIONS.md
+    owner: architect-agent
+    phase: "0"
+    shared_read: all-agents
+
   read_only:
     - canon/**
-    - specs/sprints/sprint-03*
-    - docs/sprints/sprint-03.md
+    - specs/sprints/sprint-04*
+    - docs/sprints/sprint-04.md
+    - packages/database/migrations/004_lead/**
     - _archive/**
 
-  # Explicitly forbidden paths for Sprint-03 agents
   forbidden:
     - packages/database/migrations/002_iam/**
+    - packages/database/migrations/003_crm/**
+    - packages/database/migrations/004_lead/**
     - apps/api/src/modules/iam/**
     - lead/**
     - pipeline/**

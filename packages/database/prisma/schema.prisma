@@ -529,6 +529,10 @@ model Opportunity {
   assignedUser   User?                     @relation("OpportunityAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
   conversionLogs LeadConversionLog[]
   stageHistory   OpportunityStageHistory[]
+  products       OpportunityProduct[]
+  contacts       OpportunityContact[]
+  activities     OpportunityActivity[]
+  notes          OpportunityNote[]
 
   @@index([tenantId], map: "idx_opportunities_tenant_id")
   @@index([tenantId, deletedAt], map: "idx_opportunities_tenant_deleted")
@@ -595,6 +599,106 @@ model OpportunityStageHistory {
   @@index([fromStageId], map: "idx_opportunity_stage_history_from_stage_id")
   @@index([toStageId], map: "idx_opportunity_stage_history_to_stage_id")
   @@map("opportunity_stage_history")
+}
+
+/// Tenant-owned opportunity line item.
+model OpportunityProduct {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  opportunityId String    @map("opportunity_id") @db.Uuid
+  name          String    @db.VarChar(255)
+  sku           String?   @db.VarChar(80)
+  quantity      Int       @default(1)
+  unitPrice     Decimal   @default(0) @map("unit_price") @db.Decimal(15, 2)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  version       Int       @default(1)
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_opportunity_products_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_opportunity_products_tenant_deleted")
+  @@index([opportunityId], map: "idx_opportunity_products_opportunity_id")
+  @@map("opportunity_products")
+}
+
+/// Tenant-owned opportunity contact.
+model OpportunityContact {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  opportunityId String    @map("opportunity_id") @db.Uuid
+  firstName     String    @map("first_name") @db.VarChar(100)
+  lastName      String    @map("last_name") @db.VarChar(100)
+  email         String    @db.VarChar(255)
+  phone         String?   @db.VarChar(50)
+  title         String?   @db.VarChar(120)
+  isPrimary     Boolean   @default(false) @map("is_primary")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  version       Int       @default(1)
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_opportunity_contacts_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_opportunity_contacts_tenant_deleted")
+  @@index([opportunityId], map: "idx_opportunity_contacts_opportunity_id")
+  @@map("opportunity_contacts")
+}
+
+/// Tenant-owned opportunity activity.
+model OpportunityActivity {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  opportunityId String    @map("opportunity_id") @db.Uuid
+  activityType  String    @map("activity_type") @db.VarChar(80)
+  title         String    @db.VarChar(255)
+  body          String?
+  dueAt         DateTime? @map("due_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  version       Int       @default(1)
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_opportunity_activities_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_opportunity_activities_tenant_deleted")
+  @@index([opportunityId], map: "idx_opportunity_activities_opportunity_id")
+  @@map("opportunity_activities")
+}
+
+/// Tenant-owned opportunity note.
+model OpportunityNote {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  opportunityId String    @map("opportunity_id") @db.Uuid
+  title         String?   @db.VarChar(200)
+  body          String
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  version       Int       @default(1)
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_opportunity_notes_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_opportunity_notes_tenant_deleted")
+  @@index([opportunityId], map: "idx_opportunity_notes_opportunity_id")
+  @@map("opportunity_notes")
 }
 
 /// Global identity — not tenant-scoped.

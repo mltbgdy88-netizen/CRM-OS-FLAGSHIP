@@ -58,6 +58,78 @@ async function resetDefaultTenantSalesData(): Promise<void> {
   });
 }
 
+async function seedDefaultTenantOpportunityDetail(): Promise<void> {
+  const prisma = getPrismaClient();
+
+  await prisma.opportunity.create({
+    data: {
+      id: SEED_IDS.opportunityDefault,
+      tenantId: SEED_IDS.tenantDefault,
+      pipelineId: SEED_IDS.pipelineDefault,
+      stageId: SEED_IDS.pipelineStageDefaultNew,
+      leadId: SEED_IDS.leadDefault,
+      customerId: SEED_IDS.customerDefault,
+      title: 'Default Lead Opportunity',
+      companyName: 'Default Lead Co',
+      amount: 95000,
+      probability: 45,
+      status: 'open',
+      assignedUserId: SEED_IDS.userAdmin,
+      createdBy: SEED_IDS.userAdmin,
+      products: {
+        create: {
+          tenantId: SEED_IDS.tenantDefault,
+          name: 'CRM OS Enterprise License',
+          sku: 'CRM-ENT-01',
+          quantity: 1,
+          unitPrice: 95000,
+          createdBy: SEED_IDS.userAdmin,
+        },
+      },
+      contacts: {
+        create: {
+          tenantId: SEED_IDS.tenantDefault,
+          firstName: 'Ayse',
+          lastName: 'Yilmaz',
+          email: 'ayse.yilmaz@defaultlead.co',
+          phone: '+905551112233',
+          title: 'Procurement Lead',
+          isPrimary: true,
+          createdBy: SEED_IDS.userAdmin,
+        },
+      },
+      activities: {
+        create: {
+          tenantId: SEED_IDS.tenantDefault,
+          activityType: 'call',
+          title: 'Discovery call',
+          body: 'Initial qualification call with procurement.',
+          dueAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+          createdBy: SEED_IDS.userAdmin,
+        },
+      },
+      notes: {
+        create: {
+          tenantId: SEED_IDS.tenantDefault,
+          title: 'Budget confirmed',
+          body: 'Buyer confirmed Q3 budget allocation for CRM rollout.',
+          createdBy: SEED_IDS.userAdmin,
+        },
+      },
+    },
+  });
+
+  await prisma.opportunityStageHistory.create({
+    data: {
+      tenantId: SEED_IDS.tenantDefault,
+      opportunityId: SEED_IDS.opportunityDefault,
+      fromStageId: null,
+      toStageId: SEED_IDS.pipelineStageDefaultNew,
+      createdBy: SEED_IDS.userAdmin,
+    },
+  });
+}
+
 describeSales('Sales (e2e)', () => {
   let app: INestApplication;
   let accessToken: string;
@@ -224,6 +296,21 @@ describeSales('Sales (e2e)', () => {
         tenantId: SEED_IDS.tenantB,
         roleId: tenantBPipelineRole.id,
         permissionId: SEED_IDS.permissionPipelineManage,
+      },
+    });
+
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: {
+          roleId: tenantBPipelineRole.id,
+          permissionId: '30000000-0000-4000-8000-000000000014',
+        },
+      },
+      update: { tenantId: SEED_IDS.tenantB },
+      create: {
+        tenantId: SEED_IDS.tenantB,
+        roleId: tenantBPipelineRole.id,
+        permissionId: '30000000-0000-4000-8000-000000000014',
       },
     });
 
@@ -403,6 +490,242 @@ describeSales('Sales (e2e)', () => {
 
     const events = eventPublisher.getPublishedEvents();
     expect(events.some((event) => event.eventType === 'OpportunityCreated')).toBe(true);
+    expect(events.some((event) => event.eventType === 'OpportunityStageChanged')).toBe(true);
+  });
+
+  it('GET /api/v1/opportunities requires auth', async () => {
+    await request(app.getHttpServer()).get('/api/v1/opportunities').expect(401);
+  });
+
+  it('GET /api/v1/opportunities requires opportunity.read', async () => {
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: LIMITED_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'default',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/opportunities returns paginated opportunities', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        title: `Listed Opportunity ${Date.now()}`,
+        companyName: 'Listed Opportunity Co',
+      })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    const { page, pageSize, total, items } = response.body.data;
+    expect(page).toBe(1);
+    expect(pageSize).toBeGreaterThan(0);
+    expect(typeof total).toBe('number');
+    expect(total).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(items)).toBe(true);
+    expect(items.some((item: { id: string }) => item.id === createResponse.body.data.id)).toBe(
+      true,
+    );
+    expect(items[0]).toHaveProperty('pipeline');
+    expect(items[0]).toHaveProperty('stage');
+  });
+
+  it('GET /api/v1/opportunities/:id returns detail with child entities', async () => {
+    await seedDefaultTenantOpportunityDetail();
+
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/opportunities/${SEED_IDS.opportunityDefault}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    expect(response.body.data.id).toBe(SEED_IDS.opportunityDefault);
+    expect(Array.isArray(response.body.data.products)).toBe(true);
+    expect(response.body.data.products.length).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(response.body.data.contacts)).toBe(true);
+    expect(response.body.data.contacts.length).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(response.body.data.activities)).toBe(true);
+    expect(response.body.data.activities.length).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(response.body.data.notes)).toBe(true);
+    expect(response.body.data.notes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('GET /api/v1/opportunities enforces tenant isolation', async () => {
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: TENANT_B_PIPELINE_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'tenant-b',
+      })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .expect(200);
+
+    const { items } = response.body.data;
+    expect(items.some((item: { id: string }) => item.id === SEED_IDS.opportunityDefault)).toBe(
+      false,
+    );
+    expect(items.some((item: { id: string }) => item.id === SEED_IDS.opportunityTenantB)).toBe(
+      true,
+    );
+  });
+
+  it('PATCH /api/v1/opportunities/:id updates opportunity with audit', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        title: 'Patch Target Opportunity',
+        companyName: 'Patch Target Co',
+        amount: 10000,
+        probability: 20,
+      })
+      .expect(201);
+
+    eventPublisher.clear();
+
+    const response = await request(app.getHttpServer())
+      .patch(`/api/v1/opportunities/${createResponse.body.data.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        title: 'Updated Opportunity Title',
+        amount: 15000,
+        probability: 40,
+      })
+      .expect(200);
+
+    expect(response.body.data.title).toBe('Updated Opportunity Title');
+    expect(response.body.data.amount).toBe(15000);
+    expect(response.body.data.probability).toBe(40);
+
+    const prisma = getPrismaClient();
+    const audit = await prisma.auditLog.findFirst({
+      where: {
+        action: 'opportunity.updated',
+        entityId: createResponse.body.data.id,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(audit).toBeTruthy();
+  });
+
+  it('PATCH /api/v1/opportunities/:id emits won event and audit when status is won', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        title: 'Won Target Opportunity',
+        companyName: 'Won Target Co',
+      })
+      .expect(201);
+
+    eventPublisher.clear();
+
+    const response = await request(app.getHttpServer())
+      .patch(`/api/v1/opportunities/${createResponse.body.data.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ status: 'won' })
+      .expect(200);
+
+    expect(response.body.data.status).toBe('won');
+
+    const prisma = getPrismaClient();
+    const audit = await prisma.auditLog.findFirst({
+      where: {
+        action: 'opportunity.won',
+        entityId: createResponse.body.data.id,
+      },
+    });
+    expect(audit).toBeTruthy();
+
+    const events = eventPublisher.getPublishedEvents();
+    expect(events.some((event) => event.eventType === 'OpportunityWon')).toBe(true);
+  });
+
+  it('PATCH /api/v1/opportunities/:id emits lost event and audit when status is lost', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        title: 'Lost Target Opportunity',
+        companyName: 'Lost Target Co',
+      })
+      .expect(201);
+
+    eventPublisher.clear();
+
+    const response = await request(app.getHttpServer())
+      .patch(`/api/v1/opportunities/${createResponse.body.data.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ status: 'lost' })
+      .expect(200);
+
+    expect(response.body.data.status).toBe('lost');
+
+    const prisma = getPrismaClient();
+    const audit = await prisma.auditLog.findFirst({
+      where: {
+        action: 'opportunity.lost',
+        entityId: createResponse.body.data.id,
+      },
+    });
+    expect(audit).toBeTruthy();
+
+    const events = eventPublisher.getPublishedEvents();
+    expect(events.some((event) => event.eventType === 'OpportunityLost')).toBe(true);
+  });
+
+  it('PATCH /api/v1/opportunities/:id emits stage change event and appends history', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        title: 'Stage Change Opportunity',
+        companyName: 'Stage Change Co',
+      })
+      .expect(201);
+
+    eventPublisher.clear();
+
+    const response = await request(app.getHttpServer())
+      .patch(`/api/v1/opportunities/${createResponse.body.data.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ stageId: SEED_IDS.pipelineStageDefaultQualified })
+      .expect(200);
+
+    expect(response.body.data.stageId).toBe(SEED_IDS.pipelineStageDefaultQualified);
+    expect(response.body.data.stage.code).toBe('qualified');
+
+    const prisma = getPrismaClient();
+    const stageHistory = await prisma.opportunityStageHistory.findFirst({
+      where: {
+        opportunityId: createResponse.body.data.id,
+        toStageId: SEED_IDS.pipelineStageDefaultQualified,
+      },
+    });
+    expect(stageHistory).toBeTruthy();
+    expect(stageHistory?.fromStageId).toBe(SEED_IDS.pipelineStageDefaultNew);
+
+    const events = eventPublisher.getPublishedEvents();
     expect(events.some((event) => event.eventType === 'OpportunityStageChanged')).toBe(true);
   });
 

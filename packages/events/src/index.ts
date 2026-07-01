@@ -214,6 +214,8 @@ export function createLeadConvertedEvent(input: {
 export const SALES_EVENT_TYPES = {
   OPPORTUNITY_CREATED: 'OpportunityCreated',
   OPPORTUNITY_STAGE_CHANGED: 'OpportunityStageChanged',
+  OPPORTUNITY_WON: 'OpportunityWon',
+  OPPORTUNITY_LOST: 'OpportunityLost',
 } as const;
 
 export type SalesEventType = (typeof SALES_EVENT_TYPES)[keyof typeof SALES_EVENT_TYPES];
@@ -257,6 +259,48 @@ export function createOpportunityStageChangedEvent(input: {
     payload: {
       fromStageId: input.fromStageId,
       toStageId: input.toStageId,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createOpportunityWonEvent(input: {
+  tenantId: string;
+  actorId: string;
+  opportunityId: string;
+  pipelineId: string;
+  stageId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'opportunity',
+    aggregateId: input.opportunityId,
+    eventType: SALES_EVENT_TYPES.OPPORTUNITY_WON,
+    payload: {
+      pipelineId: input.pipelineId,
+      stageId: input.stageId,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createOpportunityLostEvent(input: {
+  tenantId: string;
+  actorId: string;
+  opportunityId: string;
+  pipelineId: string;
+  stageId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'opportunity',
+    aggregateId: input.opportunityId,
+    eventType: SALES_EVENT_TYPES.OPPORTUNITY_LOST,
+    payload: {
+      pipelineId: input.pipelineId,
+      stageId: input.stageId,
     },
     createdAt: new Date(),
   };

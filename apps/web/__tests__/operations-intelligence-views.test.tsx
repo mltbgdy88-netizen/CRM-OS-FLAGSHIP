@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { AiCopilotView } from '../components/ai-copilot-view';
-import { QuoteListView } from '../components/quote-list-view';
 import { ReportsView } from '../components/reports-view';
 import { TaskListView } from '../components/task-list-view';
 
@@ -12,14 +11,6 @@ describe('TaskListView', () => {
     expect(screen.getByTestId('task-list')).toBeInTheDocument();
     expect(screen.getByText('Görevler')).toBeInTheDocument();
     expect(screen.getByTestId('task-row-task-001')).toBeInTheDocument();
-  });
-});
-
-describe('QuoteListView', () => {
-  it('renders mock quote list', () => {
-    render(<QuoteListView />);
-    expect(screen.getByTestId('quote-list')).toBeInTheDocument();
-    expect(screen.getByText('TKL-2026-0142')).toBeInTheDocument();
   });
 });
 

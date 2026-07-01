@@ -1,23 +1,69 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import {
-  formatTry,
-  MOCK_QUOTES,
-  quoteStatusClass,
-  quoteStatusLabel,
-  type QuoteStatus,
-} from '../lib/mock/quotes-mock';
-import { MockPreviewBadge } from './mock-preview-badge';
+import { useEffect, useMemo, useState } from 'react';
+import { ApiClientError } from '../lib/api/authenticated-fetch';
+import { listQuotes, type QuoteListItem, type QuoteStatus } from '../lib/api/quotes-client';
+import { formatTry, quoteStatusClass, quoteStatusLabel } from '../lib/mock/quotes-mock';
+import { TableSkeleton } from './table-skeleton';
 
 type StatusFilter = 'all' | QuoteStatus;
 
+function formatAmount(amount: number, currencyCode: string): string {
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: currencyCode,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function createdByLabel(quote: QuoteListItem): string {
+  return quote.createdByName ?? '—';
+}
+
 export function QuoteListView() {
+  const [state, setState] = useState<'loading' | 'empty' | 'error' | 'forbidden' | 'success'>(
+    'loading',
+  );
+  const [items, setItems] = useState<QuoteListItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [errorMessage, setErrorMessage] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setState('loading');
+      try {
+        const result = await listQuotes(1, 50);
+        if (cancelled) {
+          return;
+        }
+        setItems(result.items);
+        setTotal(result.total);
+        setState(result.items.length === 0 ? 'empty' : 'success');
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        if (error instanceof ApiClientError && error.kind === 'forbidden') {
+          setState('forbidden');
+          return;
+        }
+        setErrorMessage(error instanceof Error ? error.message : 'Teklifler yüklenemedi');
+        setState('error');
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const filteredItems = useMemo(() => {
-    let result = MOCK_QUOTES;
+    let result = items;
     if (statusFilter !== 'all') {
       result = result.filter((quote) => quote.status === statusFilter);
     }
@@ -26,27 +72,80 @@ export function QuoteListView() {
       result = result.filter(
         (quote) =>
           quote.number.toLowerCase().includes(query) ||
-          quote.customer.toLowerCase().includes(query),
+          quote.customerName.toLowerCase().includes(query),
       );
     }
     return result;
-  }, [searchQuery, statusFilter]);
+  }, [items, searchQuery, statusFilter]);
 
-  const totalValue = MOCK_QUOTES.reduce((sum, q) => sum + q.amount, 0);
-  const acceptedCount = MOCK_QUOTES.filter((q) => q.status === 'accepted').length;
-  const avgMargin = Math.round(
-    MOCK_QUOTES.reduce((sum, q) => sum + q.marginPercent, 0) / MOCK_QUOTES.length,
-  );
+  const totalValue = items.reduce((sum, quote) => sum + quote.total, 0);
+  const acceptedCount = items.filter((quote) => quote.status === 'accepted').length;
+  const avgMargin =
+    items.length > 0
+      ? Math.round(items.reduce((sum, quote) => sum + quote.marginPercent, 0) / items.length)
+      : 0;
+  const pendingCount = items.filter((quote) => quote.status === 'sent').length;
+
+  if (state === 'loading') {
+    return (
+      <section className="workspace-card entity-page" data-testid="quote-list">
+        <header className="entity-page__header">
+          <div className="entity-page__title-block">
+            <h1 className="entity-page__title">Teklifler</h1>
+          </div>
+        </header>
+        <TableSkeleton rows={6} data-testid="quote-list-loading" />
+      </section>
+    );
+  }
+
+  if (state === 'forbidden') {
+    return (
+      <section className="workspace-card entity-page" data-testid="quote-list">
+        <p className="state-message state-message--forbidden" data-testid="quote-list-forbidden">
+          Teklif listesini görüntüleme yetkiniz yok.
+        </p>
+      </section>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <section className="workspace-card entity-page" data-testid="quote-list">
+        <p className="state-message state-message--error" data-testid="quote-list-error">
+          {errorMessage}
+        </p>
+      </section>
+    );
+  }
+
+  if (state === 'empty') {
+    return (
+      <section className="workspace-card entity-page" data-testid="quote-list">
+        <header className="entity-page__header">
+          <div className="entity-page__title-block">
+            <h1 className="entity-page__title">Teklifler</h1>
+            <span className="entity-page__count">0 kayıt</span>
+          </div>
+        </header>
+        <div className="empty-state" data-testid="quote-list-empty">
+          <span className="empty-state__icon" aria-hidden>
+            ◇
+          </span>
+          <p>Henüz teklif kaydı yok.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="workspace-card entity-page" data-testid="quote-list">
       <header className="entity-page__header">
         <div className="entity-page__title-block">
           <h1 className="entity-page__title">Teklifler</h1>
-          <span className="entity-page__count">{MOCK_QUOTES.length} kayıt</span>
+          <span className="entity-page__count">{total} kayıt</span>
         </div>
         <div className="entity-page__header-actions">
-          <MockPreviewBadge />
           <button type="button" className="btn-accent-green" disabled title="Sprint-07 ile aktif olacak">
             + Yeni Teklif
           </button>
@@ -87,9 +186,7 @@ export function QuoteListView() {
           </span>
           <div>
             <p className="kpi-card__label">Bekleyen</p>
-            <p className="kpi-card__value">
-              {MOCK_QUOTES.filter((q) => q.status === 'sent').length}
-            </p>
+            <p className="kpi-card__value">{pendingCount}</p>
           </div>
         </article>
       </div>
@@ -155,15 +252,17 @@ export function QuoteListView() {
                   <td>
                     <span className="data-table__link">{quote.number}</span>
                   </td>
-                  <td className="data-table__muted">{quote.customer}</td>
-                  <td className="data-table__primary">{formatTry(quote.amount)}</td>
+                  <td className="data-table__muted">{quote.customerName}</td>
+                  <td className="data-table__primary">
+                    {formatAmount(quote.total, quote.currencyCode)}
+                  </td>
                   <td>%{quote.marginPercent}</td>
                   <td>
                     <span className={quoteStatusClass(quote.status)}>
                       {quoteStatusLabel(quote.status)}
                     </span>
                   </td>
-                  <td className="data-table__muted">{quote.createdBy}</td>
+                  <td className="data-table__muted">{createdByLabel(quote)}</td>
                   <td className="data-table__muted">
                     {new Date(quote.createdAt).toLocaleDateString('tr-TR')}
                   </td>
@@ -175,8 +274,8 @@ export function QuoteListView() {
       )}
 
       <footer className="entity-footer">
-        <p className="entity-footer__hint" data-testid="quote-mock-notice">
-          Demo veri — teklif oluşturucu Sprint-07 ile gelecek.
+        <p className="entity-footer__hint" data-testid="quote-api-notice">
+          Canlı API — toplu işlem kapalıdır.
         </p>
       </footer>
     </section>

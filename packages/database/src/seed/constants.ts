@@ -88,6 +88,19 @@ export const SEED_IDS = {
   opportunityActivityTenantB: '65200000-0000-4000-8000-000000000002',
   opportunityNoteDefault: '65300000-0000-4000-8000-000000000001',
   opportunityNoteTenantB: '65300000-0000-4000-8000-000000000002',
+  permissionQuoteRead: '30000000-0000-4000-8000-000000000018',
+  permissionQuoteCreate: '30000000-0000-4000-8000-000000000019',
+  permissionQuoteUpdate: '30000000-0000-4000-8000-000000000020',
+  quoteDefault: '66000000-0000-4000-8000-000000000001',
+  quoteTenantB: '66000000-0000-4000-8000-000000000002',
+  quoteVersionDefault: '66100000-0000-4000-8000-000000000001',
+  quoteVersionTenantB: '66100000-0000-4000-8000-000000000002',
+  quoteItemDefault: '66200000-0000-4000-8000-000000000001',
+  quoteItemTenantB: '66200000-0000-4000-8000-000000000002',
+  quoteDiscountDefault: '66300000-0000-4000-8000-000000000001',
+  quoteDiscountTenantB: '66300000-0000-4000-8000-000000000002',
+  quoteTaxDefault: '66400000-0000-4000-8000-000000000001',
+  quoteTaxTenantB: '66400000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -228,6 +241,27 @@ export const SEED_SALES_PERMISSIONS = [
     code: 'opportunity.update.stage',
     module: 'sales',
     description: 'Move opportunities between pipeline stages',
+  },
+] as const;
+
+export const SEED_QUOTE_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionQuoteRead,
+    code: 'quote.read',
+    module: 'quote',
+    description: 'Read quotes and related line data',
+  },
+  {
+    id: SEED_IDS.permissionQuoteCreate,
+    code: 'quote.create',
+    module: 'quote',
+    description: 'Create quotes',
+  },
+  {
+    id: SEED_IDS.permissionQuoteUpdate,
+    code: 'quote.update',
+    module: 'quote',
+    description: 'Update quotes and line items',
   },
 ] as const;
 

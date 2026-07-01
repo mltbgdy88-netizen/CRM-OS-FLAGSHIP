@@ -305,3 +305,32 @@ export function createOpportunityLostEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const QUOTE_EVENT_TYPES = {
+  QUOTE_CREATED: 'QuoteCreated',
+} as const;
+
+export type QuoteEventType = (typeof QUOTE_EVENT_TYPES)[keyof typeof QUOTE_EVENT_TYPES];
+
+export function createQuoteCreatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  quoteId: string;
+  number: string;
+  customerId: string;
+  total: number;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'quote',
+    aggregateId: input.quoteId,
+    eventType: QUOTE_EVENT_TYPES.QUOTE_CREATED,
+    payload: {
+      number: input.number,
+      customerId: input.customerId,
+      total: input.total,
+    },
+    createdAt: new Date(),
+  };
+}

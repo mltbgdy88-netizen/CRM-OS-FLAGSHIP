@@ -53,6 +53,29 @@ export const SEED_IDS = {
   leadAssignmentTenantB: '54000000-0000-4000-8000-000000000002',
   leadActivityDefault: '55000000-0000-4000-8000-000000000001',
   leadActivityTenantB: '55000000-0000-4000-8000-000000000002',
+  permissionLeadConvert: '30000000-0000-4000-8000-000000000011',
+  permissionOpportunityCreate: '30000000-0000-4000-8000-000000000012',
+  permissionPipelineManage: '30000000-0000-4000-8000-000000000013',
+  pipelineDefault: '60000000-0000-4000-8000-000000000001',
+  pipelineTenantB: '60000000-0000-4000-8000-000000000002',
+  pipelineStageDefaultNew: '61000000-0000-4000-8000-000000000001',
+  pipelineStageDefaultQualified: '61000000-0000-4000-8000-000000000002',
+  pipelineStageDefaultProposal: '61000000-0000-4000-8000-000000000003',
+  pipelineStageDefaultNegotiation: '61000000-0000-4000-8000-000000000004',
+  pipelineStageDefaultWon: '61000000-0000-4000-8000-000000000005',
+  pipelineStageDefaultLost: '61000000-0000-4000-8000-000000000006',
+  pipelineStageTenantBNew: '61000000-0000-4000-8000-000000000011',
+  pipelineStageTenantBQualified: '61000000-0000-4000-8000-000000000012',
+  pipelineStageTenantBProposal: '61000000-0000-4000-8000-000000000013',
+  pipelineStageTenantBNegotiation: '61000000-0000-4000-8000-000000000014',
+  pipelineStageTenantBWon: '61000000-0000-4000-8000-000000000015',
+  pipelineStageTenantBLost: '61000000-0000-4000-8000-000000000016',
+  opportunityDefault: '62000000-0000-4000-8000-000000000001',
+  opportunityTenantB: '62000000-0000-4000-8000-000000000002',
+  leadConversionLogDefault: '63000000-0000-4000-8000-000000000001',
+  leadConversionLogTenantB: '63000000-0000-4000-8000-000000000002',
+  opportunityStageHistoryDefault: '64000000-0000-4000-8000-000000000001',
+  opportunityStageHistoryTenantB: '64000000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -148,6 +171,27 @@ export const SEED_LEAD_PERMISSIONS = [
     code: 'lead.update',
     module: 'lead',
     description: 'Update leads and status',
+  },
+] as const;
+
+export const SEED_SALES_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionLeadConvert,
+    code: 'lead.convert',
+    module: 'lead',
+    description: 'Convert leads to opportunities and customers',
+  },
+  {
+    id: SEED_IDS.permissionOpportunityCreate,
+    code: 'opportunity.create',
+    module: 'sales',
+    description: 'Create and manage opportunities',
+  },
+  {
+    id: SEED_IDS.permissionPipelineManage,
+    code: 'pipeline.manage',
+    module: 'sales',
+    description: 'Manage pipelines and stages',
   },
 ] as const;
 

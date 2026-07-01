@@ -113,6 +113,7 @@ export const LEAD_EVENT_TYPES = {
   LEAD_ASSIGNED: 'LeadAssigned',
   LEAD_QUALIFIED: 'LeadQualified',
   LEAD_LOST: 'LeadLost',
+  LEAD_CONVERTED: 'LeadConverted',
 } as const;
 
 export type LeadEventType = (typeof LEAD_EVENT_TYPES)[keyof typeof LEAD_EVENT_TYPES];
@@ -185,6 +186,78 @@ export function createLeadLostEvent(input: {
     aggregateId: input.leadId,
     eventType: LEAD_EVENT_TYPES.LEAD_LOST,
     payload: {},
+    createdAt: new Date(),
+  };
+}
+
+export function createLeadConvertedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  leadId: string;
+  opportunityId: string;
+  customerId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'lead',
+    aggregateId: input.leadId,
+    eventType: LEAD_EVENT_TYPES.LEAD_CONVERTED,
+    payload: {
+      opportunityId: input.opportunityId,
+      customerId: input.customerId,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export const SALES_EVENT_TYPES = {
+  OPPORTUNITY_CREATED: 'OpportunityCreated',
+  OPPORTUNITY_STAGE_CHANGED: 'OpportunityStageChanged',
+} as const;
+
+export type SalesEventType = (typeof SALES_EVENT_TYPES)[keyof typeof SALES_EVENT_TYPES];
+
+export function createOpportunityCreatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  opportunityId: string;
+  pipelineId: string;
+  stageId: string;
+  title: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'opportunity',
+    aggregateId: input.opportunityId,
+    eventType: SALES_EVENT_TYPES.OPPORTUNITY_CREATED,
+    payload: {
+      pipelineId: input.pipelineId,
+      stageId: input.stageId,
+      title: input.title,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createOpportunityStageChangedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  opportunityId: string;
+  fromStageId: string;
+  toStageId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'opportunity',
+    aggregateId: input.opportunityId,
+    eventType: SALES_EVENT_TYPES.OPPORTUNITY_STAGE_CHANGED,
+    payload: {
+      fromStageId: input.fromStageId,
+      toStageId: input.toStageId,
+    },
     createdAt: new Date(),
   };
 }

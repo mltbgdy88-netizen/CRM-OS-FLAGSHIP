@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { getDatabaseConfigFromEnv } from '../config';
-import { seedCrm360Data, seedCrmData, seedIamData, seedLeadData } from './index';
+import { seedCrm360Data, seedCrmData, seedIamData, seedLeadData, seedSalesData } from './index';
 
 export async function seedIamFromEnv(): Promise<void> {
   const pool = new Pool({ connectionString: getDatabaseConfigFromEnv().url });
@@ -11,6 +11,7 @@ export async function seedIamFromEnv(): Promise<void> {
     await seedCrmData(client);
     await seedCrm360Data(client);
     await seedLeadData(client);
+    await seedSalesData(client);
   } finally {
     client.release();
     await pool.end();

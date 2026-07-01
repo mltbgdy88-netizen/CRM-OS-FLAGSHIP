@@ -1,49 +1,76 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { AuthClientError, login } from '../../lib/api/auth-client';
+import {
+  DEV_LOGIN_EMAIL,
+  DEV_LOGIN_PASSWORD,
+  DEV_LOGIN_TENANT,
+  isDevAutoLoginEnabled,
+} from '../../lib/auth/dev-credentials';
 import { storeAccessToken } from '../../lib/auth/token-storage';
 
 type FormStatus = 'idle' | 'loading' | 'validation_error' | 'auth_error' | 'network_error' | 'success';
 
+const devAutoLogin = isDevAutoLoginEnabled();
+
 export function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [tenantSlug, setTenantSlug] = useState('default');
+  const autoLoginAttempted = useRef(false);
+  const [email, setEmail] = useState(devAutoLogin ? DEV_LOGIN_EMAIL : '');
+  const [password, setPassword] = useState(devAutoLogin ? DEV_LOGIN_PASSWORD : '');
+  const [tenantSlug, setTenantSlug] = useState(DEV_LOGIN_TENANT);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [status, setStatus] = useState<FormStatus>('idle');
   const [successEmail, setSuccessEmail] = useState<string | null>(null);
   const [tokenReceived, setTokenReceived] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!email.trim() || !password) {
-      setStatus('validation_error');
-      return;
-    }
-
-    setStatus('loading');
-    setSuccessEmail(null);
-    setTokenReceived(false);
-
-    try {
-      const result = await login({ email: email.trim(), password, tenantSlug: tenantSlug.trim() });
-      storeAccessToken(result.accessToken);
-      setSuccessEmail(result.user.email);
-      setTokenReceived(Boolean(result.accessToken));
-      setStatus('success');
-      router.push('/dashboard');
-    } catch (error) {
-      if (error instanceof AuthClientError) {
-        setStatus(error.kind === 'network' ? 'network_error' : 'auth_error');
+  const performLogin = useCallback(
+    async (loginEmail: string, loginPassword: string, loginTenant: string) => {
+      if (!loginEmail.trim() || !loginPassword) {
+        setStatus('validation_error');
         return;
       }
-      setStatus('network_error');
+
+      setStatus('loading');
+      setSuccessEmail(null);
+      setTokenReceived(false);
+
+      try {
+        const result = await login({
+          email: loginEmail.trim(),
+          password: loginPassword,
+          tenantSlug: loginTenant.trim(),
+        });
+        storeAccessToken(result.accessToken);
+        setSuccessEmail(result.user.email);
+        setTokenReceived(Boolean(result.accessToken));
+        setStatus('success');
+        router.push('/dashboard');
+      } catch (error) {
+        if (error instanceof AuthClientError) {
+          setStatus(error.kind === 'network' ? 'network_error' : 'auth_error');
+          return;
+        }
+        setStatus('network_error');
+      }
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    if (!devAutoLogin || autoLoginAttempted.current) {
+      return;
     }
+    autoLoginAttempted.current = true;
+    void performLogin(DEV_LOGIN_EMAIL, DEV_LOGIN_PASSWORD, DEV_LOGIN_TENANT);
+  }, [performLogin]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await performLogin(email, password, tenantSlug);
   }
 
   const isLoading = status === 'loading';
@@ -54,6 +81,11 @@ export function LoginForm() {
         Yerel geliştirme: token sessionStorage&apos;da tutulur (XSS riski). Prodüksiyonda
         kullanmayın.
       </p>
+      {devAutoLogin ? (
+        <p className="login-dev-hint" data-testid="login-dev-auto-hint">
+          Yerel dev: varsayılan hesap otomatik doldurulur ve giriş denenir.
+        </p>
+      ) : null}
 
       <form onSubmit={handleSubmit} aria-busy={isLoading} data-testid="login-form">
         <label htmlFor="email">E-posta</label>

@@ -132,12 +132,12 @@ describe('OrderDetailView', () => {
     render(<OrderDetailView orderId="ord-001" />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('order-detail')).toBeInTheDocument();
+      expect(screen.getByTestId('order-detail-header')).toBeInTheDocument();
     });
 
+    expect(screen.getByTestId('order-detail')).toBeInTheDocument();
     expect(screen.getByText('O-2026-0001')).toBeInTheDocument();
     expect(screen.getAllByText('Onaylandı').length).toBeGreaterThan(0);
-    expect(screen.getByTestId('order-detail-header')).toBeInTheDocument();
     expect(screen.getByTestId('order-detail-items')).toBeInTheDocument();
     expect(screen.getByText('CRM OS Enterprise License')).toBeInTheDocument();
     expect(screen.getByTestId('order-detail-timeline')).toBeInTheDocument();

@@ -254,6 +254,10 @@ describeOrders('Orders (e2e)', () => {
     expect(response.body.data.items.length).toBeGreaterThanOrEqual(1);
     expect(Array.isArray(response.body.data.statusHistory)).toBe(true);
     expect(response.body.data.statusHistory.length).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(response.body.data.shipments)).toBe(true);
+    expect(Array.isArray(response.body.data.deliveries)).toBe(true);
+    expect(Array.isArray(response.body.data.orderNotes)).toBe(true);
+    expect(response.body.data.orderNotes.length).toBeGreaterThanOrEqual(1);
   });
 
   it('POST /api/v1/orders requires order.create', async () => {
@@ -404,6 +408,127 @@ describeOrders('Orders (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ customerId: SEED_IDS.customerDefault })
       .expect(403);
+  });
+
+  async function createConfirmedOrder(): Promise<string> {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/orders')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        customerId: SEED_IDS.customerDefault,
+        status: 'confirmed',
+        items: [{ name: 'Operations test line', quantity: 1, unitPrice: 1500 }],
+      })
+      .expect(201);
+
+    return response.body.data.id as string;
+  }
+
+  it('POST /api/v1/orders/:id/ship requires order.ship', async () => {
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: ORDER_READ_ONLY_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'default',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/orders/${SEED_IDS.orderDefault}/ship`)
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .send({ carrier: 'Aras', trackingNumber: 'TRK-001' })
+      .expect(403);
+  });
+
+  it('POST /api/v1/orders/:id/ship ships confirmed order with audit and event', async () => {
+    eventPublisher.clear();
+    const orderId = await createConfirmedOrder();
+
+    const response = await request(app.getHttpServer())
+      .post(`/api/v1/orders/${orderId}/ship`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ carrier: 'Yurtiçi', trackingNumber: 'YT-OPS-001', notes: 'Express shipment' })
+      .expect(201);
+
+    expect(response.body.data.status).toBe('shipped');
+    expect(response.body.data.shipments.length).toBeGreaterThanOrEqual(1);
+    expect(response.body.data.shipments[0].trackingNumber).toBe('YT-OPS-001');
+
+    const prisma = getPrismaClient();
+    const audit = await prisma.auditLog.findFirst({
+      where: { action: 'order.shipped', entityId: orderId },
+    });
+    expect(audit).toBeTruthy();
+
+    const events = eventPublisher.getPublishedEvents();
+    expect(events.some((event) => event.eventType === 'OrderShipped')).toBe(true);
+  });
+
+  it('POST /api/v1/orders/:id/deliver delivers shipped order', async () => {
+    eventPublisher.clear();
+    const orderId = await createConfirmedOrder();
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/orders/${orderId}/ship`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ carrier: 'MNG', trackingNumber: 'MNG-OPS-002' })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .post(`/api/v1/orders/${orderId}/deliver`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ recipientName: 'Ayşe Yılmaz', notes: 'Signed at front desk' })
+      .expect(201);
+
+    expect(response.body.data.status).toBe('delivered');
+    expect(response.body.data.deliveries.length).toBeGreaterThanOrEqual(1);
+
+    const events = eventPublisher.getPublishedEvents();
+    expect(events.some((event) => event.eventType === 'OrderDelivered')).toBe(true);
+  });
+
+  it('POST /api/v1/orders/:id/cancel cancels pending order', async () => {
+    eventPublisher.clear();
+
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/orders')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        customerId: SEED_IDS.customerDefault,
+        items: [{ name: 'Cancel test line', quantity: 1, unitPrice: 500 }],
+      })
+      .expect(201);
+
+    const orderId = createResponse.body.data.id as string;
+
+    const response = await request(app.getHttpServer())
+      .post(`/api/v1/orders/${orderId}/cancel`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ reason: 'Customer requested cancellation.' })
+      .expect(201);
+
+    expect(response.body.data.status).toBe('cancelled');
+
+    const events = eventPublisher.getPublishedEvents();
+    expect(events.some((event) => event.eventType === 'OrderCancelled')).toBe(true);
+  });
+
+  it('POST /api/v1/orders/:id/ship rejects non-confirmed order', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/orders')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        customerId: SEED_IDS.customerDefault,
+        items: [{ name: 'Pending ship test', quantity: 1, unitPrice: 500 }],
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/orders/${createResponse.body.data.id}/ship`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ carrier: 'Aras' })
+      .expect(400);
   });
 });
 

@@ -1282,6 +1282,11 @@ model Order {
   quote         Quote?               @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
+  shipments     OrderShipment[]
+  deliveries    OrderDelivery[]
+  returns       OrderReturn[]
+  files         OrderFile[]
+  orderNotes    OrderNote[]
 
   @@unique([tenantId, number], map: "uq_orders_tenant_number")
   @@index([tenantId], map: "idx_orders_tenant_id")
@@ -1340,6 +1345,125 @@ model OrderStatusHistory {
   @@index([tenantId, deletedAt], map: "idx_order_status_history_tenant_deleted")
   @@index([orderId], map: "idx_order_status_history_order_id")
   @@map("order_status_history")
+}
+
+/// Tenant-owned order shipment record.
+model OrderShipment {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  orderId        String    @map("order_id") @db.Uuid
+  carrier        String?   @db.VarChar(120)
+  trackingNumber String?   @map("tracking_number") @db.VarChar(120)
+  shippedAt      DateTime  @default(now()) @map("shipped_at") @db.Timestamptz(6)
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedAt      DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy      String?   @map("updated_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+  version        Int       @default(1)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_order_shipments_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_order_shipments_tenant_deleted")
+  @@index([orderId], map: "idx_order_shipments_order_id")
+  @@map("order_shipments")
+}
+
+/// Tenant-owned order delivery record.
+model OrderDelivery {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  orderId       String    @map("order_id") @db.Uuid
+  deliveredAt   DateTime  @default(now()) @map("delivered_at") @db.Timestamptz(6)
+  recipientName String?   @map("recipient_name") @db.VarChar(255)
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  version       Int       @default(1)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_order_deliveries_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_order_deliveries_tenant_deleted")
+  @@index([orderId], map: "idx_order_deliveries_order_id")
+  @@map("order_deliveries")
+}
+
+/// Tenant-owned order return record.
+model OrderReturn {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  orderId    String    @map("order_id") @db.Uuid
+  reason     String
+  returnedAt DateTime  @default(now()) @map("returned_at") @db.Timestamptz(6)
+  status     String    @default("pending") @db.VarChar(40)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_order_returns_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_order_returns_tenant_deleted")
+  @@index([orderId], map: "idx_order_returns_order_id")
+  @@map("order_returns")
+}
+
+/// Tenant-owned order file attachment.
+model OrderFile {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  orderId   String    @map("order_id") @db.Uuid
+  fileName  String    @map("file_name") @db.VarChar(255)
+  fileUrl   String    @map("file_url")
+  mimeType  String?   @map("mime_type") @db.VarChar(120)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy String?   @map("deleted_by") @db.Uuid
+  version   Int       @default(1)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_order_files_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_order_files_tenant_deleted")
+  @@index([orderId], map: "idx_order_files_order_id")
+  @@map("order_files")
+}
+
+/// Tenant-owned order note.
+model OrderNote {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  orderId   String    @map("order_id") @db.Uuid
+  body      String
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy String?   @map("deleted_by") @db.Uuid
+  version   Int       @default(1)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_order_notes_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_order_notes_tenant_deleted")
+  @@index([orderId], map: "idx_order_notes_order_id")
+  @@map("order_notes")
 }
 
 /// Global identity — not tenant-scoped.

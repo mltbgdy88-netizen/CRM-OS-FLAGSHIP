@@ -174,6 +174,22 @@ describe.skipIf(!canRunIntegration)('Sprint-13 Order RLS proof', () => {
       client.release();
     }
   });
+
+  it('Tenant A can read Tenant A order notes', async () => {
+    const client = await appPool.connect();
+    try {
+      const notes = await withRlsContext(
+        client,
+        SEED_IDS.tenantDefault,
+        SEED_IDS.userAdmin,
+        async () => client.query<{ id: string }>('SELECT id FROM order_notes'),
+      );
+
+      expect(notes.rows.some((row) => row.id === SEED_IDS.orderNoteDefault)).toBe(true);
+    } finally {
+      client.release();
+    }
+  });
 });
 
 describe('Sprint-13 Order RLS proof (offline)', () => {

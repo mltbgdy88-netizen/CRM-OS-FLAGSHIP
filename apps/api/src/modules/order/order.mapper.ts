@@ -1,4 +1,12 @@
-import type { Customer, Order, OrderItem, OrderStatusHistory } from '@prisma/client';
+import type {
+  Customer,
+  Order,
+  OrderDelivery,
+  OrderItem,
+  OrderNote,
+  OrderShipment,
+  OrderStatusHistory,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import type {
   OrderDetailResponseDto,
@@ -12,6 +20,9 @@ type OrderRecord = Order & {
 type OrderDetailRecord = OrderRecord & {
   items: OrderItem[];
   statusHistory: OrderStatusHistory[];
+  shipments: OrderShipment[];
+  deliveries: OrderDelivery[];
+  orderNotes: OrderNote[];
 };
 
 function decimalToNumber(value: Decimal | number): number {
@@ -72,6 +83,29 @@ export function mapOrderDetail(order: OrderDetailRecord): OrderDetailResponseDto
       reason: entry.reason,
       createdAt: entry.createdAt.toISOString(),
       version: entry.version,
+    })),
+    shipments: order.shipments.map((shipment) => ({
+      id: shipment.id,
+      carrier: shipment.carrier,
+      trackingNumber: shipment.trackingNumber,
+      shippedAt: shipment.shippedAt.toISOString(),
+      notes: shipment.notes,
+      createdAt: shipment.createdAt.toISOString(),
+      version: shipment.version,
+    })),
+    deliveries: order.deliveries.map((delivery) => ({
+      id: delivery.id,
+      deliveredAt: delivery.deliveredAt.toISOString(),
+      recipientName: delivery.recipientName,
+      notes: delivery.notes,
+      createdAt: delivery.createdAt.toISOString(),
+      version: delivery.version,
+    })),
+    notes: order.orderNotes.map((note) => ({
+      id: note.id,
+      body: note.body,
+      createdAt: note.createdAt.toISOString(),
+      version: note.version,
     })),
   };
 }

@@ -21,6 +21,9 @@ import { TenantContextParam } from '../../common/tenant/tenant-context.decorator
 import type { RequestTenantContext } from '../../common/tenant/tenant-context.types';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
+import { CancelOrderDto } from './dto/cancel-order.dto';
+import { DeliverOrderDto } from './dto/deliver-order.dto';
+import { ShipOrderDto } from './dto/ship-order.dto';
 import { OrderService } from './order.service';
 
 @Controller('orders')
@@ -47,6 +50,39 @@ export class OrderController {
     @Body() dto: CreateOrderDto,
   ) {
     const order = await this.orderService.createOrder(context, dto);
+    return okEnvelope(order);
+  }
+
+  @Post(':id/ship')
+  @RequirePermissions(PERMISSIONS.ORDER_SHIP)
+  async ship(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ShipOrderDto,
+  ) {
+    const order = await this.orderService.shipOrder(context, id, dto);
+    return okEnvelope(order);
+  }
+
+  @Post(':id/deliver')
+  @RequirePermissions(PERMISSIONS.ORDER_SHIP)
+  async deliver(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: DeliverOrderDto,
+  ) {
+    const order = await this.orderService.deliverOrder(context, id, dto);
+    return okEnvelope(order);
+  }
+
+  @Post(':id/cancel')
+  @RequirePermissions(PERMISSIONS.ORDER_CANCEL)
+  async cancel(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CancelOrderDto,
+  ) {
+    const order = await this.orderService.cancelOrder(context, id, dto);
     return okEnvelope(order);
   }
 

@@ -1,9 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ApiClientError } from '../lib/api/authenticated-fetch';
-import { getOrder, type OrderDetail } from '../lib/api/orders-client';
+import {
+  cancelOrder,
+  deliverOrder,
+  getOrder,
+  shipOrder,
+  type OrderDetail,
+} from '../lib/api/orders-client';
 import { orderStatusClass, orderStatusLabel } from '../lib/mock/orders-mock';
 import { TableSkeleton } from './table-skeleton';
 
@@ -23,42 +29,67 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
   const [state, setState] = useState<'loading' | 'error' | 'forbidden' | 'success'>('loading');
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const loadOrder = useCallback(async () => {
+    setState('loading');
+    setActionError('');
+    try {
+      const result = await getOrder(orderId);
+      setOrder(result);
+      setState('success');
+    } catch (error) {
+      if (error instanceof ApiClientError && error.kind === 'forbidden') {
+        setState('forbidden');
+        return;
+      }
+      if (error instanceof ApiClientError && error.kind === 'not_found') {
+        setErrorMessage('Sipariş bulunamadı.');
+        setState('error');
+        return;
+      }
+      setErrorMessage(error instanceof Error ? error.message : 'Sipariş yüklenemedi');
+      setState('error');
+    }
+  }, [orderId]);
 
   useEffect(() => {
-    let cancelled = false;
+    void loadOrder();
+  }, [loadOrder]);
 
-    async function load() {
-      setState('loading');
-      try {
-        const result = await getOrder(orderId);
-        if (cancelled) {
-          return;
-        }
-        setOrder(result);
-        setState('success');
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-        if (error instanceof ApiClientError && error.kind === 'forbidden') {
-          setState('forbidden');
-          return;
-        }
-        if (error instanceof ApiClientError && error.kind === 'not_found') {
-          setErrorMessage('Sipariş bulunamadı.');
-          setState('error');
-          return;
-        }
-        setErrorMessage(error instanceof Error ? error.message : 'Sipariş yüklenemedi');
-        setState('error');
-      }
+  async function runAction(action: 'ship' | 'deliver' | 'cancel') {
+    if (!order) {
+      return;
     }
 
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [orderId]);
+    setActionLoading(true);
+    setActionError('');
+
+    try {
+      let updated: OrderDetail;
+      if (action === 'ship') {
+        updated = await shipOrder(order.id, {
+          carrier: 'Yurtiçi Kargo',
+          trackingNumber: `TRK-${Date.now()}`,
+        });
+      } else if (action === 'deliver') {
+        updated = await deliverOrder(order.id, { recipientName: order.customer.displayName });
+      } else {
+        updated = await cancelOrder(order.id, { reason: 'Sipariş iptal edildi.' });
+      }
+      setOrder(updated);
+      setState('success');
+    } catch (error) {
+      if (error instanceof ApiClientError && error.kind === 'forbidden') {
+        setActionError('Bu işlem için yetkiniz yok.');
+        return;
+      }
+      setActionError(error instanceof Error ? error.message : 'İşlem tamamlanamadı');
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
   if (state === 'loading') {
     return (
@@ -105,11 +136,50 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
           <span className={orderStatusClass(order.status)}>{orderStatusLabel(order.status)}</span>
         </div>
         <div className="entity-page__header-actions">
+          {order.status === 'confirmed' ? (
+            <button
+              type="button"
+              className="btn-primary"
+              data-testid="order-action-ship"
+              disabled={actionLoading}
+              onClick={() => void runAction('ship')}
+            >
+              Kargola
+            </button>
+          ) : null}
+          {order.status === 'shipped' ? (
+            <button
+              type="button"
+              className="btn-primary"
+              data-testid="order-action-deliver"
+              disabled={actionLoading}
+              onClick={() => void runAction('deliver')}
+            >
+              Teslim et
+            </button>
+          ) : null}
+          {order.status === 'pending' || order.status === 'confirmed' ? (
+            <button
+              type="button"
+              className="btn-ghost"
+              data-testid="order-action-cancel"
+              disabled={actionLoading}
+              onClick={() => void runAction('cancel')}
+            >
+              İptal et
+            </button>
+          ) : null}
           <Link href="/orders" className="btn-ghost">
             ← Liste
           </Link>
         </div>
       </header>
+
+      {actionError ? (
+        <p className="state-message state-message--error" data-testid="order-action-error">
+          {actionError}
+        </p>
+      ) : null}
 
       <dl className="detail-info-grid" data-testid="order-detail-header">
         <div>
@@ -189,6 +259,40 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
         </div>
       </dl>
 
+      {order.shipments.length > 0 ? (
+        <>
+          <h2 className="customer-360__section-title">Kargo kayıtları</h2>
+          <ul className="detail-timeline-list" data-testid="order-detail-shipments">
+            {order.shipments.map((shipment) => (
+              <li key={shipment.id} className="detail-timeline-list__item">
+                <p className="detail-timeline-list__title">
+                  {shipment.carrier ?? 'Kargo'} — {shipment.trackingNumber ?? 'Takip no yok'}
+                </p>
+                <p className="detail-timeline-list__meta">
+                  {new Date(shipment.shippedAt).toLocaleString('tr-TR')}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
+      {order.orderNotes.length > 0 ? (
+        <>
+          <h2 className="customer-360__section-title">Operasyon notları</h2>
+          <ul className="detail-timeline-list" data-testid="order-detail-notes-list">
+            {order.orderNotes.map((note) => (
+              <li key={note.id} className="detail-timeline-list__item">
+                <p className="detail-timeline-list__meta">{note.body}</p>
+                <p className="detail-timeline-list__meta">
+                  {new Date(note.createdAt).toLocaleString('tr-TR')}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
       <h2 className="customer-360__section-title">Teslimat zaman çizelgesi</h2>
       {sortedHistory.length === 0 ? (
         <p className="detail-tab-panel__empty" data-testid="order-detail-timeline-empty">
@@ -220,8 +324,8 @@ export function OrderDetailView({ orderId }: OrderDetailViewProps) {
 
       {order.notes ? (
         <>
-          <h2 className="customer-360__section-title">Notlar</h2>
-          <p className="detail-tab-panel__empty" data-testid="order-detail-notes">
+          <h2 className="customer-360__section-title">Sipariş notu</h2>
+          <p className="detail-tab-panel__empty" data-testid="order-detail-notes-field">
             {order.notes}
           </p>
         </>

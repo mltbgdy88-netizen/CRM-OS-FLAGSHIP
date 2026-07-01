@@ -149,6 +149,20 @@ export async function seedOrderData(client: PoolClient): Promise<void> {
       ],
     );
 
+    await client.query(
+      `INSERT INTO order_notes (
+         id, tenant_id, order_id, body, created_by
+       )
+       VALUES ($1, $2, $3, 'Fulfillment team: prepare license keys before shipping.', $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        SEED_IDS.orderNoteDefault,
+        SEED_IDS.tenantDefault,
+        SEED_IDS.orderDefault,
+        SEED_IDS.userAdmin,
+      ],
+    );
+
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

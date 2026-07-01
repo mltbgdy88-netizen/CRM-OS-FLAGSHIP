@@ -57,13 +57,7 @@ function mapOpportunityForCard(opportunity: OpportunitySummary): PipelineCardVie
   };
 }
 
-function OpportunityCardContent({
-  opportunity,
-  stageColor,
-}: {
-  opportunity: PipelineCardView;
-  stageColor: string;
-}) {
+function OpportunityCardContent({ opportunity }: { opportunity: PipelineCardView }) {
   return (
     <>
       <h3 className="pipeline-card__title">{opportunity.title}</h3>
@@ -129,7 +123,7 @@ function DraggableOpportunityCard({
       }}
       data-testid={`pipeline-card-${opportunity.id}`}
     >
-      <OpportunityCardContent opportunity={opportunity} stageColor={stageColor} />
+      <OpportunityCardContent opportunity={opportunity} />
     </article>
   );
 }

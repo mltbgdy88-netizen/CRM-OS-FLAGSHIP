@@ -1,7 +1,7 @@
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import type { INestApplication } from '@nestjs/common';
 
-export const DEFAULT_CORS_ORIGIN = 'http://localhost:3000';
+export const DEFAULT_CORS_ORIGIN = 'http://localhost:3010';
 
 /** Parse CORS_ORIGIN env (comma-separated allowed origins for local/dev). */
 export function resolveCorsOrigins(corsOriginEnv?: string): string[] {

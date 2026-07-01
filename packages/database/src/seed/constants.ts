@@ -155,6 +155,24 @@ export const SEED_IDS = {
   orderStatusHistoryDefault2: '69300000-0000-4000-8000-000000000002',
   orderStatusHistoryTenantB: '69300000-0000-4000-8000-000000000003',
   orderNoteDefault: '69900000-0000-4000-8000-000000000001',
+  permissionProductRead: '70100000-0000-4000-8000-000000000001',
+  permissionProductCreate: '70100000-0000-4000-8000-000000000002',
+  permissionProductUpdate: '70100000-0000-4000-8000-000000000003',
+  productBrandDefault: '70200000-0000-4000-8000-000000000001',
+  productBrandTenantB: '70200000-0000-4000-8000-000000000002',
+  productCategoryDefault: '70210000-0000-4000-8000-000000000001',
+  productCategoryTenantB: '70210000-0000-4000-8000-000000000002',
+  productCollectionDefault: '70220000-0000-4000-8000-000000000001',
+  productCollectionTenantB: '70220000-0000-4000-8000-000000000002',
+  productDefault: '70230000-0000-4000-8000-000000000001',
+  productTenantB: '70230000-0000-4000-8000-000000000002',
+  productVariantDefault: '70240000-0000-4000-8000-000000000001',
+  productVariantTenantB: '70240000-0000-4000-8000-000000000002',
+  productPriceDefault: '70250000-0000-4000-8000-000000000001',
+  productPriceVariantDefault: '70250000-0000-4000-8000-000000000002',
+  productPriceTenantB: '70250000-0000-4000-8000-000000000003',
+  productCollectionItemDefault: '70260000-0000-4000-8000-000000000001',
+  productCollectionItemTenantB: '70260000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -412,6 +430,27 @@ export const SEED_ORDER_PERMISSIONS = [
     code: 'order.return',
     module: 'order',
     description: 'Process order returns',
+  },
+] as const;
+
+export const SEED_PRODUCT_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionProductRead,
+    code: 'product.read',
+    module: 'product',
+    description: 'Read products and catalog data',
+  },
+  {
+    id: SEED_IDS.permissionProductCreate,
+    code: 'product.create',
+    module: 'product',
+    description: 'Create products and variants',
+  },
+  {
+    id: SEED_IDS.permissionProductUpdate,
+    code: 'product.update',
+    module: 'product',
+    description: 'Update products and catalog data',
   },
 ] as const;
 

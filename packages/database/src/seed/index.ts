@@ -15,6 +15,7 @@ export { seedSalesData } from './sales';
 export { seedTaskData } from './task';
 export { seedDashboardNotificationData } from './dashboard-notification';
 export { seedOrderData } from './order';
+export { seedProductData } from './product';
 export {
   SEED_CUSTOMER_360_PERMISSIONS,
   SEED_CUSTOMER_PERMISSIONS,
@@ -27,6 +28,7 @@ export {
   SEED_TASK_PERMISSIONS,
   SEED_DASHBOARD_NOTIFICATION_PERMISSIONS,
   SEED_ORDER_PERMISSIONS,
+  SEED_PRODUCT_PERMISSIONS,
 } from './constants';
 
 function hashPassword(password: string): string {

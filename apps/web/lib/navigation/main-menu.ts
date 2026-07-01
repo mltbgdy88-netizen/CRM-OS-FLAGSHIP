@@ -13,8 +13,8 @@ export interface MainMenuItem {
 export const MAIN_MENU: MainMenuItem[] = [
   { id: 'dashboard', label: 'Gösterge Paneli', href: '/dashboard', status: 'live', section: 'workspace' },
   { id: 'customers', label: 'Müşteriler', href: '/customers', status: 'live', section: 'crm' },
-  { id: 'leads', label: 'Leadler', status: 'soon', section: 'crm' },
-  { id: 'pipeline', label: 'Pipeline', status: 'soon', section: 'crm' },
+  { id: 'leads', label: 'Leadler', href: '/leads', status: 'live', section: 'crm' },
+  { id: 'pipeline', label: 'Pipeline', href: '/pipeline', status: 'live', section: 'crm' },
   { id: 'quotes', label: 'Teklifler', status: 'soon', section: 'crm' },
   { id: 'orders', label: 'Siparişler', status: 'soon', section: 'crm' },
   { id: 'tasks', label: 'Görevler', status: 'soon', section: 'operations' },

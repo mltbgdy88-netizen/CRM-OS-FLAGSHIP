@@ -43,6 +43,15 @@ function pageTitle(pathname: string) {
   if (pathname.startsWith('/customers')) {
     return 'Müşteriler';
   }
+  if (pathname.startsWith('/leads/')) {
+    return 'Lead Detayı';
+  }
+  if (pathname.startsWith('/leads')) {
+    return 'Leadler';
+  }
+  if (pathname.startsWith('/pipeline')) {
+    return 'Pipeline';
+  }
   return 'CRM OS';
 }
 

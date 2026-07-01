@@ -555,3 +555,54 @@ export function createDashboardViewedEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const ORDER_EVENT_TYPES = {
+  ORDER_CREATED: 'OrderCreated',
+  ORDER_CONFIRMED: 'OrderConfirmed',
+} as const;
+
+export type OrderEventType = (typeof ORDER_EVENT_TYPES)[keyof typeof ORDER_EVENT_TYPES];
+
+export function createOrderCreatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  orderId: string;
+  number: string;
+  customerId: string;
+  total: number;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'order',
+    aggregateId: input.orderId,
+    eventType: ORDER_EVENT_TYPES.ORDER_CREATED,
+    payload: {
+      number: input.number,
+      customerId: input.customerId,
+      total: input.total,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createOrderConfirmedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  orderId: string;
+  number: string;
+  total: number;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'order',
+    aggregateId: input.orderId,
+    eventType: ORDER_EVENT_TYPES.ORDER_CONFIRMED,
+    payload: {
+      number: input.number,
+      total: input.total,
+    },
+    createdAt: new Date(),
+  };
+}

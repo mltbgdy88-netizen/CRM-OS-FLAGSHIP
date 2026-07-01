@@ -52,6 +52,18 @@ function pageTitle(pathname: string) {
   if (pathname.startsWith('/pipeline')) {
     return 'Pipeline';
   }
+  if (pathname.startsWith('/quotes')) {
+    return 'Teklifler';
+  }
+  if (pathname.startsWith('/tasks')) {
+    return 'Görevler';
+  }
+  if (pathname.startsWith('/reports')) {
+    return 'Raporlar';
+  }
+  if (pathname.startsWith('/ai')) {
+    return 'AI Copilot';
+  }
   return 'CRM OS';
 }
 

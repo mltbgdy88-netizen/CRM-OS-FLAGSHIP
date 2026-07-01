@@ -1587,6 +1587,9 @@ model ProductVariant {
 
   product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   prices  ProductPrice[]
+  stocks  Stock[]
+  stockMovements StockMovement[]
+  stockAdjustments StockAdjustment[]
 
   @@unique([tenantId, sku], map: "uq_product_variants_tenant_sku")
   @@index([tenantId], map: "idx_product_variants_tenant_id")
@@ -1620,6 +1623,182 @@ model ProductPrice {
   @@index([productId], map: "idx_product_prices_product_id")
   @@index([variantId], map: "idx_product_prices_variant_id")
   @@map("product_prices")
+}
+
+/// Tenant-owned warehouse.
+model Warehouse {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  name      String    @db.VarChar(150)
+  code      String    @db.VarChar(50)
+  status    String    @default("active") @db.VarChar(30)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy String?   @map("deleted_by") @db.Uuid
+  version   Int       @default(1)
+
+  locations     WarehouseLocation[]
+  stocks        Stock[]
+  stockMovements StockMovement[]
+  stockCounts   StockCount[]
+  stockAdjustments StockAdjustment[]
+
+  @@unique([tenantId, code], map: "uq_warehouses_tenant_code")
+  @@index([tenantId], map: "idx_warehouses_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_warehouses_tenant_deleted")
+  @@map("warehouses")
+}
+
+/// Tenant-owned warehouse location bin.
+model WarehouseLocation {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  warehouseId String    @map("warehouse_id") @db.Uuid
+  code        String    @db.VarChar(50)
+  name        String    @db.VarChar(150)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, code], map: "uq_warehouse_locations_warehouse_code")
+  @@index([tenantId], map: "idx_warehouse_locations_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_warehouse_locations_tenant_deleted")
+  @@index([warehouseId], map: "idx_warehouse_locations_warehouse_id")
+  @@map("warehouse_locations")
+}
+
+/// Tenant-owned stock balance per warehouse and variant.
+model Stock {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  warehouseId       String    @map("warehouse_id") @db.Uuid
+  productVariantId  String    @map("product_variant_id") @db.Uuid
+  quantityOnHand    Decimal   @default(0) @map("quantity_on_hand") @db.Decimal(18, 3)
+  quantityReserved  Decimal   @default(0) @map("quantity_reserved") @db.Decimal(18, 3)
+  quantityAvailable Decimal   @default(0) @map("quantity_available") @db.Decimal(18, 3)
+  criticalLevel     Decimal?  @map("critical_level") @db.Decimal(18, 3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy         String?   @map("created_by") @db.Uuid
+  updatedAt         DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy         String?   @map("updated_by") @db.Uuid
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy         String?   @map("deleted_by") @db.Uuid
+  version           Int       @default(1)
+
+  warehouse      Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant  @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
+  stockAdjustments StockAdjustment[]
+
+  @@unique([tenantId, warehouseId, productVariantId], map: "uq_stocks_tenant_warehouse_variant")
+  @@index([tenantId], map: "idx_stocks_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_stocks_tenant_deleted")
+  @@index([warehouseId], map: "idx_stocks_warehouse_id")
+  @@index([productVariantId], map: "idx_stocks_product_variant_id")
+  @@map("stocks")
+}
+
+/// Tenant-owned stock movement ledger entry.
+model StockMovement {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  warehouseId      String    @map("warehouse_id") @db.Uuid
+  productVariantId String    @map("product_variant_id") @db.Uuid
+  stockId          String?   @map("stock_id") @db.Uuid
+  movementType     String    @map("movement_type") @db.VarChar(30)
+  quantity         Decimal   @db.Decimal(18, 3)
+  referenceType    String?   @map("reference_type") @db.VarChar(50)
+  referenceId      String?   @map("reference_id") @db.Uuid
+  movementAt       DateTime  @default(now()) @map("movement_at") @db.Timestamptz(6)
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy        String?   @map("created_by") @db.Uuid
+  updatedAt        DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy        String?   @map("updated_by") @db.Uuid
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy        String?   @map("deleted_by") @db.Uuid
+  version          Int       @default(1)
+
+  warehouse      Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  stock          Stock?         @relation(fields: [stockId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId], map: "idx_stock_movements_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_stock_movements_tenant_deleted")
+  @@index([warehouseId], map: "idx_stock_movements_warehouse_id")
+  @@index([productVariantId], map: "idx_stock_movements_product_variant_id")
+  @@index([stockId], map: "idx_stock_movements_stock_id")
+  @@index([movementAt], map: "idx_stock_movements_movement_at")
+  @@map("stock_movements")
+}
+
+/// Tenant-owned physical stock count session.
+model StockCount {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  warehouseId String    @map("warehouse_id") @db.Uuid
+  status      String    @default("draft") @db.VarChar(30)
+  countedAt   DateTime? @map("counted_at") @db.Timestamptz(6)
+  notes       String?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  warehouse     Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  adjustments   StockAdjustment[]
+
+  @@index([tenantId], map: "idx_stock_counts_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_stock_counts_tenant_deleted")
+  @@index([warehouseId], map: "idx_stock_counts_warehouse_id")
+  @@map("stock_counts")
+}
+
+/// Tenant-owned stock adjustment record.
+model StockAdjustment {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  stockId            String    @map("stock_id") @db.Uuid
+  warehouseId        String    @map("warehouse_id") @db.Uuid
+  productVariantId   String    @map("product_variant_id") @db.Uuid
+  stockCountId       String?   @map("stock_count_id") @db.Uuid
+  quantityBefore     Decimal   @map("quantity_before") @db.Decimal(18, 3)
+  quantityAfter      Decimal   @map("quantity_after") @db.Decimal(18, 3)
+  adjustmentQuantity Decimal   @map("adjustment_quantity") @db.Decimal(18, 3)
+  reason             String?
+  status             String    @default("completed") @db.VarChar(30)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy          String?   @map("created_by") @db.Uuid
+  updatedAt          DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy          String?   @map("updated_by") @db.Uuid
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy          String?   @map("deleted_by") @db.Uuid
+  version            Int       @default(1)
+
+  stock          Stock          @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  warehouse      Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  stockCount     StockCount?    @relation(fields: [stockCountId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId], map: "idx_stock_adjustments_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_stock_adjustments_tenant_deleted")
+  @@index([stockId], map: "idx_stock_adjustments_stock_id")
+  @@index([warehouseId], map: "idx_stock_adjustments_warehouse_id")
+  @@index([productVariantId], map: "idx_stock_adjustments_product_variant_id")
+  @@index([stockCountId], map: "idx_stock_adjustments_stock_count_id")
+  @@map("stock_adjustments")
 }
 
 /// Tenant-owned product collection junction.

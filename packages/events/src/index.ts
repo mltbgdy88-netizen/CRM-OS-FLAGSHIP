@@ -741,3 +741,63 @@ export function createProductUpdatedEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const INVENTORY_EVENT_TYPES = {
+  STOCK_CHANGED: 'StockChanged',
+  CRITICAL_STOCK_REACHED: 'CriticalStockReached',
+} as const;
+
+export type InventoryEventType =
+  (typeof INVENTORY_EVENT_TYPES)[keyof typeof INVENTORY_EVENT_TYPES];
+
+export function createStockChangedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  stockId: string;
+  warehouseId: string;
+  productVariantId: string;
+  movementType: string;
+  quantityOnHand: number;
+  quantityAvailable: number;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'stock',
+    aggregateId: input.stockId,
+    eventType: INVENTORY_EVENT_TYPES.STOCK_CHANGED,
+    payload: {
+      warehouseId: input.warehouseId,
+      productVariantId: input.productVariantId,
+      movementType: input.movementType,
+      quantityOnHand: input.quantityOnHand,
+      quantityAvailable: input.quantityAvailable,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createCriticalStockReachedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  stockId: string;
+  warehouseId: string;
+  productVariantId: string;
+  quantityAvailable: number;
+  criticalLevel: number;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'stock',
+    aggregateId: input.stockId,
+    eventType: INVENTORY_EVENT_TYPES.CRITICAL_STOCK_REACHED,
+    payload: {
+      warehouseId: input.warehouseId,
+      productVariantId: input.productVariantId,
+      quantityAvailable: input.quantityAvailable,
+      criticalLevel: input.criticalLevel,
+    },
+    createdAt: new Date(),
+  };
+}

@@ -7,6 +7,7 @@ import { CrmModule } from './modules/crm/crm.module';
 import { LeadModule } from './modules/lead/lead.module';
 import { OrderModule } from './modules/order/order.module';
 import { ProductModule } from './modules/product/product.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 import { QuoteModule } from './modules/quote/quote.module';
 import { SalesModule } from './modules/sales/sales.module';
 import { NotificationModule } from './modules/notification/notification.module';
@@ -26,6 +27,7 @@ import { TaskModule } from './modules/task/task.module';
     QuoteModule,
     OrderModule,
     ProductModule,
+    InventoryModule,
     TaskModule,
     NotificationModule,
   ],

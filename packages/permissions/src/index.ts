@@ -1,4 +1,4 @@
-/** Sprint-02 IAM + Sprint-03 Customer + Sprint-06 Sales + Sprint-08 Pipeline + Sprint-09/10 Quote + Sprint-11 Task + Sprint-12 Dashboard/Notification + Sprint-13/14 Order + Sprint-15 Product permission registry (global codes). */
+/** Sprint-02 IAM + Sprint-03 Customer + Sprint-06 Sales + Sprint-08 Pipeline + Sprint-09/10 Quote + Sprint-11 Task + Sprint-12 Dashboard/Notification + Sprint-13/14 Order + Sprint-15 Product + Sprint-16 Inventory permission registry (global codes). */
 export const PERMISSIONS = {
   AUTH_LOGIN: 'auth.login',
   TENANT_MANAGE: 'tenant.manage',
@@ -41,6 +41,8 @@ export const PERMISSIONS = {
   PRODUCT_READ: 'product.read',
   PRODUCT_CREATE: 'product.create',
   PRODUCT_UPDATE: 'product.update',
+  INVENTORY_READ: 'inventory.read',
+  INVENTORY_ADJUST: 'inventory.adjust',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

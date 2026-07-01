@@ -10,7 +10,7 @@ export interface CrmSectionItem {
 /** Bitrix24 CRM horizontal section menu (Space+ pattern). */
 export const CRM_SECTION_NAV: CrmSectionItem[] = [
   { id: 'deals', label: 'Deals', status: 'soon' },
-  { id: 'inventory', label: 'Inventory', status: 'soon' },
+  { id: 'inventory', label: 'Inventory', href: '/inventory', status: 'live' },
   { id: 'customers', label: 'Customers', href: '/customers', status: 'live' },
   { id: 'sales', label: 'Sales', status: 'soon' },
   { id: 'analytics', label: 'Analytics', status: 'soon' },

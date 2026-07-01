@@ -275,6 +275,118 @@ export async function seedSalesData(client: PoolClient): Promise<void> {
       ],
     );
 
+    await client.query(
+      `INSERT INTO opportunity_products (
+         id, tenant_id, opportunity_id, name, sku, quantity, unit_price, created_by
+       )
+       VALUES ($1, $2, $3, 'CRM OS Enterprise License', 'CRM-ENT-01', 1, 95000, $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        SEED_IDS.opportunityProductDefault,
+        SEED_IDS.tenantDefault,
+        SEED_IDS.opportunityDefault,
+        SEED_IDS.userAdmin,
+      ],
+    );
+
+    await client.query(
+      `INSERT INTO opportunity_products (
+         id, tenant_id, opportunity_id, name, sku, quantity, unit_price, created_by
+       )
+       VALUES ($1, $2, $3, 'Tenant B Platform Bundle', 'CRM-BND-02', 2, 64000, $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        SEED_IDS.opportunityProductTenantB,
+        SEED_IDS.tenantB,
+        SEED_IDS.opportunityTenantB,
+        SEED_IDS.userMemberB,
+      ],
+    );
+
+    await client.query(
+      `INSERT INTO opportunity_contacts (
+         id, tenant_id, opportunity_id, first_name, last_name, email, phone, title, is_primary, created_by
+       )
+       VALUES ($1, $2, $3, 'Ayse', 'Yilmaz', 'ayse.yilmaz@defaultlead.co', '+905551112233', 'Procurement Lead', TRUE, $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        SEED_IDS.opportunityContactDefault,
+        SEED_IDS.tenantDefault,
+        SEED_IDS.opportunityDefault,
+        SEED_IDS.userAdmin,
+      ],
+    );
+
+    await client.query(
+      `INSERT INTO opportunity_contacts (
+         id, tenant_id, opportunity_id, first_name, last_name, email, phone, title, is_primary, created_by
+       )
+       VALUES ($1, $2, $3, 'Mehmet', 'Kaya', 'mehmet.kaya@tenantblead.co', NULL, 'VP Sales', TRUE, $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        SEED_IDS.opportunityContactTenantB,
+        SEED_IDS.tenantB,
+        SEED_IDS.opportunityTenantB,
+        SEED_IDS.userMemberB,
+      ],
+    );
+
+    await client.query(
+      `INSERT INTO opportunity_activities (
+         id, tenant_id, opportunity_id, activity_type, title, body, due_at, created_by
+       )
+       VALUES ($1, $2, $3, 'call', 'Discovery call', 'Initial qualification call with procurement.', NOW() + INTERVAL '3 days', $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        SEED_IDS.opportunityActivityDefault,
+        SEED_IDS.tenantDefault,
+        SEED_IDS.opportunityDefault,
+        SEED_IDS.userAdmin,
+      ],
+    );
+
+    await client.query(
+      `INSERT INTO opportunity_activities (
+         id, tenant_id, opportunity_id, activity_type, title, body, due_at, created_by
+       )
+       VALUES ($1, $2, $3, 'meeting', 'Proposal review', 'Review proposal deck with buyer committee.', NOW() + INTERVAL '5 days', $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        SEED_IDS.opportunityActivityTenantB,
+        SEED_IDS.tenantB,
+        SEED_IDS.opportunityTenantB,
+        SEED_IDS.userMemberB,
+      ],
+    );
+
+    await client.query(
+      `INSERT INTO opportunity_notes (
+         id, tenant_id, opportunity_id, title, body, created_by
+       )
+       VALUES ($1, $2, $3, 'Budget confirmed', 'Buyer confirmed Q3 budget allocation for CRM rollout.', $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        SEED_IDS.opportunityNoteDefault,
+        SEED_IDS.tenantDefault,
+        SEED_IDS.opportunityDefault,
+        SEED_IDS.userAdmin,
+      ],
+    );
+
+    await client.query(
+      `INSERT INTO opportunity_notes (
+         id, tenant_id, opportunity_id, title, body, created_by
+       )
+       VALUES ($1, $2, $3, NULL, 'Tenant B opportunity note: awaiting legal review on MSA.', $4)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        SEED_IDS.opportunityNoteTenantB,
+        SEED_IDS.tenantB,
+        SEED_IDS.opportunityTenantB,
+        SEED_IDS.userMemberB,
+      ],
+    );
+
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

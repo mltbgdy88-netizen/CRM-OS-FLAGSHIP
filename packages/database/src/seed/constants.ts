@@ -56,6 +56,8 @@ export const SEED_IDS = {
   permissionLeadConvert: '30000000-0000-4000-8000-000000000011',
   permissionOpportunityCreate: '30000000-0000-4000-8000-000000000012',
   permissionPipelineManage: '30000000-0000-4000-8000-000000000013',
+  permissionOpportunityRead: '30000000-0000-4000-8000-000000000014',
+  permissionOpportunityUpdate: '30000000-0000-4000-8000-000000000015',
   pipelineDefault: '60000000-0000-4000-8000-000000000001',
   pipelineTenantB: '60000000-0000-4000-8000-000000000002',
   pipelineStageDefaultNew: '61000000-0000-4000-8000-000000000001',
@@ -76,6 +78,14 @@ export const SEED_IDS = {
   leadConversionLogTenantB: '63000000-0000-4000-8000-000000000002',
   opportunityStageHistoryDefault: '64000000-0000-4000-8000-000000000001',
   opportunityStageHistoryTenantB: '64000000-0000-4000-8000-000000000002',
+  opportunityProductDefault: '65000000-0000-4000-8000-000000000001',
+  opportunityProductTenantB: '65000000-0000-4000-8000-000000000002',
+  opportunityContactDefault: '65100000-0000-4000-8000-000000000001',
+  opportunityContactTenantB: '65100000-0000-4000-8000-000000000002',
+  opportunityActivityDefault: '65200000-0000-4000-8000-000000000001',
+  opportunityActivityTenantB: '65200000-0000-4000-8000-000000000002',
+  opportunityNoteDefault: '65300000-0000-4000-8000-000000000001',
+  opportunityNoteTenantB: '65300000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -186,6 +196,18 @@ export const SEED_SALES_PERMISSIONS = [
     code: 'opportunity.create',
     module: 'sales',
     description: 'Create and manage opportunities',
+  },
+  {
+    id: SEED_IDS.permissionOpportunityRead,
+    code: 'opportunity.read',
+    module: 'sales',
+    description: 'Read opportunities and related detail data',
+  },
+  {
+    id: SEED_IDS.permissionOpportunityUpdate,
+    code: 'opportunity.update',
+    module: 'sales',
+    description: 'Update opportunities and related detail data',
   },
   {
     id: SEED_IDS.permissionPipelineManage,

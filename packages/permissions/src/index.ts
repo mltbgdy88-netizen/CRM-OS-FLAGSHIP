@@ -15,7 +15,9 @@ export const PERMISSIONS = {
   LEAD_ASSIGN: 'lead.assign',
   LEAD_UPDATE: 'lead.update',
   LEAD_CONVERT: 'lead.convert',
+  OPPORTUNITY_READ: 'opportunity.read',
   OPPORTUNITY_CREATE: 'opportunity.create',
+  OPPORTUNITY_UPDATE: 'opportunity.update',
   PIPELINE_MANAGE: 'pipeline.manage',
 } as const;
 

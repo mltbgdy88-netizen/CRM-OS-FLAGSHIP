@@ -49,6 +49,12 @@ function pageTitle(pathname: string) {
   if (pathname.startsWith('/leads')) {
     return 'Leadler';
   }
+  if (pathname.startsWith('/opportunities/')) {
+    return 'Fırsat Detayı';
+  }
+  if (pathname.startsWith('/opportunities')) {
+    return 'Fırsatlar';
+  }
   if (pathname.startsWith('/pipeline')) {
     return 'Pipeline';
   }

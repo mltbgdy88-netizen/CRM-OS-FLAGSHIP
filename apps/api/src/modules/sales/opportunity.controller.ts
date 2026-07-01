@@ -1,4 +1,15 @@
-import { Body, Controller, Post, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { PERMISSIONS } from '@crm-os/permissions';
 import { JwtAuthGuard, PermissionGuard } from '../../common/auth/auth.guards';
 import { RequirePermissions } from '../../common/auth/require-permissions.decorator';
@@ -10,6 +21,8 @@ import {
 import { TenantContextParam } from '../../common/tenant/tenant-context.decorator';
 import type { RequestTenantContext } from '../../common/tenant/tenant-context.types';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
+import { ListOpportunitiesQueryDto } from './dto/list-opportunities-query.dto';
+import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { OpportunityService } from './opportunity.service';
 
 @Controller('opportunities')
@@ -19,6 +32,26 @@ import { OpportunityService } from './opportunity.service';
 export class OpportunityController {
   constructor(private readonly opportunityService: OpportunityService) {}
 
+  @Get()
+  @RequirePermissions(PERMISSIONS.OPPORTUNITY_READ)
+  async list(
+    @TenantContextParam() context: RequestTenantContext,
+    @Query() query: ListOpportunitiesQueryDto,
+  ) {
+    const result = await this.opportunityService.listOpportunities(context, query);
+    return okEnvelope(result);
+  }
+
+  @Get(':id')
+  @RequirePermissions(PERMISSIONS.OPPORTUNITY_READ)
+  async getById(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const opportunity = await this.opportunityService.getOpportunityById(context, id);
+    return okEnvelope(opportunity);
+  }
+
   @Post()
   @RequirePermissions(PERMISSIONS.OPPORTUNITY_CREATE)
   async create(
@@ -26,6 +59,17 @@ export class OpportunityController {
     @Body() dto: CreateOpportunityDto,
   ) {
     const opportunity = await this.opportunityService.createOpportunity(context, dto);
+    return okEnvelope(opportunity);
+  }
+
+  @Patch(':id')
+  @RequirePermissions(PERMISSIONS.OPPORTUNITY_UPDATE)
+  async update(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateOpportunityDto,
+  ) {
+    const opportunity = await this.opportunityService.updateOpportunity(context, id, dto);
     return okEnvelope(opportunity);
   }
 }

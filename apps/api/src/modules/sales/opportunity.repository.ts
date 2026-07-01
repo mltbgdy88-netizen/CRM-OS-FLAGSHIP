@@ -8,9 +8,103 @@ const opportunitySummaryInclude = {
   stage: true,
 } as const;
 
+const opportunityDetailInclude = {
+  ...opportunitySummaryInclude,
+  products: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'asc' as const },
+  },
+  contacts: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'asc' as const },
+  },
+  activities: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'desc' as const },
+  },
+  notes: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'desc' as const },
+  },
+} as const;
+
 @Injectable()
 export class OpportunityRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async countOpportunities(context: TenantContext): Promise<number> {
+    return withTenantContext(this.prisma, context, async (tx) =>
+      tx.opportunity.count({ where: { deletedAt: null } }),
+    );
+  }
+
+  async listOpportunities(context: TenantContext, input: { skip: number; take: number }) {
+    return withTenantContext(this.prisma, context, async (tx) =>
+      tx.opportunity.findMany({
+        where: { deletedAt: null },
+        include: opportunitySummaryInclude,
+        orderBy: { createdAt: 'desc' },
+        skip: input.skip,
+        take: input.take,
+      }),
+    );
+  }
+
+  async findOpportunityById(context: TenantContext, id: string) {
+    return withTenantContext(this.prisma, context, async (tx) =>
+      tx.opportunity.findFirst({
+        where: { id, deletedAt: null },
+        include: opportunitySummaryInclude,
+      }),
+    );
+  }
+
+  async findOpportunityDetailById(context: TenantContext, id: string) {
+    return withTenantContext(this.prisma, context, async (tx) =>
+      tx.opportunity.findFirst({
+        where: { id, deletedAt: null },
+        include: opportunityDetailInclude,
+      }),
+    );
+  }
+
+  async updateOpportunity(
+    context: TenantContext,
+    id: string,
+    input: {
+      title?: string;
+      companyName?: string;
+      amount?: number;
+      probability?: number;
+      status?: string;
+      stageId?: string;
+      assignedUserId?: string | null;
+    },
+  ) {
+    const data: Record<string, unknown> = {
+      updatedAt: new Date(),
+      updatedBy: context.userId,
+      version: { increment: 1 },
+    };
+
+    if (input.title !== undefined) data.title = input.title;
+    if (input.companyName !== undefined) data.companyName = input.companyName;
+    if (input.amount !== undefined) data.amount = input.amount;
+    if (input.probability !== undefined) data.probability = input.probability;
+    if (input.status !== undefined) data.status = input.status;
+    if (input.stageId !== undefined) data.stageId = input.stageId;
+    if (Object.prototype.hasOwnProperty.call(input, 'assignedUserId')) {
+      data.assignedUserId = input.assignedUserId ?? null;
+    }
+
+    return withTenantContext(this.prisma, context, async (tx) =>
+      tx.opportunity.update({
+        where: { id },
+        data,
+        include: opportunitySummaryInclude,
+      }),
+    );
+  }
 
   async findCustomerById(context: TenantContext, id: string) {
     return withTenantContext(this.prisma, context, async (tx) =>

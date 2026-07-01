@@ -23,7 +23,8 @@
     "sprint:03:verify": "pnpm --filter @crm-os/database prisma:generate && pnpm sprint:02:verify:core && pnpm sprint:01:verify",
     "sprint:04:verify": "pnpm sprint:03:verify",
     "sprint:05:verify": "pnpm sprint:04:verify",
-    "sprint:06:verify": "pnpm sprint:05:verify"
+    "sprint:06:verify": "pnpm sprint:05:verify",
+    "sprint:07:verify": "pnpm sprint:06:verify"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

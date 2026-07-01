@@ -6,18 +6,26 @@ import {
 import {
   createLeadConvertedEvent,
   createOpportunityCreatedEvent,
+  createOpportunityLostEvent,
   createOpportunityStageChangedEvent,
+  createOpportunityWonEvent,
 } from '@crm-os/events';
 import type { RequestTenantContext } from '../../common/tenant/tenant-context.types';
 import { IamRepository } from '../iam/repositories/iam.repository';
 import { DomainEventPublisher } from '../iam/services/audit.service';
 import type { ConvertLeadDto } from './dto/convert-lead.dto';
 import type { CreateOpportunityDto } from './dto/create-opportunity.dto';
-import { mapOpportunitySummary } from './opportunity.mapper';
+import type { ListOpportunitiesQueryDto } from './dto/list-opportunities-query.dto';
+import type { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import { mapOpportunityDetail, mapOpportunitySummary } from './opportunity.mapper';
 import { OpportunityRepository } from './opportunity.repository';
 import { PipelineRepository } from './pipeline.repository';
 
 const INITIAL_STAGE_CODE = 'new';
+
+function hasOwn(input: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(input, key);
+}
 
 @Injectable()
 export class OpportunityService {
@@ -27,6 +35,125 @@ export class OpportunityService {
     private readonly iamRepository: IamRepository,
     private readonly eventPublisher: DomainEventPublisher,
   ) {}
+
+  async listOpportunities(context: RequestTenantContext, query: ListOpportunitiesQueryDto) {
+    const skip = (query.page - 1) * query.pageSize;
+    const [total, opportunities] = await Promise.all([
+      this.opportunityRepository.countOpportunities(context),
+      this.opportunityRepository.listOpportunities(context, {
+        skip,
+        take: query.pageSize,
+      }),
+    ]);
+
+    return {
+      items: opportunities.map(mapOpportunitySummary),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
+  async getOpportunityById(context: RequestTenantContext, id: string) {
+    const opportunity = await this.opportunityRepository.findOpportunityDetailById(context, id);
+    if (!opportunity) {
+      throw new NotFoundException('Opportunity not found');
+    }
+
+    return mapOpportunityDetail(opportunity);
+  }
+
+  async updateOpportunity(
+    context: RequestTenantContext,
+    id: string,
+    dto: UpdateOpportunityDto,
+  ) {
+    const existing = await this.opportunityRepository.findOpportunityById(context, id);
+    if (!existing) {
+      throw new NotFoundException('Opportunity not found');
+    }
+
+    if (dto.stageId && dto.stageId !== existing.stageId) {
+      const stage = await this.pipelineRepository.findStageById(context, dto.stageId);
+      if (!stage || stage.pipelineId !== existing.pipelineId) {
+        throw new NotFoundException('Pipeline stage not found');
+      }
+    }
+
+    if (hasOwn(dto, 'assignedUserId') && dto.assignedUserId) {
+      await this.assertAssignableUser(context, dto.assignedUserId);
+    }
+
+    const stageChanged = dto.stageId !== undefined && dto.stageId !== existing.stageId;
+    const statusChanged = dto.status !== undefined && dto.status !== existing.status;
+
+    const opportunity = await this.opportunityRepository.updateOpportunity(context, id, dto);
+
+    await this.iamRepository.writeAuditLog(context, {
+      action: 'opportunity.updated',
+      entityType: 'opportunity',
+      entityId: opportunity.id,
+      payload: { changes: dto as Record<string, unknown> },
+    });
+
+    if (stageChanged) {
+      await this.opportunityRepository.appendStageHistory(context, {
+        opportunityId: opportunity.id,
+        fromStageId: existing.stageId,
+        toStageId: opportunity.stageId,
+      });
+
+      this.eventPublisher.publish(
+        createOpportunityStageChangedEvent({
+          tenantId: context.tenantId,
+          actorId: context.userId,
+          opportunityId: opportunity.id,
+          fromStageId: existing.stageId,
+          toStageId: opportunity.stageId,
+        }),
+      );
+    }
+
+    if (statusChanged && opportunity.status === 'won') {
+      await this.iamRepository.writeAuditLog(context, {
+        action: 'opportunity.won',
+        entityType: 'opportunity',
+        entityId: opportunity.id,
+        payload: { previousStatus: existing.status, status: opportunity.status },
+      });
+
+      this.eventPublisher.publish(
+        createOpportunityWonEvent({
+          tenantId: context.tenantId,
+          actorId: context.userId,
+          opportunityId: opportunity.id,
+          pipelineId: opportunity.pipelineId,
+          stageId: opportunity.stageId,
+        }),
+      );
+    }
+
+    if (statusChanged && opportunity.status === 'lost') {
+      await this.iamRepository.writeAuditLog(context, {
+        action: 'opportunity.lost',
+        entityType: 'opportunity',
+        entityId: opportunity.id,
+        payload: { previousStatus: existing.status, status: opportunity.status },
+      });
+
+      this.eventPublisher.publish(
+        createOpportunityLostEvent({
+          tenantId: context.tenantId,
+          actorId: context.userId,
+          opportunityId: opportunity.id,
+          pipelineId: opportunity.pipelineId,
+          stageId: opportunity.stageId,
+        }),
+      );
+    }
+
+    return mapOpportunitySummary(opportunity);
+  }
 
   async createOpportunity(context: RequestTenantContext, dto: CreateOpportunityDto) {
     const pipeline = await this.pipelineRepository.findPipelineById(context, dto.pipelineId);

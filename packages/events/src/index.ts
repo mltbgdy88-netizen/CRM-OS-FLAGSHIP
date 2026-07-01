@@ -510,3 +510,48 @@ export function createActivityLoggedEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const NOTIFICATION_EVENT_TYPES = {
+  NOTIFICATION_CREATED: 'NotificationCreated',
+  DASHBOARD_VIEWED: 'DashboardViewed',
+} as const;
+
+export type NotificationEventType =
+  (typeof NOTIFICATION_EVENT_TYPES)[keyof typeof NOTIFICATION_EVENT_TYPES];
+
+export function createNotificationCreatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  notificationId: string;
+  title: string;
+  notificationType: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'notification',
+    aggregateId: input.notificationId,
+    eventType: NOTIFICATION_EVENT_TYPES.NOTIFICATION_CREATED,
+    payload: {
+      title: input.title,
+      notificationType: input.notificationType,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createDashboardViewedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  dashboardId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'dashboard',
+    aggregateId: input.dashboardId,
+    eventType: NOTIFICATION_EVENT_TYPES.DASHBOARD_VIEWED,
+    payload: {},
+    createdAt: new Date(),
+  };
+}

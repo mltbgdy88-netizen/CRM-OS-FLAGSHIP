@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { MAIN_MENU, MENU_SECTION_LABELS, type MainMenuItem } from '../lib/navigation/main-menu';
 import { clearAccessToken, getAccessToken } from '../lib/auth/token-storage';
 import { NavIcon } from './nav-icon';
+import { UtilityRail } from './utility-rail';
 
 interface AppShellProps {
   children: ReactNode;
@@ -63,6 +64,9 @@ function pageTitle(pathname: string) {
   }
   if (pathname.startsWith('/tasks')) {
     return 'Görevler';
+  }
+  if (pathname.startsWith('/notifications')) {
+    return 'Bildirimler';
   }
   if (pathname.startsWith('/reports')) {
     return 'Raporlar';
@@ -257,10 +261,14 @@ export function AppShell({ children }: AppShellProps) {
               Default Workspace
               <span className="app-shell__workspace-plan">Enterprise</span>
             </button>
-            <button type="button" className="app-shell__icon-btn" disabled aria-label="Bildirimler">
+            <Link
+              href="/notifications"
+              className="app-shell__icon-btn"
+              aria-label="Bildirimler"
+              data-testid="app-shell-notifications"
+            >
               ◉
-              <span className="app-shell__icon-badge">3</span>
-            </button>
+            </Link>
             <button type="button" className="app-shell__icon-btn" disabled aria-label="Yardım">
               ?
             </button>
@@ -290,6 +298,8 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </div>
       </div>
+
+      <UtilityRail />
     </div>
   );
 }

@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
+import { ApiClientError } from '../lib/api/authenticated-fetch';
+import { getDashboard, type DashboardResponse } from '../lib/api/dashboard-client';
 import {
   formatCurrencyShort,
   RevenueAreaChart,
@@ -7,50 +10,66 @@ import {
   useAnimatedMetric,
   type RevenueMonth,
 } from './dashboard-charts';
+import { TableSkeleton } from './table-skeleton';
 
-const KPI_CARDS = [
+type KpiFormat = 'currency' | 'number' | 'percent';
+type KpiTone = 'orange' | 'blue' | 'green' | 'purple';
+
+interface KpiCardData {
+  id: string;
+  label: string;
+  target: number;
+  format: KpiFormat;
+  trend: string;
+  trendUp: boolean;
+  icon: string;
+  tone: KpiTone;
+  spark: number[];
+}
+
+const KPI_CARD_DEFAULTS: KpiCardData[] = [
   {
     id: 'revenue',
     label: 'Toplam Gelir',
     target: 2_400_000,
-    format: 'currency' as const,
+    format: 'currency',
     trend: '+12.5%',
     trendUp: true,
     icon: '₺',
-    tone: 'orange' as const,
+    tone: 'orange',
     spark: [1.52, 1.58, 1.61, 1.72, 1.78, 1.85, 1.92, 2.05, 2.12, 2.28, 2.35, 2.4],
   },
   {
     id: 'opportunities',
     label: 'Açık Fırsatlar',
     target: 48,
-    format: 'number' as const,
+    format: 'number',
     trend: '+8.2%',
     trendUp: true,
     icon: '◆',
-    tone: 'blue' as const,
+    tone: 'blue',
     spark: [28, 31, 30, 34, 36, 35, 39, 41, 43, 44, 46, 48],
   },
   {
-    id: 'winrate',
-    label: 'Kazanma Oranı',
+    id: 'customers',
+    label: 'Müşteriler',
     target: 34,
-    format: 'percent' as const,
-    trend: '-2.1%',
-    trendUp: false,
+    format: 'number',
+    trend: '+5',
+    trendUp: true,
     icon: '◎',
-    tone: 'green' as const,
-    spark: [38, 37, 36, 35, 36, 35, 34, 35, 34, 33, 34, 34],
+    tone: 'green',
+    spark: [18, 20, 22, 24, 25, 27, 28, 30, 31, 32, 33, 34],
   },
   {
     id: 'tasks',
     label: 'Bekleyen Görevler',
     target: 17,
-    format: 'number' as const,
+    format: 'number',
     trend: '+3',
     trendUp: true,
     icon: '☑',
-    tone: 'purple' as const,
+    tone: 'purple',
     spark: [9, 10, 11, 12, 11, 13, 14, 15, 14, 16, 15, 17],
   },
 ];
@@ -91,6 +110,40 @@ const UPCOMING_EVENTS = [
   { id: '3', time: '16:00', title: 'Haftalık pipeline', customer: 'Ekip' },
 ];
 
+function mergeKpiCards(dashboard: DashboardResponse | null): KpiCardData[] {
+  if (!dashboard) {
+    return KPI_CARD_DEFAULTS;
+  }
+
+  const quoteTotal = Number.parseFloat(dashboard.kpis.quoteTotal) || 0;
+
+  return KPI_CARD_DEFAULTS.map((card) => {
+    switch (card.id) {
+      case 'revenue':
+        return { ...card, target: quoteTotal };
+      case 'opportunities':
+        return { ...card, target: dashboard.kpis.openOpportunities };
+      case 'customers':
+        return { ...card, target: dashboard.kpis.customers };
+      case 'tasks':
+        return { ...card, target: dashboard.kpis.pendingTasks };
+      default:
+        return card;
+    }
+  });
+}
+
+function isDashboardEmpty(dashboard: DashboardResponse): boolean {
+  const { customers, openOpportunities, pendingTasks, quoteTotal } = dashboard.kpis;
+  const hasKpis =
+    customers > 0 ||
+    openOpportunities > 0 ||
+    pendingTasks > 0 ||
+    Number.parseFloat(quoteTotal) > 0;
+
+  return dashboard.widgets.length === 0 && !hasKpis;
+}
+
 function KpiCard({
   label,
   target,
@@ -100,7 +153,8 @@ function KpiCard({
   icon,
   tone,
   spark,
-}: (typeof KPI_CARDS)[number]) {
+  id,
+}: KpiCardData) {
   const animated = useAnimatedMetric(target);
   const displayValue =
     format === 'currency'
@@ -110,7 +164,7 @@ function KpiCard({
         : String(Math.round(animated));
 
   return (
-    <article className={`dashboard-kpi dashboard-kpi--${tone}`}>
+    <article className={`dashboard-kpi dashboard-kpi--${tone}`} data-testid={`dashboard-kpi-${id}`}>
       <div className="dashboard-kpi__main">
         <div className="dashboard-kpi__top">
           <span className="dashboard-kpi__icon" aria-hidden>
@@ -125,7 +179,13 @@ function KpiCard({
           </span>
         </div>
         <p className="dashboard-kpi__label">{label}</p>
-        <p className="dashboard-kpi__value">{displayValue}</p>
+        <p
+          className="dashboard-kpi__value"
+          data-testid={`dashboard-kpi-value-${id}`}
+          data-value={target}
+        >
+          {displayValue}
+        </p>
         <p className="dashboard-kpi__period">Son 30 gün</p>
       </div>
       <SparklineChart values={spark} tone={tone} className="dashboard-kpi__spark" />
@@ -133,28 +193,51 @@ function KpiCard({
   );
 }
 
-export function DashboardView() {
+function DashboardContent({
+  dashboard,
+  kpiCards,
+}: {
+  dashboard: DashboardResponse | null;
+  kpiCards: KpiCardData[];
+}) {
   const maxPipeline = Math.max(...PIPELINE_STAGES.map((s) => s.value));
+  const dashboardName = dashboard?.name ?? 'Gösterge Paneli';
 
   return (
-    <section className="workspace-card dashboard-page" data-testid="dashboard-page">
+    <>
       <header className="dashboard-page__header">
         <div>
           <p className="dashboard-page__greeting">Hoş geldiniz, Ahmet!</p>
-          <h1 className="dashboard-page__title">Gösterge Paneli</h1>
-          <p className="dashboard-page__subtitle">Canlı satış özeti · güncellenme: az önce</p>
+          <h1 className="dashboard-page__title">{dashboardName}</h1>
+          <p className="dashboard-page__subtitle">
+            Canlı satış özeti · güncellenme: az önce
+            {dashboard?.isDefault ? ' · varsayılan panel' : ''}
+          </p>
         </div>
         <span className="dashboard-page__live-badge">
           <span className="dashboard-page__live-dot" aria-hidden />
-          Canlı önizleme
+          Canlı API
         </span>
       </header>
 
       <div className="dashboard-kpi-grid">
-        {KPI_CARDS.map((card) => (
+        {kpiCards.map((card) => (
           <KpiCard key={card.id} {...card} />
         ))}
       </div>
+
+      {dashboard?.widgets.length ? (
+        <div className="kpi-strip kpi-strip--compact" data-testid="dashboard-widgets">
+          {dashboard.widgets.map((widget) => (
+            <article key={widget.id} className="kpi-card">
+              <div>
+                <p className="kpi-card__label">{widget.title}</p>
+                <p className="kpi-card__value">{widget.liveValue ?? '—'}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
 
       <div className="dashboard-grid">
         <article className="dashboard-card dashboard-card--wide dashboard-card--chart">
@@ -258,6 +341,105 @@ export function DashboardView() {
           </div>
         </article>
       </div>
+    </>
+  );
+}
+
+export function DashboardView() {
+  const [state, setState] = useState<'loading' | 'empty' | 'error' | 'forbidden' | 'success'>(
+    'loading',
+  );
+  const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setState('loading');
+      try {
+        const result = await getDashboard();
+        if (cancelled) {
+          return;
+        }
+        setDashboard(result);
+        setState(isDashboardEmpty(result) ? 'empty' : 'success');
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        if (error instanceof ApiClientError && error.kind === 'forbidden') {
+          setState('forbidden');
+          return;
+        }
+        setErrorMessage(error instanceof Error ? error.message : 'Gösterge paneli yüklenemedi');
+        setState('error');
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const kpiCards = useMemo(() => mergeKpiCards(dashboard), [dashboard]);
+
+  if (state === 'loading') {
+    return (
+      <section className="workspace-card dashboard-page" data-testid="dashboard-page">
+        <header className="dashboard-page__header">
+          <div>
+            <p className="dashboard-page__greeting">Hoş geldiniz, Ahmet!</p>
+            <h1 className="dashboard-page__title">Gösterge Paneli</h1>
+          </div>
+        </header>
+        <TableSkeleton rows={4} columns={3} data-testid="dashboard-loading" />
+      </section>
+    );
+  }
+
+  if (state === 'forbidden') {
+    return (
+      <section className="workspace-card dashboard-page" data-testid="dashboard-page">
+        <p className="state-message state-message--forbidden" data-testid="dashboard-forbidden">
+          Gösterge panelini görüntüleme yetkiniz yok.
+        </p>
+      </section>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <section className="workspace-card dashboard-page" data-testid="dashboard-page">
+        <p className="state-message state-message--error" data-testid="dashboard-error">
+          {errorMessage}
+        </p>
+      </section>
+    );
+  }
+
+  if (state === 'empty') {
+    return (
+      <section className="workspace-card dashboard-page" data-testid="dashboard-page">
+        <header className="dashboard-page__header">
+          <div>
+            <h1 className="dashboard-page__title">Gösterge Paneli</h1>
+          </div>
+        </header>
+        <div className="empty-state" data-testid="dashboard-empty">
+          <span className="empty-state__icon" aria-hidden>
+            ▣
+          </span>
+          <p>Henüz gösterge paneli verisi yok.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="workspace-card dashboard-page" data-testid="dashboard-page">
+      <DashboardContent dashboard={dashboard} kpiCards={kpiCards} />
     </section>
   );
 }

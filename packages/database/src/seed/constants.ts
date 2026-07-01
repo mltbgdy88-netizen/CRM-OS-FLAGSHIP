@@ -125,6 +125,21 @@ export const SEED_IDS = {
   taskCommentTenantB: '67200000-0000-4000-8000-000000000002',
   activityDefault: '67300000-0000-4000-8000-000000000001',
   activityTenantB: '67300000-0000-4000-8000-000000000002',
+  permissionDashboardRead: '68000000-0000-4000-8000-000000000001',
+  permissionNotificationRead: '68000000-0000-4000-8000-000000000002',
+  dashboardDefault: '68100000-0000-4000-8000-000000000001',
+  dashboardWidgetKpiRevenue: '68200000-0000-4000-8000-000000000001',
+  dashboardWidgetKpiPipeline: '68200000-0000-4000-8000-000000000002',
+  dashboardWidgetKpiTasks: '68200000-0000-4000-8000-000000000003',
+  dashboardWidgetChartRevenue: '68200000-0000-4000-8000-000000000004',
+  notificationDefault1: '68300000-0000-4000-8000-000000000001',
+  notificationDefault2: '68300000-0000-4000-8000-000000000002',
+  notificationDefault3: '68300000-0000-4000-8000-000000000003',
+  notificationTenantB: '68300000-0000-4000-8000-000000000004',
+  notificationRecipientDefault1: '68400000-0000-4000-8000-000000000001',
+  notificationRecipientDefault2: '68400000-0000-4000-8000-000000000002',
+  notificationRecipientDefault3: '68400000-0000-4000-8000-000000000003',
+  notificationRecipientTenantB: '68400000-0000-4000-8000-000000000004',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -328,6 +343,21 @@ export const SEED_TASK_PERMISSIONS = [
     code: 'activity.create',
     module: 'task',
     description: 'Log activities against CRM records',
+  },
+] as const;
+
+export const SEED_DASHBOARD_NOTIFICATION_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionDashboardRead,
+    code: 'dashboard.read',
+    module: 'dashboard',
+    description: 'Read dashboards and widget layouts',
+  },
+  {
+    id: SEED_IDS.permissionNotificationRead,
+    code: 'notification.read',
+    module: 'notification',
+    description: 'Read in-app notifications',
   },
 ] as const;
 

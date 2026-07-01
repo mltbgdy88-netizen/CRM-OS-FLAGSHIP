@@ -13,6 +13,7 @@ export const MIGRATION_BANDS = [
   '006_quote',
   '007_quote_pdf_approval',
   '008_task',
+  '009_dashboard_notification',
 ] as const;
 export type MigrationBand = (typeof MIGRATION_BANDS)[number];
 
@@ -65,7 +66,7 @@ export async function applyAllMigrations(pool: Pool): Promise<boolean> {
   return anyApplied;
 }
 
-/** Applies all migration bands in order (002_iam … 008_task). */
+/** Applies all migration bands in order (002_iam … 009_dashboard_notification). */
 export async function applyMigration(pool: Pool): Promise<boolean> {
   return applyAllMigrations(pool);
 }

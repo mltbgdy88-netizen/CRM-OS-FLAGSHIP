@@ -114,6 +114,17 @@ export const SEED_IDS = {
   quoteSignatureTenantB: '66800000-0000-4000-8000-000000000002',
   quoteStatusHistoryDefault: '66900000-0000-4000-8000-000000000001',
   quoteStatusHistoryTenantB: '66900000-0000-4000-8000-000000000002',
+  permissionTaskRead: '30000000-0000-4000-8000-000000000024',
+  permissionTaskCreate: '30000000-0000-4000-8000-000000000025',
+  permissionActivityCreate: '30000000-0000-4000-8000-000000000026',
+  taskDefault: '67000000-0000-4000-8000-000000000001',
+  taskTenantB: '67000000-0000-4000-8000-000000000002',
+  taskAssigneeDefault: '67100000-0000-4000-8000-000000000001',
+  taskAssigneeTenantB: '67100000-0000-4000-8000-000000000002',
+  taskCommentDefault: '67200000-0000-4000-8000-000000000001',
+  taskCommentTenantB: '67200000-0000-4000-8000-000000000002',
+  activityDefault: '67300000-0000-4000-8000-000000000001',
+  activityTenantB: '67300000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -296,6 +307,27 @@ export const SEED_QUOTE_PDF_PERMISSIONS = [
     code: 'quote.pdf.generate',
     module: 'quote',
     description: 'Generate quote PDF documents',
+  },
+] as const;
+
+export const SEED_TASK_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionTaskRead,
+    code: 'task.read',
+    module: 'task',
+    description: 'Read tasks and related detail data',
+  },
+  {
+    id: SEED_IDS.permissionTaskCreate,
+    code: 'task.create',
+    module: 'task',
+    description: 'Create and manage tasks',
+  },
+  {
+    id: SEED_IDS.permissionActivityCreate,
+    code: 'activity.create',
+    module: 'task',
+    description: 'Log activities against CRM records',
   },
 ] as const;
 

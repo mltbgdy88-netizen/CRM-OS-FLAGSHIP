@@ -446,3 +446,67 @@ export function createQuoteExpiredEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const TASK_EVENT_TYPES = {
+  TASK_CREATED: 'TaskCreated',
+  TASK_COMPLETED: 'TaskCompleted',
+  ACTIVITY_LOGGED: 'ActivityLogged',
+} as const;
+
+export type TaskEventType = (typeof TASK_EVENT_TYPES)[keyof typeof TASK_EVENT_TYPES];
+
+export function createTaskCreatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  taskId: string;
+  title: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'task',
+    aggregateId: input.taskId,
+    eventType: TASK_EVENT_TYPES.TASK_CREATED,
+    payload: { title: input.title },
+    createdAt: new Date(),
+  };
+}
+
+export function createTaskCompletedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  taskId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'task',
+    aggregateId: input.taskId,
+    eventType: TASK_EVENT_TYPES.TASK_COMPLETED,
+    payload: {},
+    createdAt: new Date(),
+  };
+}
+
+export function createActivityLoggedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  activityId: string;
+  activityType: string;
+  subjectType: string;
+  subjectId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'activity',
+    aggregateId: input.activityId,
+    eventType: TASK_EVENT_TYPES.ACTIVITY_LOGGED,
+    payload: {
+      activityType: input.activityType,
+      subjectType: input.subjectType,
+      subjectId: input.subjectId,
+    },
+    createdAt: new Date(),
+  };
+}

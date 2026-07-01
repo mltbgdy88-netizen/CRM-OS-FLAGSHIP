@@ -1,4 +1,4 @@
-/** Sprint-02 IAM + Sprint-03 Customer + Sprint-06 Sales + Sprint-08 Pipeline + Sprint-09/10 Quote permission registry (global codes). */
+/** Sprint-02 IAM + Sprint-03 Customer + Sprint-06 Sales + Sprint-08 Pipeline + Sprint-09/10 Quote + Sprint-11 Task permission registry (global codes). */
 export const PERMISSIONS = {
   AUTH_LOGIN: 'auth.login',
   TENANT_MANAGE: 'tenant.manage',
@@ -27,6 +27,9 @@ export const PERMISSIONS = {
   QUOTE_SEND: 'quote.send',
   QUOTE_APPROVE: 'quote.approve',
   QUOTE_PDF_GENERATE: 'quote.pdf.generate',
+  TASK_READ: 'task.read',
+  TASK_CREATE: 'task.create',
+  ACTIVITY_CREATE: 'activity.create',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

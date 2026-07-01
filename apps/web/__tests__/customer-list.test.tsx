@@ -39,7 +39,7 @@ describe('CustomerListView', () => {
     await waitFor(() => {
       expect(screen.getByTestId('customer-list-items')).toBeInTheDocument();
     });
-    expect(screen.getByTestId('customer-list-pagination')).toHaveTextContent('1 total');
+    expect(screen.getByTestId('customer-list-pagination')).toHaveTextContent('1 toplam');
     expect(screen.getByTestId('no-upload-ui-notice')).toBeInTheDocument();
   });
 

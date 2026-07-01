@@ -6,8 +6,7 @@ import { ApiClientError } from '../lib/api/authenticated-fetch';
 import { listCustomers, type CustomerSummary } from '../lib/api/customers-client';
 import { TableSkeleton } from './table-skeleton';
 
-type CustomerTab = 'all' | 'active' | 'inactive';
-type ListView = 'list' | 'kanban' | 'timeline';
+type StatusFilter = 'all' | 'active' | 'inactive';
 
 interface CustomerListViewProps {
   onSelectCustomer?: (id: string) => void;
@@ -20,9 +19,19 @@ function statusPillClass(status: string) {
     return 'status-pill status-pill--success';
   }
   if (status === 'inactive' || status === 'lost') {
-    return 'status-pill status-pill--muted';
+    return 'status-pill status-pill--danger';
   }
-  return 'status-pill status-pill--info';
+  return 'status-pill status-pill--warning';
+}
+
+function statusLabel(status: string) {
+  if (status === 'active') {
+    return 'Aktif';
+  }
+  if (status === 'inactive' || status === 'lost') {
+    return 'Pasif';
+  }
+  return 'Potansiyel';
 }
 
 export function CustomerListView({
@@ -38,8 +47,7 @@ export function CustomerListView({
   const [page, setPage] = useState(1);
   const [pageSize] = useState(8);
   const [errorMessage, setErrorMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<CustomerTab>('all');
-  const [listView, setListView] = useState<ListView>('list');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -63,7 +71,7 @@ export function CustomerListView({
           setState('forbidden');
           return;
         }
-        setErrorMessage(error instanceof Error ? error.message : 'Failed to load customers');
+        setErrorMessage(error instanceof Error ? error.message : 'Müşteriler yüklenemedi');
         setState('error');
       }
     }
@@ -76,9 +84,9 @@ export function CustomerListView({
 
   const filteredItems = useMemo(() => {
     let result = items;
-    if (activeTab === 'active') {
+    if (statusFilter === 'active') {
       result = result.filter((item) => item.status === 'active');
-    } else if (activeTab === 'inactive') {
+    } else if (statusFilter === 'inactive') {
       result = result.filter((item) => item.status !== 'active');
     }
     const query = searchQuery.trim().toLowerCase();
@@ -90,7 +98,7 @@ export function CustomerListView({
         item.displayName.toLowerCase().includes(query) ||
         (item.email?.toLowerCase().includes(query) ?? false),
     );
-  }, [activeTab, items, searchQuery]);
+  }, [items, searchQuery, statusFilter]);
 
   const activeCount = useMemo(
     () => items.filter((item) => item.status === 'active').length,
@@ -101,107 +109,103 @@ export function CustomerListView({
     onSelectCustomer?.(customer.id);
   }
 
+  function resetFilters() {
+    setStatusFilter('all');
+    setSearchQuery('');
+  }
+
   return (
-    <section className="workspace-card" data-testid="customer-list">
-      <header className="entity-toolbar">
-        <div className="entity-toolbar__title-row">
-          <h1 className="entity-toolbar__title">Contacts</h1>
-          {onOpenCreate ? (
-            <button
-              type="button"
-              className="btn-accent-green"
-              onClick={onOpenCreate}
-              data-testid="customer-create-link"
-            >
-              + Create
-            </button>
-          ) : (
-            <Link href="/customers/new" className="btn-accent-green" data-testid="customer-create-link">
-              + Create
-            </Link>
-          )}
+    <section className="workspace-card entity-page" data-testid="customer-list">
+      <header className="entity-page__header">
+        <div className="entity-page__title-block">
+          <h1 className="entity-page__title">Müşteriler</h1>
+          {state === 'success' ? (
+            <span className="entity-page__count">{total} kayıt</span>
+          ) : null}
         </div>
-
-        <div className="entity-toolbar__filters">
-          <span className="filter-chip filter-chip--active">All contacts</span>
-          <input
-            type="search"
-            className="entity-toolbar__search"
-            placeholder="Filter and search…"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            aria-label="Filter customers"
-          />
-        </div>
-
-        <div className="entity-toolbar__views" role="tablist" aria-label="View mode">
-          {(
-            [
-              ['list', 'List'],
-              ['kanban', 'Kanban'],
-              ['timeline', 'Activities'],
-            ] as const
-          ).map(([view, label]) => (
-            <button
-              key={view}
-              type="button"
-              role="tab"
-              aria-selected={listView === view}
-              disabled={view !== 'list'}
-              className={
-                listView === view ? 'view-pill view-pill--active' : 'view-pill view-pill--disabled'
-              }
-              onClick={() => view === 'list' && setListView(view)}
-              title={view !== 'list' ? 'Coming soon' : undefined}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {onOpenCreate ? (
+          <button
+            type="button"
+            className="btn-accent-green"
+            onClick={onOpenCreate}
+            data-testid="customer-create-link"
+          >
+            + Yeni Müşteri
+          </button>
+        ) : (
+          <Link href="/customers/new" className="btn-accent-green" data-testid="customer-create-link">
+            + Yeni Müşteri
+          </Link>
+        )}
       </header>
 
       {state === 'success' ? (
-        <div className="kpi-strip" data-testid="customer-kpi-strip">
+        <div className="kpi-strip kpi-strip--compact" data-testid="customer-kpi-strip">
           <article className="kpi-card">
-            <p className="kpi-card__label">Total</p>
-            <p className="kpi-card__value">{total}</p>
+            <span className="kpi-card__icon kpi-card__icon--orange" aria-hidden>
+              ◎
+            </span>
+            <div>
+              <p className="kpi-card__label">Toplam</p>
+              <p className="kpi-card__value">{total}</p>
+            </div>
           </article>
           <article className="kpi-card">
-            <p className="kpi-card__label">Active</p>
-            <p className="kpi-card__value">{activeCount}</p>
+            <span className="kpi-card__icon kpi-card__icon--green" aria-hidden>
+              ✓
+            </span>
+            <div>
+              <p className="kpi-card__label">Aktif</p>
+              <p className="kpi-card__value">{activeCount}</p>
+            </div>
           </article>
           <article className="kpi-card">
-            <p className="kpi-card__label">On page</p>
-            <p className="kpi-card__value">{filteredItems.length}</p>
+            <span className="kpi-card__icon kpi-card__icon--blue" aria-hidden>
+              ◷
+            </span>
+            <div>
+              <p className="kpi-card__label">Bu sayfa</p>
+              <p className="kpi-card__value">{filteredItems.length}</p>
+            </div>
           </article>
         </div>
       ) : null}
 
-      <div className="crm-tabs crm-tabs--inline" role="tablist" aria-label="Customer filters">
-        {(
-          [
-            ['all', 'All'],
-            ['active', 'Customer'],
-            ['inactive', 'Lost'],
-          ] as const
-        ).map(([tab, label]) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === tab}
-            className={activeTab === tab ? 'crm-tabs__tab crm-tabs__tab--active' : 'crm-tabs__tab'}
-            onClick={() => setActiveTab(tab)}
+      <div className="entity-page__filters">
+        <label className="entity-page__filter">
+          <span className="entity-page__filter-label">Durum</span>
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+            aria-label="Durum filtresi"
           >
-            {label}
-          </button>
-        ))}
+            <option value="all">Tümü</option>
+            <option value="active">Aktif</option>
+            <option value="inactive">Pasif / Potansiyel</option>
+          </select>
+        </label>
+        <div className="entity-page__search-wrap">
+          <span className="entity-page__search-icon" aria-hidden>
+            ⌕
+          </span>
+          <input
+            type="search"
+            className="entity-page__search"
+            placeholder="İsim veya e-posta ara…"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            aria-label="Müşteri ara"
+          />
+        </div>
+        <button type="button" className="btn-ghost btn-ghost--compact" onClick={resetFilters}>
+          Filtreleri sıfırla
+        </button>
       </div>
 
       {state === 'loading' && (
         <>
           <p className="state-message state-message--inline" data-testid="customer-list-loading">
-            Loading customers…
+            Müşteriler yükleniyor…
           </p>
           <TableSkeleton />
         </>
@@ -210,9 +214,12 @@ export function CustomerListView({
       {state === 'empty' && (
         <div className="empty-state" data-testid="customer-list-empty">
           <span className="empty-state__icon" aria-hidden>
-            ∅
+            ◎
           </span>
-          <p>No customers yet.</p>
+          <p>Henüz müşteri kaydı yok.</p>
+          <Link href="/customers/new" className="btn-accent-green">
+            + İlk müşteriyi ekle
+          </Link>
         </div>
       )}
 
@@ -224,31 +231,31 @@ export function CustomerListView({
 
       {state === 'forbidden' && (
         <p className="state-message state-message--error" data-testid="customer-list-forbidden">
-          You do not have permission to view customers.
+          Müşterileri görüntüleme yetkiniz yok.
         </p>
       )}
 
       {state === 'success' && filteredItems.length === 0 && (
         <div className="empty-state">
           <span className="empty-state__icon" aria-hidden>
-            ∅
+            ⌕
           </span>
-          <p>No matches for current filters.</p>
+          <p>Filtrelere uygun kayıt bulunamadı.</p>
         </div>
       )}
 
       {state === 'success' && filteredItems.length > 0 && (
         <div className="data-table-wrap data-table-wrap--flush">
-          <table className="data-table" data-testid="customer-list-items">
+          <table className="data-table data-table--premium" data-testid="customer-list-items">
             <thead>
               <tr>
-                <th className="data-table__col-check" aria-label="Select" />
-                <th>Contact</th>
-                <th>Activity</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Status</th>
-                <th>Created</th>
+                <th className="data-table__col-check" aria-label="Seç" />
+                <th>Müşteri</th>
+                <th>E-posta</th>
+                <th>Telefon</th>
+                <th>Durum</th>
+                <th>Son güncelleme</th>
+                <th className="data-table__col-chevron" aria-hidden />
               </tr>
             </thead>
             <tbody>
@@ -272,7 +279,7 @@ export function CustomerListView({
                   data-testid={`customer-row-${customer.id}`}
                 >
                   <td className="data-table__col-check" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" disabled aria-label="Bulk select disabled" />
+                    <input type="checkbox" disabled aria-label="Toplu seçim kapalı" />
                   </td>
                   <td>
                     <div className="data-table__primary">
@@ -286,16 +293,18 @@ export function CustomerListView({
                       )}
                     </div>
                   </td>
+                  <td className="data-table__muted">{customer.email ?? '—'}</td>
+                  <td className="data-table__muted">{customer.phone ?? '—'}</td>
                   <td>
-                    <span className="activity-dot activity-dot--idle" title="No recent activity" />
-                  </td>
-                  <td>{customer.email ?? '—'}</td>
-                  <td>{customer.phone ?? '—'}</td>
-                  <td>
-                    <span className={statusPillClass(customer.status)}>{customer.status}</span>
+                    <span className={statusPillClass(customer.status)}>
+                      {statusLabel(customer.status)}
+                    </span>
                   </td>
                   <td className="data-table__muted">
-                    {new Date(customer.createdAt).toLocaleDateString()}
+                    {new Date(customer.updatedAt ?? customer.createdAt).toLocaleDateString('tr-TR')}
+                  </td>
+                  <td className="data-table__col-chevron" aria-hidden>
+                    ›
                   </td>
                 </tr>
               ))}
@@ -306,26 +315,31 @@ export function CustomerListView({
 
       <footer className="entity-footer">
         <p className="entity-footer__hint" data-testid="no-upload-ui-notice">
-          Bulk actions and file upload are disabled in Sprint-03/04.
+          Toplu işlem ve dosya yükleme Sprint-04 kapsamı dışında kapalıdır.
         </p>
         <div className="entity-footer__pagination">
           <span data-testid="customer-list-pagination">
-            Records: {pageSize} · Page {page} · {total} total
+            Sayfa {page} · {pageSize} kayıt · {total} toplam
           </span>
-          <div className="pagination-controls">
+          <div className="pagination-controls pagination-controls--premium">
             <button
               type="button"
+              className="pagination-controls__btn"
               disabled={page <= 1}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
             >
-              Previous
+              ‹
             </button>
+            <span className="pagination-controls__page pagination-controls__page--active">
+              {page}
+            </span>
             <button
               type="button"
+              className="pagination-controls__btn"
               disabled={page * pageSize >= total}
               onClick={() => setPage((current) => current + 1)}
             >
-              Next
+              ›
             </button>
           </div>
         </div>

@@ -28,6 +28,29 @@ const TENANT_B_PIPELINE_USER = {
   email: 'pipeline-only@tenant-b.local',
 };
 
+const PIPELINE_READ_USER = {
+  id: '58000000-0000-4000-8000-000000000001',
+  memberId: '58000000-0000-4000-8000-000000000002',
+  roleId: '58000000-0000-4000-8000-000000000003',
+  email: 'pipeline-read-only@default.local',
+};
+
+const STAGE_UPDATE_USER = {
+  id: '58000000-0000-4000-8000-000000000011',
+  memberId: '58000000-0000-4000-8000-000000000012',
+  roleId: '58000000-0000-4000-8000-000000000013',
+  email: 'stage-update-only@default.local',
+};
+
+const TENANT_B_BOARD_USER = {
+  id: '58000000-0000-4000-8000-000000000021',
+  memberId: '58000000-0000-4000-8000-000000000022',
+  roleId: '58000000-0000-4000-8000-000000000023',
+  email: 'pipeline-board@tenant-b.local',
+};
+
+const PERMISSION_PIPELINE_READ = '30000000-0000-4000-8000-000000000016';
+const PERMISSION_OPPORTUNITY_UPDATE_STAGE = '30000000-0000-4000-8000-000000000017';
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const describeSales = hasDatabase ? describe : describe.skip;
 
@@ -329,6 +352,121 @@ describeSales('Sales (e2e)', () => {
       },
     });
 
+    const dedicatedUsers = [
+      {
+        user: PIPELINE_READ_USER,
+        tenantId: SEED_IDS.tenantDefault,
+        roleCode: 'pipeline_read_only',
+        roleName: 'Pipeline Read Only',
+        permissionIds: [PERMISSION_PIPELINE_READ],
+        createdBy: SEED_IDS.userAdmin,
+      },
+      {
+        user: STAGE_UPDATE_USER,
+        tenantId: SEED_IDS.tenantDefault,
+        roleCode: 'stage_update_only',
+        roleName: 'Stage Update Only',
+        permissionIds: [PERMISSION_OPPORTUNITY_UPDATE_STAGE],
+        createdBy: SEED_IDS.userAdmin,
+      },
+      {
+        user: TENANT_B_BOARD_USER,
+        tenantId: SEED_IDS.tenantB,
+        roleCode: 'pipeline_board_only',
+        roleName: 'Pipeline Board Only',
+        permissionIds: [PERMISSION_PIPELINE_READ],
+        createdBy: SEED_IDS.userMemberB,
+      },
+    ] as const;
+
+    for (const entry of dedicatedUsers) {
+      await prisma.user.upsert({
+        where: { id: entry.user.id },
+        update: {
+          email: entry.user.email,
+          passwordHash,
+          firstName: entry.roleName.split(' ')[0],
+          lastName: entry.roleName.split(' ').slice(1).join(' ') || 'User',
+          status: 'active',
+        },
+        create: {
+          id: entry.user.id,
+          email: entry.user.email,
+          passwordHash,
+          firstName: entry.roleName.split(' ')[0],
+          lastName: entry.roleName.split(' ').slice(1).join(' ') || 'User',
+          status: 'active',
+        },
+      });
+
+      const membership = await prisma.tenantMember.upsert({
+        where: {
+          tenantId_userId: {
+            tenantId: entry.tenantId,
+            userId: entry.user.id,
+          },
+        },
+        update: { status: 'active' },
+        create: {
+          id: entry.user.memberId,
+          tenantId: entry.tenantId,
+          userId: entry.user.id,
+          status: 'active',
+          joinedAt: new Date(),
+        },
+      });
+
+      const role = await prisma.role.upsert({
+        where: {
+          tenantId_code: {
+            tenantId: entry.tenantId,
+            code: entry.roleCode,
+          },
+        },
+        update: { name: entry.roleName, deletedAt: null, deletedBy: null },
+        create: {
+          id: entry.user.roleId,
+          tenantId: entry.tenantId,
+          code: entry.roleCode,
+          name: entry.roleName,
+          isSystem: false,
+          createdBy: entry.createdBy,
+        },
+      });
+
+      for (const permissionId of entry.permissionIds) {
+        await prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: {
+              roleId: role.id,
+              permissionId,
+            },
+          },
+          update: { tenantId: entry.tenantId },
+          create: {
+            tenantId: entry.tenantId,
+            roleId: role.id,
+            permissionId,
+          },
+        });
+      }
+
+      await prisma.memberRole.upsert({
+        where: {
+          tenantMemberId_roleId: {
+            tenantMemberId: membership.id,
+            roleId: role.id,
+          },
+        },
+        update: { tenantId: entry.tenantId },
+        create: {
+          tenantId: entry.tenantId,
+          tenantMemberId: membership.id,
+          roleId: role.id,
+        },
+      });
+    }
+
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -430,6 +568,110 @@ describeSales('Sales (e2e)', () => {
     expect(items.some((item: { id: string }) => item.id === SEED_IDS.pipelineTenantB)).toBe(
       true,
     );
+  });
+
+  it('GET /api/v1/pipelines/:id/board requires auth', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/pipelines/${SEED_IDS.pipelineDefault}/board`)
+      .expect(401);
+  });
+
+  it('GET /api/v1/pipelines/:id/board requires pipeline.read', async () => {
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: LIMITED_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'default',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/pipelines/${SEED_IDS.pipelineDefault}/board`)
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .expect(403);
+  });
+
+  it('GET /api/v1/pipelines/:id/board returns stages with nested opportunities', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        title: `Board Opportunity ${Date.now()}`,
+        companyName: 'Board Opportunity Co',
+      })
+      .expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: PIPELINE_READ_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'default',
+      })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/pipelines/${SEED_IDS.pipelineDefault}/board`)
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .expect(200);
+
+    expect(response.body.data.id).toBe(SEED_IDS.pipelineDefault);
+    expect(Array.isArray(response.body.data.stages)).toBe(true);
+    expect(response.body.data.stages.length).toBeGreaterThanOrEqual(1);
+
+    const newStage = response.body.data.stages.find(
+      (stage: { code: string }) => stage.code === 'new',
+    );
+    expect(newStage).toBeTruthy();
+    expect(Array.isArray(newStage.opportunities)).toBe(true);
+    expect(
+      newStage.opportunities.some(
+        (opportunity: { id: string }) => opportunity.id === createResponse.body.data.id,
+      ),
+    ).toBe(true);
+    expect(Array.isArray(response.body.data.opportunities)).toBe(true);
+  });
+
+  it('GET /api/v1/pipelines/:id/board returns 404 for missing pipeline', async () => {
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: PIPELINE_READ_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'default',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/pipelines/${SEED_IDS.pipelineTenantB}/board`)
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .expect(404);
+  });
+
+  it('GET /api/v1/pipelines/:id/board enforces tenant isolation', async () => {
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: TENANT_B_BOARD_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'tenant-b',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/pipelines/${SEED_IDS.pipelineDefault}/board`)
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .expect(404);
+
+    const response = await request(app.getHttpServer())
+      .get(`/api/v1/pipelines/${SEED_IDS.pipelineTenantB}/board`)
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .expect(200);
+
+    expect(response.body.data.id).toBe(SEED_IDS.pipelineTenantB);
+    expect(Array.isArray(response.body.data.stages)).toBe(true);
   });
 
   it('POST /api/v1/opportunities requires opportunity.create', async () => {
@@ -726,6 +968,131 @@ describeSales('Sales (e2e)', () => {
     expect(stageHistory?.fromStageId).toBe(SEED_IDS.pipelineStageDefaultNew);
 
     const events = eventPublisher.getPublishedEvents();
+    expect(events.some((event) => event.eventType === 'OpportunityStageChanged')).toBe(true);
+  });
+
+  it('PATCH /api/v1/opportunities/:id/stage requires auth', async () => {
+    await request(app.getHttpServer())
+      .patch(`/api/v1/opportunities/${SEED_IDS.opportunityDefault}/stage`)
+      .send({ stageId: SEED_IDS.pipelineStageDefaultQualified })
+      .expect(401);
+  });
+
+  it('PATCH /api/v1/opportunities/:id/stage requires opportunity.update.stage', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        title: 'Stage Permission Opportunity',
+        companyName: 'Stage Permission Co',
+      })
+      .expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: LIMITED_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'default',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/opportunities/${createResponse.body.data.id}/stage`)
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .send({ stageId: SEED_IDS.pipelineStageDefaultQualified })
+      .expect(403);
+  });
+
+  it('PATCH /api/v1/opportunities/:id/stage moves card with events and history', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        title: 'Dedicated Stage Move Opportunity',
+        companyName: 'Dedicated Stage Move Co',
+      })
+      .expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: STAGE_UPDATE_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'default',
+      })
+      .expect(201);
+
+    eventPublisher.clear();
+
+    const response = await request(app.getHttpServer())
+      .patch(`/api/v1/opportunities/${createResponse.body.data.id}/stage`)
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .send({ stageId: SEED_IDS.pipelineStageDefaultQualified })
+      .expect(200);
+
+    expect(response.body.data.stageId).toBe(SEED_IDS.pipelineStageDefaultQualified);
+    expect(response.body.data.stage.code).toBe('qualified');
+
+    const prisma = getPrismaClient();
+    const stageHistory = await prisma.opportunityStageHistory.findFirst({
+      where: {
+        opportunityId: createResponse.body.data.id,
+        toStageId: SEED_IDS.pipelineStageDefaultQualified,
+      },
+    });
+    expect(stageHistory).toBeTruthy();
+    expect(stageHistory?.fromStageId).toBe(SEED_IDS.pipelineStageDefaultNew);
+
+    const events = eventPublisher.getPublishedEvents();
+    expect(events.some((event) => event.eventType === 'OpportunityStageChanged')).toBe(true);
+  });
+
+  it('PATCH /api/v1/opportunities/:id/stage sets won status when moved to won stage', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        title: 'Won Stage Move Opportunity',
+        companyName: 'Won Stage Move Co',
+      })
+      .expect(201);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        email: STAGE_UPDATE_USER.email,
+        password: SEED_ADMIN_PASSWORD,
+        tenantSlug: 'default',
+      })
+      .expect(201);
+
+    eventPublisher.clear();
+
+    const response = await request(app.getHttpServer())
+      .patch(`/api/v1/opportunities/${createResponse.body.data.id}/stage`)
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .send({ stageId: SEED_IDS.pipelineStageDefaultWon })
+      .expect(200);
+
+    expect(response.body.data.stageId).toBe(SEED_IDS.pipelineStageDefaultWon);
+    expect(response.body.data.stage.code).toBe('won');
+    expect(response.body.data.status).toBe('won');
+
+    const prisma = getPrismaClient();
+    const audit = await prisma.auditLog.findFirst({
+      where: {
+        action: 'opportunity.won',
+        entityId: createResponse.body.data.id,
+      },
+    });
+    expect(audit).toBeTruthy();
+
+    const events = eventPublisher.getPublishedEvents();
+    expect(events.some((event) => event.eventType === 'OpportunityWon')).toBe(true);
     expect(events.some((event) => event.eventType === 'OpportunityStageChanged')).toBe(true);
   });
 

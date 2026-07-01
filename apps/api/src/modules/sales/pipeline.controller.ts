@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { PERMISSIONS } from '@crm-os/permissions';
 import { JwtAuthGuard, PermissionGuard } from '../../common/auth/auth.guards';
 import { RequirePermissions } from '../../common/auth/require-permissions.decorator';
@@ -18,6 +18,16 @@ import { PipelineService } from './pipeline.service';
 @RequireTenantContext()
 export class PipelineController {
   constructor(private readonly pipelineService: PipelineService) {}
+
+  @Get(':id/board')
+  @RequirePermissions(PERMISSIONS.PIPELINE_READ)
+  async getBoard(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const board = await this.pipelineService.getPipelineBoard(context, id);
+    return okEnvelope(board);
+  }
 
   @Get()
   @RequirePermissions(PERMISSIONS.PIPELINE_MANAGE)

@@ -1,4 +1,4 @@
-import { authenticatedFetch, parseApiResponse } from './authenticated-fetch';
+import { ApiClientError, authenticatedFetch, parseApiResponse } from './authenticated-fetch';
 
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected';
 
@@ -118,4 +118,48 @@ export async function updateQuote(id: string, input: UpdateQuoteInput): Promise<
     body: JSON.stringify(input),
   });
   return parseApiResponse<QuoteListItem>(response);
+}
+
+export interface SendQuoteInput {
+  recipientEmail?: string;
+}
+
+export interface ApproveQuoteInput {
+  decision: 'approved' | 'rejected';
+  notes?: string;
+}
+
+export async function sendQuote(id: string, input: SendQuoteInput = {}): Promise<QuoteListItem> {
+  const response = await authenticatedFetch(`/api/v1/quotes/${id}/send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return parseApiResponse<QuoteListItem>(response);
+}
+
+export async function approveQuote(id: string, input: ApproveQuoteInput): Promise<QuoteListItem> {
+  const response = await authenticatedFetch(`/api/v1/quotes/${id}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return parseApiResponse<QuoteListItem>(response);
+}
+
+export async function fetchQuotePdf(id: string): Promise<Blob> {
+  const response = await authenticatedFetch(`/api/v1/quotes/${id}/pdf`);
+  if (response.status === 401) {
+    throw new ApiClientError('Authentication required', 401, 'auth');
+  }
+  if (response.status === 403) {
+    throw new ApiClientError('Insufficient permissions', 403, 'forbidden');
+  }
+  if (response.status === 404) {
+    throw new ApiClientError('Resource not found', 404, 'not_found');
+  }
+  if (!response.ok) {
+    throw new ApiClientError('Request failed', response.status, 'unknown');
+  }
+  return response.blob();
 }

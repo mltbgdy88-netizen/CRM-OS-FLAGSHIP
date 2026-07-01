@@ -101,6 +101,19 @@ export const SEED_IDS = {
   quoteDiscountTenantB: '66300000-0000-4000-8000-000000000002',
   quoteTaxDefault: '66400000-0000-4000-8000-000000000001',
   quoteTaxTenantB: '66400000-0000-4000-8000-000000000002',
+  permissionQuoteSend: '30000000-0000-4000-8000-000000000021',
+  permissionQuoteApprove: '30000000-0000-4000-8000-000000000022',
+  permissionQuotePdfGenerate: '30000000-0000-4000-8000-000000000023',
+  quoteApprovalDefault: '66500000-0000-4000-8000-000000000001',
+  quoteApprovalTenantB: '66500000-0000-4000-8000-000000000002',
+  quoteFileDefault: '66600000-0000-4000-8000-000000000001',
+  quoteFileTenantB: '66600000-0000-4000-8000-000000000002',
+  quoteViewLogDefault: '66700000-0000-4000-8000-000000000001',
+  quoteViewLogTenantB: '66700000-0000-4000-8000-000000000002',
+  quoteSignatureDefault: '66800000-0000-4000-8000-000000000001',
+  quoteSignatureTenantB: '66800000-0000-4000-8000-000000000002',
+  quoteStatusHistoryDefault: '66900000-0000-4000-8000-000000000001',
+  quoteStatusHistoryTenantB: '66900000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -262,6 +275,27 @@ export const SEED_QUOTE_PERMISSIONS = [
     code: 'quote.update',
     module: 'quote',
     description: 'Update quotes and line items',
+  },
+] as const;
+
+export const SEED_QUOTE_PDF_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionQuoteSend,
+    code: 'quote.send',
+    module: 'quote',
+    description: 'Send quotes to customers for review',
+  },
+  {
+    id: SEED_IDS.permissionQuoteApprove,
+    code: 'quote.approve',
+    module: 'quote',
+    description: 'Approve or reject quotes in workflow',
+  },
+  {
+    id: SEED_IDS.permissionQuotePdfGenerate,
+    code: 'quote.pdf.generate',
+    module: 'quote',
+    description: 'Generate quote PDF documents',
   },
 ] as const;
 

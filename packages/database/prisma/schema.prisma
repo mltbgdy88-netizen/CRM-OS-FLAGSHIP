@@ -728,10 +728,15 @@ model Quote {
 
   customer    Customer     @relation(fields: [customerId], references: [id])
   opportunity Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
-  versions    QuoteVersion[]
-  items       QuoteItem[]
-  discounts   QuoteDiscount[]
-  taxes       QuoteTax[]
+  versions       QuoteVersion[]
+  items          QuoteItem[]
+  discounts      QuoteDiscount[]
+  taxes          QuoteTax[]
+  approvals      QuoteApproval[]
+  files          QuoteFile[]
+  viewLogs       QuoteViewLog[]
+  signatures     QuoteSignature[]
+  statusHistory  QuoteStatusHistory[]
 
   @@unique([tenantId, number], map: "uq_quotes_tenant_number")
   @@index([tenantId], map: "idx_quotes_tenant_id")
@@ -838,6 +843,130 @@ model QuoteTax {
   @@index([tenantId, deletedAt], map: "idx_quote_taxes_tenant_deleted")
   @@index([quoteId], map: "idx_quote_taxes_quote_id")
   @@map("quote_taxes")
+}
+
+/// Tenant-owned quote approval workflow record.
+model QuoteApproval {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  quoteId        String    @map("quote_id") @db.Uuid
+  approverUserId String?   @map("approver_user_id") @db.Uuid
+  status         String    @default("pending") @db.VarChar(30)
+  notes          String?
+  decidedAt      DateTime? @map("decided_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedAt      DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy      String?   @map("updated_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+  version        Int       @default(1)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_quote_approvals_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quote_approvals_tenant_deleted")
+  @@index([quoteId], map: "idx_quote_approvals_quote_id")
+  @@map("quote_approvals")
+}
+
+/// Tenant-owned generated quote PDF file metadata.
+model QuoteFile {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  quoteId     String    @map("quote_id") @db.Uuid
+  fileName    String    @map("file_name") @db.VarChar(255)
+  mimeType    String    @default("application/pdf") @map("mime_type") @db.VarChar(100)
+  storageKey  String    @map("storage_key") @db.VarChar(500)
+  sizeBytes   BigInt    @default(0) @map("size_bytes")
+  checksum    String?   @db.VarChar(128)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_quote_files_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quote_files_tenant_deleted")
+  @@index([quoteId], map: "idx_quote_files_quote_id")
+  @@map("quote_files")
+}
+
+/// Tenant-owned quote view audit log.
+model QuoteViewLog {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  quoteId      String    @map("quote_id") @db.Uuid
+  viewerUserId String?   @map("viewer_user_id") @db.Uuid
+  viewedAt     DateTime  @default(now()) @map("viewed_at") @db.Timestamptz(6)
+  source       String    @default("pdf") @db.VarChar(40)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy    String?   @map("created_by") @db.Uuid
+  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy    String?   @map("updated_by") @db.Uuid
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy    String?   @map("deleted_by") @db.Uuid
+  version      Int       @default(1)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_quote_view_logs_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quote_view_logs_tenant_deleted")
+  @@index([quoteId], map: "idx_quote_view_logs_quote_id")
+  @@map("quote_view_logs")
+}
+
+/// Tenant-owned quote signature capture.
+model QuoteSignature {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  quoteId       String    @map("quote_id") @db.Uuid
+  signerName    String    @map("signer_name") @db.VarChar(255)
+  signerEmail   String?   @map("signer_email") @db.VarChar(255)
+  signedAt      DateTime  @map("signed_at") @db.Timestamptz(6)
+  signatureData String?   @map("signature_data")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  version       Int       @default(1)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_quote_signatures_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quote_signatures_tenant_deleted")
+  @@index([quoteId], map: "idx_quote_signatures_quote_id")
+  @@map("quote_signatures")
+}
+
+/// Tenant-owned quote status transition history.
+model QuoteStatusHistory {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  quoteId    String    @map("quote_id") @db.Uuid
+  fromStatus String    @map("from_status") @db.VarChar(40)
+  toStatus   String    @map("to_status") @db.VarChar(40)
+  reason     String?
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_quote_status_history_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quote_status_history_tenant_deleted")
+  @@index([quoteId], map: "idx_quote_status_history_quote_id")
+  @@map("quote_status_history")
 }
 
 /// Global identity — not tenant-scoped.

@@ -611,10 +611,7 @@ export function PipelineView() {
                   className="pipeline-card pipeline-card--dragging"
                   style={{ borderLeftColor: activeDragStageColor }}
                 >
-                  <OpportunityCardContent
-                    opportunity={activeDragOpportunity}
-                    stageColor={activeDragStageColor}
-                  />
+                  <OpportunityCardContent opportunity={activeDragOpportunity} />
                 </article>
               ) : null}
             </DragOverlay>

@@ -2,7 +2,7 @@ import { Pool } from 'pg';
 import { getDatabaseConfigFromEnv } from '../index';
 import { applyAllMigrations } from '../migrate';
 import { cleanupProofSeedOrphans, shouldCleanupProofSeedOrphans } from './cleanup';
-import { seedCrm360Data, seedCrmData, seedDashboardNotificationData, seedIamData, seedLeadData, seedQuoteData, seedQuotePdfApprovalData, seedSalesData, seedTaskData } from './index';
+import { seedCrm360Data, seedCrmData, seedDashboardNotificationData, seedIamData, seedLeadData, seedOrderData, seedQuoteData, seedQuotePdfApprovalData, seedSalesData, seedTaskData } from './index';
 
 async function main(): Promise<void> {
   const { url } = getDatabaseConfigFromEnv();
@@ -28,6 +28,7 @@ async function main(): Promise<void> {
     await seedQuotePdfApprovalData(client);
     await seedTaskData(client);
     await seedDashboardNotificationData(client);
+    await seedOrderData(client);
     console.log('Sprint-02 IAM seed completed');
     console.log('Sprint-03 CRM seed completed');
     console.log('Sprint-04 Customer 360 seed completed');
@@ -37,6 +38,7 @@ async function main(): Promise<void> {
     console.log('Sprint-10 Quote PDF + Approval seed completed');
     console.log('Sprint-11 Task & Activity seed completed');
     console.log('Sprint-12 Dashboard & Notification seed completed');
+    console.log('Sprint-13 Order seed completed');
   } finally {
     client.release();
     await pool.end();

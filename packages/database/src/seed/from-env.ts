@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { getDatabaseConfigFromEnv } from '../config';
-import { seedCrm360Data, seedCrmData, seedDashboardNotificationData, seedIamData, seedLeadData, seedQuoteData, seedQuotePdfApprovalData, seedSalesData, seedTaskData } from './index';
+import { seedCrm360Data, seedCrmData, seedDashboardNotificationData, seedIamData, seedLeadData, seedOrderData, seedQuoteData, seedQuotePdfApprovalData, seedSalesData, seedTaskData } from './index';
 
 export async function seedIamFromEnv(): Promise<void> {
   const pool = new Pool({ connectionString: getDatabaseConfigFromEnv().url });
@@ -16,6 +16,7 @@ export async function seedIamFromEnv(): Promise<void> {
     await seedQuotePdfApprovalData(client);
     await seedTaskData(client);
     await seedDashboardNotificationData(client);
+    await seedOrderData(client);
   } finally {
     client.release();
     await pool.end();

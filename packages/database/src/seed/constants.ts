@@ -140,6 +140,17 @@ export const SEED_IDS = {
   notificationRecipientDefault2: '68400000-0000-4000-8000-000000000002',
   notificationRecipientDefault3: '68400000-0000-4000-8000-000000000003',
   notificationRecipientTenantB: '68400000-0000-4000-8000-000000000004',
+  permissionOrderRead: '69000000-0000-4000-8000-000000000001',
+  permissionOrderCreate: '69000000-0000-4000-8000-000000000002',
+  permissionOrderUpdate: '69000000-0000-4000-8000-000000000003',
+  orderDefault: '69100000-0000-4000-8000-000000000001',
+  orderTenantB: '69100000-0000-4000-8000-000000000002',
+  orderItemDefault: '69200000-0000-4000-8000-000000000001',
+  orderItemDefault2: '69200000-0000-4000-8000-000000000002',
+  orderItemTenantB: '69200000-0000-4000-8000-000000000003',
+  orderStatusHistoryDefault: '69300000-0000-4000-8000-000000000001',
+  orderStatusHistoryDefault2: '69300000-0000-4000-8000-000000000002',
+  orderStatusHistoryTenantB: '69300000-0000-4000-8000-000000000003',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -358,6 +369,27 @@ export const SEED_DASHBOARD_NOTIFICATION_PERMISSIONS = [
     code: 'notification.read',
     module: 'notification',
     description: 'Read in-app notifications',
+  },
+] as const;
+
+export const SEED_ORDER_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionOrderRead,
+    code: 'order.read',
+    module: 'order',
+    description: 'Read orders and related line data',
+  },
+  {
+    id: SEED_IDS.permissionOrderCreate,
+    code: 'order.create',
+    module: 'order',
+    description: 'Create orders',
+  },
+  {
+    id: SEED_IDS.permissionOrderUpdate,
+    code: 'order.update',
+    module: 'order',
+    description: 'Update orders and line items',
   },
 ] as const;
 

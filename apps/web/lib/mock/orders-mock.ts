@@ -1,4 +1,11 @@
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'confirmed'
+  | 'draft'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled';
 
 export interface MockOrder {
   id: string;
@@ -59,32 +66,44 @@ export function formatTry(amount: number): string {
   return `₺${Math.round(amount / 1_000)}K`;
 }
 
-export function orderStatusLabel(status: OrderStatus): string {
+export function orderStatusLabel(status: OrderStatus | string): string {
   switch (status) {
     case 'pending':
       return 'Bekliyor';
     case 'processing':
       return 'İşleniyor';
+    case 'confirmed':
+      return 'Onaylandı';
+    case 'draft':
+      return 'Taslak';
     case 'shipped':
       return 'Kargoda';
     case 'delivered':
       return 'Teslim';
     case 'cancelled':
       return 'İptal';
+    default:
+      return status;
   }
 }
 
-export function orderStatusClass(status: OrderStatus): string {
+export function orderStatusClass(status: OrderStatus | string): string {
   switch (status) {
     case 'pending':
       return 'status-pill status-pill--info';
     case 'processing':
       return 'status-pill status-pill--warning';
+    case 'confirmed':
+      return 'status-pill status-pill--warning';
+    case 'draft':
+      return 'status-pill status-pill--info';
     case 'shipped':
       return 'status-pill status-pill--info';
     case 'delivered':
       return 'status-pill status-pill--success';
     case 'cancelled':
       return 'status-pill status-pill--danger';
+    default:
+      return 'status-pill';
   }
 }

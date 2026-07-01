@@ -29,7 +29,8 @@
     "sprint:09:verify": "pnpm sprint:08:verify",
     "sprint:10:verify": "pnpm sprint:09:verify",
     "sprint:11:verify": "pnpm sprint:10:verify",
-    "sprint:12:verify": "pnpm sprint:11:verify"
+    "sprint:12:verify": "pnpm sprint:11:verify",
+    "sprint:13:verify": "pnpm sprint:12:verify"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

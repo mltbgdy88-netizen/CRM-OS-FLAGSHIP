@@ -63,6 +63,7 @@ model Customer {
   opportunities Opportunity[]
   conversionLogs LeadConversionLog[]
   quotes        Quote[]
+  orders        Order[]
 
   @@index([tenantId], map: "idx_customers_tenant_id")
   @@index([tenantId, deletedAt], map: "idx_customers_tenant_deleted")
@@ -737,6 +738,7 @@ model Quote {
   viewLogs       QuoteViewLog[]
   signatures     QuoteSignature[]
   statusHistory  QuoteStatusHistory[]
+  orders         Order[]
 
   @@unique([tenantId, number], map: "uq_quotes_tenant_number")
   @@index([tenantId], map: "idx_quotes_tenant_id")
@@ -1253,6 +1255,91 @@ model DashboardWidget {
   @@index([tenantId, deletedAt], map: "idx_dashboard_widgets_tenant_deleted")
   @@index([dashboardId], map: "idx_dashboard_widgets_dashboard_id")
   @@map("dashboard_widgets")
+}
+
+/// Tenant-owned sales order aggregate root.
+model Order {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  number       String    @db.VarChar(80)
+  customerId   String    @map("customer_id") @db.Uuid
+  quoteId      String?   @map("quote_id") @db.Uuid
+  status       String    @default("pending") @db.VarChar(40)
+  subtotal     Decimal   @default(0) @db.Decimal(15, 2)
+  taxTotal     Decimal   @default(0) @map("tax_total") @db.Decimal(15, 2)
+  total        Decimal   @default(0) @db.Decimal(15, 2)
+  currencyCode String    @default("TRY") @map("currency_code") @db.VarChar(3)
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy    String?   @map("created_by") @db.Uuid
+  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy    String?   @map("updated_by") @db.Uuid
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy    String?   @map("deleted_by") @db.Uuid
+  version      Int       @default(1)
+
+  customer      Customer             @relation(fields: [customerId], references: [id])
+  quote         Quote?               @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+
+  @@unique([tenantId, number], map: "uq_orders_tenant_number")
+  @@index([tenantId], map: "idx_orders_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_orders_tenant_deleted")
+  @@index([customerId], map: "idx_orders_customer_id")
+  @@index([quoteId], map: "idx_orders_quote_id")
+  @@map("orders")
+}
+
+/// Tenant-owned order line item.
+model OrderItem {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  orderId     String    @map("order_id") @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?
+  quantity    Int       @default(1)
+  unitPrice   Decimal   @map("unit_price") @db.Decimal(15, 2)
+  lineTotal   Decimal   @map("line_total") @db.Decimal(15, 2)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_order_items_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_order_items_tenant_deleted")
+  @@index([orderId], map: "idx_order_items_order_id")
+  @@map("order_items")
+}
+
+/// Tenant-owned order status transition history.
+model OrderStatusHistory {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  orderId    String    @map("order_id") @db.Uuid
+  fromStatus String    @map("from_status") @db.VarChar(40)
+  toStatus   String    @map("to_status") @db.VarChar(40)
+  reason     String?
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_order_status_history_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_order_status_history_tenant_deleted")
+  @@index([orderId], map: "idx_order_status_history_order_id")
+  @@map("order_status_history")
 }
 
 /// Global identity — not tenant-scoped.

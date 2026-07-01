@@ -101,7 +101,7 @@ export function mapOrderDetail(order: OrderDetailRecord): OrderDetailResponseDto
       createdAt: delivery.createdAt.toISOString(),
       version: delivery.version,
     })),
-    notes: order.orderNotes.map((note) => ({
+    orderNotes: order.orderNotes.map((note) => ({
       id: note.id,
       body: note.body,
       createdAt: note.createdAt.toISOString(),

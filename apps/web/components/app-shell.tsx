@@ -77,6 +77,12 @@ function pageTitle(pathname: string) {
   if (pathname.startsWith('/orders')) {
     return 'Siparişler';
   }
+  if (pathname.startsWith('/products/')) {
+    return 'Ürün Detayı';
+  }
+  if (pathname.startsWith('/products')) {
+    return 'Ürünler';
+  }
   if (pathname.startsWith('/calendar')) {
     return 'Takvim';
   }

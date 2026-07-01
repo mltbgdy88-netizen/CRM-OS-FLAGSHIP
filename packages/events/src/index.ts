@@ -694,3 +694,50 @@ export function createOrderReturnedEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const PRODUCT_EVENT_TYPES = {
+  PRODUCT_CREATED: 'ProductCreated',
+  PRODUCT_UPDATED: 'ProductUpdated',
+} as const;
+
+export type ProductEventType = (typeof PRODUCT_EVENT_TYPES)[keyof typeof PRODUCT_EVENT_TYPES];
+
+export function createProductCreatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  productId: string;
+  sku: string;
+  name: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'product',
+    aggregateId: input.productId,
+    eventType: PRODUCT_EVENT_TYPES.PRODUCT_CREATED,
+    payload: {
+      sku: input.sku,
+      name: input.name,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createProductUpdatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  productId: string;
+  changes: Record<string, unknown>;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'product',
+    aggregateId: input.productId,
+    eventType: PRODUCT_EVENT_TYPES.PRODUCT_UPDATED,
+    payload: {
+      changes: input.changes,
+    },
+    createdAt: new Date(),
+  };
+}

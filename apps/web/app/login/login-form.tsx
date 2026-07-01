@@ -12,6 +12,8 @@ export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [tenantSlug, setTenantSlug] = useState('default');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [status, setStatus] = useState<FormStatus>('idle');
   const [successEmail, setSuccessEmail] = useState<string | null>(null);
   const [tokenReceived, setTokenReceived] = useState(false);
@@ -47,76 +49,114 @@ export function LoginForm() {
   const isLoading = status === 'loading';
 
   return (
-    <div className="card login-card">
+    <div className="login-card">
       <p className="security-warning" data-testid="token-storage-warning">
-        Local dev only: access token is stored in sessionStorage (XSS risk). Do not use in
-        production.
+        Yerel geliştirme: token sessionStorage&apos;da tutulur (XSS riski). Prodüksiyonda
+        kullanmayın.
       </p>
 
       <form onSubmit={handleSubmit} aria-busy={isLoading} data-testid="login-form">
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          disabled={isLoading}
-          data-testid="login-email"
-        />
+        <label htmlFor="email">E-posta</label>
+        <div className="login-field">
+          <span className="login-field__icon" aria-hidden>
+            @
+          </span>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="admin@default.local"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={isLoading}
+            data-testid="login-email"
+          />
+        </div>
 
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          disabled={isLoading}
-          data-testid="login-password"
-        />
+        <label htmlFor="password">Şifre</label>
+        <div className="login-field">
+          <span className="login-field__icon" aria-hidden>
+            ◆
+          </span>
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            disabled={isLoading}
+            data-testid="login-password"
+          />
+          <button
+            type="button"
+            className="login-field__toggle"
+            onClick={() => setShowPassword((current) => !current)}
+            aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+          >
+            {showPassword ? '◉' : '○'}
+          </button>
+        </div>
 
-        <label htmlFor="tenantSlug">Tenant slug</label>
-        <input
-          id="tenantSlug"
-          name="tenantSlug"
-          type="text"
-          value={tenantSlug}
-          onChange={(event) => setTenantSlug(event.target.value)}
-          disabled={isLoading}
-          data-testid="login-tenant-slug"
-        />
+        <label htmlFor="tenantSlug">Çalışma alanı (tenant)</label>
+        <div className="login-field">
+          <span className="login-field__icon" aria-hidden>
+            ⌂
+          </span>
+          <input
+            id="tenantSlug"
+            name="tenantSlug"
+            type="text"
+            value={tenantSlug}
+            onChange={(event) => setTenantSlug(event.target.value)}
+            disabled={isLoading}
+            data-testid="login-tenant-slug"
+          />
+        </div>
+
+        <div className="login-form__row">
+          <label className="login-form__remember">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.target.checked)}
+              disabled={isLoading}
+            />
+            Beni hatırla
+          </label>
+          <span className="login-form__forgot">Şifremi unuttum?</span>
+        </div>
 
         <button type="submit" disabled={isLoading} className="btn-primary btn-primary--full" data-testid="login-submit">
-          {isLoading ? 'Signing in…' : 'Giriş Yap'}
+          {isLoading ? 'Giriş yapılıyor…' : 'Giriş Yap →'}
         </button>
       </form>
 
       {status === 'validation_error' && (
         <p className="form-message form-message--error" role="alert" data-testid="login-validation-error">
-          Email and password are required.
+          E-posta ve şifre zorunludur.
         </p>
       )}
 
       {status === 'auth_error' && (
         <p className="form-message form-message--error" role="alert" data-testid="login-auth-error">
-          Invalid credentials or tenant.
+          Geçersiz kimlik bilgileri veya tenant.
         </p>
       )}
 
       {status === 'network_error' && (
         <p className="form-message form-message--error" role="alert" data-testid="login-network-error">
-          Network error. Check API connectivity and try again.
+          Ağ hatası. API bağlantısını kontrol edin.
         </p>
       )}
 
       {status === 'success' && (
         <p className="form-message form-message--success" role="status" data-testid="login-success">
-          Signed in as {successEmail}. Access token stored for local dev.
+          {successEmail} olarak giriş yapıldı.
           {tokenReceived && (
-            <span data-testid="login-token-received"> Token received.</span>
+            <span data-testid="login-token-received"> Token alındı.</span>
           )}
         </p>
       )}

@@ -5,18 +5,28 @@ export default function LoginPage() {
   return (
     <div className="login-page login-page--premium-dark" data-testid="login-page">
       <section className="login-page__hero" aria-label="CRM OS">
-        <div className="login-page__hero-brand">
-          <span className="login-page__hero-mark" aria-hidden>
-            C
-          </span>
-          <div>
-            <p className="login-page__hero-title">CRM OS</p>
-            <p className="login-page__hero-tagline">Akıllı CRM İşletim Sistemi</p>
+        <div className="login-page__hero-glow" aria-hidden />
+        <div className="login-page__hero-content">
+          <div className="login-page__hero-brand">
+            <span className="login-page__hero-mark" aria-hidden>
+              C
+            </span>
+            <div>
+              <p className="login-page__hero-title">CRM OS</p>
+              <p className="login-page__hero-tagline">Akıllı CRM İşletim Sistemi</p>
+            </div>
           </div>
+          <h1 className="login-page__hero-headline">
+            Müşterilerinizi anlayın,
+            <br />
+            ilişkilerinizi büyütün.
+          </h1>
+          <ul className="login-page__hero-features">
+            <li>Akıllı analitik ve 360° görünüm</li>
+            <li>Güvenli çok kiracılı mimari</li>
+            <li>Her yerden erişim</li>
+          </ul>
         </div>
-        <p className="login-page__hero-headline">
-          Müşterilerinizi anlayın, ilişkilerinizi büyütün.
-        </p>
       </section>
       <section className="login-page__form-col">
         <div className="login-page__panel-card">

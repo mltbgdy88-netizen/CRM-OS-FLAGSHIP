@@ -3,15 +3,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import {
-  MAIN_MENU,
-  MENU_SECTION_LABELS,
-  NAV_ICONS,
-  type MainMenuItem,
-} from '../lib/navigation/main-menu';
+import { MAIN_MENU, MENU_SECTION_LABELS, type MainMenuItem } from '../lib/navigation/main-menu';
 import { clearAccessToken, getAccessToken } from '../lib/auth/token-storage';
-import { CrmSectionNav } from './crm-section-nav';
-import { UtilityRail } from './utility-rail';
+import { NavIcon } from './nav-icon';
 
 interface AppShellProps {
   children: ReactNode;
@@ -36,8 +30,17 @@ function groupMenuBySection(items: MainMenuItem[]) {
 
 const SIDEBAR_COLLAPSED_KEY = 'crm-os-sidebar-collapsed';
 
-function formatClock(date: Date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+function pageTitle(pathname: string) {
+  if (pathname.startsWith('/customers/new')) {
+    return 'Yeni Müşteri';
+  }
+  if (pathname.startsWith('/customers/')) {
+    return 'Müşteri Detayı';
+  }
+  if (pathname.startsWith('/customers')) {
+    return 'Müşteriler';
+  }
+  return 'CRM OS';
 }
 
 export function AppShell({ children }: AppShellProps) {
@@ -46,11 +49,10 @@ export function AppShell({ children }: AppShellProps) {
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'required'>(
     'checking',
   );
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [clock, setClock] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const menuGroups = useMemo(() => groupMenuBySection(MAIN_MENU), []);
-  const showCrmNav = pathname.startsWith('/customers');
+  const title = pageTitle(pathname);
 
   useEffect(() => {
     setAuthState(getAccessToken() ? 'authenticated' : 'required');
@@ -58,17 +60,9 @@ export function AppShell({ children }: AppShellProps) {
 
   useEffect(() => {
     const stored = sessionStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-    if (stored === '0') {
-      setSidebarCollapsed(false);
-    } else if (stored === '1') {
+    if (stored === '1') {
       setSidebarCollapsed(true);
     }
-  }, []);
-
-  useEffect(() => {
-    setClock(formatClock(new Date()));
-    const timer = window.setInterval(() => setClock(formatClock(new Date())), 30_000);
-    return () => window.clearInterval(timer);
   }, []);
 
   function toggleSidebar() {
@@ -87,7 +81,7 @@ export function AppShell({ children }: AppShellProps) {
   if (authState === 'checking') {
     return (
       <div className="app-shell app-shell--loading" data-testid="app-shell-loading">
-        <p>Checking session…</p>
+        <p>Oturum kontrol ediliyor…</p>
       </div>
     );
   }
@@ -95,9 +89,9 @@ export function AppShell({ children }: AppShellProps) {
   if (authState === 'required') {
     return (
       <div className="app-shell app-shell--auth-required" data-testid="app-shell-auth-required">
-        <h1>Sign in required</h1>
-        <p>You must sign in to access customer screens.</p>
-        <Link href="/login">Go to login</Link>
+        <h1>Giriş gerekli</h1>
+        <p>Müşteri ekranlarına erişmek için oturum açın.</p>
+        <Link href="/login">Giriş sayfasına git</Link>
       </div>
     );
   }
@@ -106,49 +100,51 @@ export function AppShell({ children }: AppShellProps) {
     <div
       className={
         sidebarCollapsed
-          ? 'app-shell app-shell--space app-shell--collapsed'
-          : 'app-shell app-shell--space'
+          ? 'app-shell app-shell--premium app-shell--collapsed'
+          : 'app-shell app-shell--premium'
       }
       data-testid="app-shell"
     >
-      <div className="app-shell__space-bg" aria-hidden />
-      <aside className="app-shell__sidebar" aria-label="Primary navigation">
-        {!sidebarCollapsed ? (
-          <div className="app-shell__brand" data-testid="app-shell-brand">
-            <span className="app-shell__brand-mark" aria-hidden>
-              C
-            </span>
-            <span>CRM OS</span>
-          </div>
-        ) : null}
+      <div className="app-shell__ambient" aria-hidden />
+
+      <aside className="app-shell__sidebar" aria-label="Ana menü">
+        <div className="app-shell__brand" data-testid="app-shell-brand">
+          <span className="app-shell__brand-mark" aria-hidden>
+            C
+          </span>
+          {!sidebarCollapsed ? <span className="app-shell__brand-text">CRM OS</span> : null}
+        </div>
+
         <button
           type="button"
           className="app-shell__collapse-btn"
           onClick={toggleSidebar}
-          aria-label={sidebarCollapsed ? 'Expand menu' : 'Collapse menu'}
+          aria-label={sidebarCollapsed ? 'Menüyü genişlet' : 'Menüyü daralt'}
           data-testid="app-shell-sidebar-toggle"
         >
           {sidebarCollapsed ? '»' : '«'}
         </button>
+
         {menuGroups.map((group) => (
           <div key={group.section} className="app-shell__nav-group">
+            {!sidebarCollapsed ? (
+              <p className="app-shell__nav-group-label">{group.label}</p>
+            ) : null}
             <nav className="app-shell__sidebar-nav" aria-label={group.label}>
               {group.items.map((item) => {
                 const isActive = item.href ? pathname.startsWith(item.href) : false;
                 const isDisabled = item.status === 'soon' || !item.href;
-                const icon = NAV_ICONS[item.id] ?? '•';
 
                 if (isDisabled) {
                   return (
                     <span
                       key={item.id}
                       className="app-shell__nav-item app-shell__nav-item--soon"
-                      title={`${item.label} — coming soon`}
+                      title={`${item.label} — yakında`}
                       data-testid={`nav-soon-${item.id}`}
                     >
-                      <span className="app-shell__nav-icon" aria-hidden>
-                        {icon}
-                      </span>
+                      <NavIcon name={item.id} />
+                      {!sidebarCollapsed ? <span>{item.label}</span> : null}
                     </span>
                   );
                 }
@@ -165,9 +161,7 @@ export function AppShell({ children }: AppShellProps) {
                     title={item.label}
                     data-testid={`nav-${item.id}`}
                   >
-                    <span className="app-shell__nav-icon" aria-hidden>
-                      {icon}
-                    </span>
+                    <NavIcon name={item.id} />
                     {!sidebarCollapsed ? <span>{item.label}</span> : null}
                   </Link>
                 );
@@ -175,53 +169,73 @@ export function AppShell({ children }: AppShellProps) {
             </nav>
           </div>
         ))}
+
         <div className="app-shell__sidebar-footer">
-          <button type="button" className="app-shell__upgrade-btn" disabled title="Coming soon">
-            ✦
-          </button>
-          <span className="app-shell__user-avatar" title="Admin" aria-hidden>
-            A
-          </span>
+          <div className="app-shell__user">
+            <span className="app-shell__user-avatar" aria-hidden>
+              AY
+            </span>
+            {!sidebarCollapsed ? (
+              <div className="app-shell__user-meta">
+                <span className="app-shell__user-name">Ahmet Yılmaz</span>
+                <span className="app-shell__user-email">admin@default.local</span>
+              </div>
+            ) : null}
+          </div>
         </div>
       </aside>
 
-      <div className="app-shell__workspace">
+      <div className="app-shell__main">
         <header className="app-shell__topbar">
-          <div className="app-shell__topbar-row">
-            {showCrmNav ? (
-              <CrmSectionNav />
-            ) : (
-              <span className="app-shell__topbar-title app-shell__topbar-title--solo">CRM OS</span>
-            )}
-            <div className="app-shell__topbar-utils">
+          <div className="app-shell__breadcrumb">
+            <span className="app-shell__breadcrumb-root">CRM OS</span>
+            <span className="app-shell__breadcrumb-sep">/</span>
+            <span className="app-shell__breadcrumb-current">{title}</span>
+          </div>
+
+          <div className="app-shell__search-wrap">
+            <span className="app-shell__search-icon" aria-hidden>
+              ⌕
+            </span>
             <input
               type="search"
-              placeholder="Search CRM OS…"
-              aria-label="Global search"
+              placeholder="Ara…"
+              aria-label="Global arama"
               disabled
               className="app-shell__search-input"
             />
-            <button type="button" className="app-shell__util-link" disabled>
-              Invite
+            <kbd className="app-shell__search-kbd">⌘K</kbd>
+          </div>
+
+          <div className="app-shell__topbar-actions">
+            <button type="button" className="app-shell__workspace-pill" disabled>
+              Default Workspace
+              <span className="app-shell__workspace-plan">Enterprise</span>
             </button>
-            <button type="button" className="btn-accent-green" disabled>
-              Upgrade
+            <button type="button" className="app-shell__icon-btn" disabled aria-label="Bildirimler">
+              ◉
+              <span className="app-shell__icon-badge">3</span>
             </button>
-            <button type="button" className="app-shell__util-link app-shell__util-link--badge" disabled>
-              Help
-              <span className="app-shell__badge">1</span>
+            <button type="button" className="app-shell__icon-btn" disabled aria-label="Yardım">
+              ?
             </button>
-            <time className="app-shell__clock">{clock}</time>
+            <Link
+              href="/customers/new"
+              className="app-shell__create-btn"
+              aria-label="Yeni kayıt"
+              title="Yeni kayıt"
+            >
+              +
+            </Link>
             <button
               type="button"
               className="app-shell__profile"
               onClick={handleSignOut}
               data-testid="app-shell-sign-out"
-              title="Sign out"
+              title="Çıkış yap"
             >
-              A
+              AY
             </button>
-            </div>
           </div>
         </header>
 
@@ -230,17 +244,7 @@ export function AppShell({ children }: AppShellProps) {
             {children}
           </div>
         </div>
-
-        <footer className="app-shell__footer">
-          <span>CRM OS</span>
-          <span>© 2026</span>
-          <button type="button" disabled>
-            Themes
-          </button>
-        </footer>
       </div>
-
-      <UtilityRail />
     </div>
   );
 }

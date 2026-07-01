@@ -62,6 +62,7 @@ model Customer {
   convertedLeads Lead[] @relation("LeadCustomer")
   opportunities Opportunity[]
   conversionLogs LeadConversionLog[]
+  quotes        Quote[]
 
   @@index([tenantId], map: "idx_customers_tenant_id")
   @@index([tenantId, deletedAt], map: "idx_customers_tenant_deleted")
@@ -533,6 +534,7 @@ model Opportunity {
   contacts       OpportunityContact[]
   activities     OpportunityActivity[]
   notes          OpportunityNote[]
+  quotes         Quote[]
 
   @@index([tenantId], map: "idx_opportunities_tenant_id")
   @@index([tenantId, deletedAt], map: "idx_opportunities_tenant_deleted")
@@ -699,6 +701,143 @@ model OpportunityNote {
   @@index([tenantId, deletedAt], map: "idx_opportunity_notes_tenant_deleted")
   @@index([opportunityId], map: "idx_opportunity_notes_opportunity_id")
   @@map("opportunity_notes")
+}
+
+/// Tenant-owned sales quote aggregate root.
+model Quote {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  number        String    @db.VarChar(80)
+  customerId    String    @map("customer_id") @db.Uuid
+  opportunityId String?   @map("opportunity_id") @db.Uuid
+  status        String    @default("draft") @db.VarChar(40)
+  subtotal      Decimal   @default(0) @db.Decimal(15, 2)
+  discountTotal Decimal   @default(0) @map("discount_total") @db.Decimal(15, 2)
+  taxTotal      Decimal   @default(0) @map("tax_total") @db.Decimal(15, 2)
+  total         Decimal   @default(0) @db.Decimal(15, 2)
+  marginPercent Int       @default(0) @map("margin_percent")
+  currencyCode  String    @default("TRY") @map("currency_code") @db.VarChar(3)
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  version       Int       @default(1)
+
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  versions    QuoteVersion[]
+  items       QuoteItem[]
+  discounts   QuoteDiscount[]
+  taxes       QuoteTax[]
+
+  @@unique([tenantId, number], map: "uq_quotes_tenant_number")
+  @@index([tenantId], map: "idx_quotes_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quotes_tenant_deleted")
+  @@index([customerId], map: "idx_quotes_customer_id")
+  @@index([opportunityId], map: "idx_quotes_opportunity_id")
+  @@map("quotes")
+}
+
+/// Tenant-owned quote version snapshot.
+model QuoteVersion {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  quoteId       String    @map("quote_id") @db.Uuid
+  versionNumber Int       @map("version_number")
+  label         String?   @db.VarChar(120)
+  isCurrent     Boolean   @default(false) @map("is_current")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  version       Int       @default(1)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_quote_versions_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quote_versions_tenant_deleted")
+  @@index([quoteId], map: "idx_quote_versions_quote_id")
+  @@map("quote_versions")
+}
+
+/// Tenant-owned quote line item.
+model QuoteItem {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  quoteId     String    @map("quote_id") @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?
+  quantity    Int       @default(1)
+  unitPrice   Decimal   @map("unit_price") @db.Decimal(15, 2)
+  lineTotal   Decimal   @map("line_total") @db.Decimal(15, 2)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_quote_items_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quote_items_tenant_deleted")
+  @@index([quoteId], map: "idx_quote_items_quote_id")
+  @@map("quote_items")
+}
+
+/// Tenant-owned quote-level discount.
+model QuoteDiscount {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  quoteId      String    @map("quote_id") @db.Uuid
+  name         String    @db.VarChar(120)
+  discountType String    @default("percent") @map("discount_type") @db.VarChar(30)
+  value        Decimal   @db.Decimal(15, 2)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy    String?   @map("created_by") @db.Uuid
+  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy    String?   @map("updated_by") @db.Uuid
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy    String?   @map("deleted_by") @db.Uuid
+  version      Int       @default(1)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_quote_discounts_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quote_discounts_tenant_deleted")
+  @@index([quoteId], map: "idx_quote_discounts_quote_id")
+  @@map("quote_discounts")
+}
+
+/// Tenant-owned quote tax line.
+model QuoteTax {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  quoteId     String    @map("quote_id") @db.Uuid
+  name        String    @db.VarChar(120)
+  ratePercent Decimal   @map("rate_percent") @db.Decimal(5, 2)
+  amount      Decimal   @db.Decimal(15, 2)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_quote_taxes_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_quote_taxes_tenant_deleted")
+  @@index([quoteId], map: "idx_quote_taxes_quote_id")
+  @@map("quote_taxes")
 }
 
 /// Global identity — not tenant-scoped.

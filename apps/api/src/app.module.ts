@@ -7,6 +7,7 @@ import { CrmModule } from './modules/crm/crm.module';
 import { LeadModule } from './modules/lead/lead.module';
 import { QuoteModule } from './modules/quote/quote.module';
 import { SalesModule } from './modules/sales/sales.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { TaskModule } from './modules/task/task.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { TaskModule } from './modules/task/task.module';
     SalesModule,
     QuoteModule,
     TaskModule,
+    NotificationModule,
   ],
 })
 export class AppModule {}

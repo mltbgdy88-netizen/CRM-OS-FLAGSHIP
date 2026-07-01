@@ -1,15 +1,22 @@
 'use client';
 
+import Link from 'next/link';
+
 /** Bitrix-style right utility rail — notifications / AI quick access (placeholders). */
 export function UtilityRail() {
   return (
     <aside className="utility-rail" aria-label="Quick tools" data-testid="utility-rail">
-      <button type="button" className="utility-rail__btn" title="Notifications" aria-label="Notifications">
+      <Link
+        href="/notifications"
+        className="utility-rail__btn"
+        title="Bildirimler"
+        aria-label="Bildirimler"
+        data-testid="utility-rail-notifications"
+      >
         <span className="utility-rail__icon" aria-hidden>
           ◉
         </span>
-        <span className="utility-rail__badge">0</span>
-      </button>
+      </Link>
       <button type="button" className="utility-rail__btn" title="AI Copilot" aria-label="AI Copilot">
         <span className="utility-rail__icon" aria-hidden>
           ✦

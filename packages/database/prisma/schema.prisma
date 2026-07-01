@@ -1131,6 +1131,130 @@ model Activity {
   @@map("activities")
 }
 
+/// Tenant-owned in-app notification.
+model Notification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  title      String    @db.VarChar(255)
+  body       String?
+  category   String    @default("info") @db.VarChar(40)
+  severity   String    @default("normal") @db.VarChar(30)
+  sourceType String?   @map("source_type") @db.VarChar(80)
+  sourceId   String?   @map("source_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  recipients NotificationRecipient[]
+
+  @@index([tenantId], map: "idx_notifications_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_notifications_tenant_deleted")
+  @@map("notifications")
+}
+
+/// Tenant-owned notification delivery target.
+model NotificationRecipient {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  notificationId String    @map("notification_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  readAt         DateTime? @map("read_at") @db.Timestamptz(6)
+  isRead         Boolean   @default(false) @map("is_read")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedAt      DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy      String?   @map("updated_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+  version        Int       @default(1)
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user         User         @relation("NotificationRecipientUser", fields: [userId], references: [id])
+
+  @@index([tenantId], map: "idx_notification_recipients_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_notification_recipients_tenant_deleted")
+  @@index([notificationId], map: "idx_notification_recipients_notification_id")
+  @@index([userId], map: "idx_notification_recipients_user_id")
+  @@map("notification_recipients")
+}
+
+/// Tenant-owned per-user notification channel preference.
+model NotificationPreference {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  channel   String    @default("in_app") @db.VarChar(40)
+  category  String    @default("all") @db.VarChar(40)
+  enabled   Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy String?   @map("deleted_by") @db.Uuid
+  version   Int       @default(1)
+
+  user User @relation("NotificationPreferenceUser", fields: [userId], references: [id])
+
+  @@index([tenantId], map: "idx_notification_preferences_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_notification_preferences_tenant_deleted")
+  @@index([userId], map: "idx_notification_preferences_user_id")
+  @@map("notification_preferences")
+}
+
+/// Tenant-owned dashboard layout container.
+model Dashboard {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  name       String    @db.VarChar(255)
+  code       String    @db.VarChar(80)
+  isDefault  Boolean   @default(false) @map("is_default")
+  layoutJson Json?     @map("layout_json")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  widgets DashboardWidget[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId], map: "idx_dashboards_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_dashboards_tenant_deleted")
+  @@map("dashboards")
+}
+
+/// Tenant-owned dashboard widget placement.
+model DashboardWidget {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  dashboardId String    @map("dashboard_id") @db.Uuid
+  widgetType  String    @map("widget_type") @db.VarChar(80)
+  title       String    @db.VarChar(255)
+  configJson  Json      @default("{}") @map("config_json")
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_dashboard_widgets_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_dashboard_widgets_tenant_deleted")
+  @@index([dashboardId], map: "idx_dashboard_widgets_dashboard_id")
+  @@map("dashboard_widgets")
+}
+
 /// Global identity — not tenant-scoped.
 model User {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -1156,6 +1280,8 @@ model User {
   assignedTasks Task[]          @relation("TaskAssignedUser")
   taskAssignees TaskAssignee[]  @relation("TaskAssigneeUser")
   taskComments  TaskComment[]   @relation("TaskCommentAuthor")
+  notificationRecipients NotificationRecipient[] @relation("NotificationRecipientUser")
+  notificationPreferences NotificationPreference[] @relation("NotificationPreferenceUser")
 
   @@map("users")
 }

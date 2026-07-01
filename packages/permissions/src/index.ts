@@ -1,4 +1,4 @@
-/** Sprint-02 IAM + Sprint-03 Customer + Sprint-06 Sales + Sprint-08 Pipeline + Sprint-09/10 Quote + Sprint-11 Task permission registry (global codes). */
+/** Sprint-02 IAM + Sprint-03 Customer + Sprint-06 Sales + Sprint-08 Pipeline + Sprint-09/10 Quote + Sprint-11 Task + Sprint-12 Dashboard/Notification permission registry (global codes). */
 export const PERMISSIONS = {
   AUTH_LOGIN: 'auth.login',
   TENANT_MANAGE: 'tenant.manage',
@@ -30,6 +30,8 @@ export const PERMISSIONS = {
   TASK_READ: 'task.read',
   TASK_CREATE: 'task.create',
   ACTIVITY_CREATE: 'activity.create',
+  DASHBOARD_READ: 'dashboard.read',
+  NOTIFICATION_READ: 'notification.read',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

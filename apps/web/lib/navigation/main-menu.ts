@@ -15,14 +15,14 @@ export const MAIN_MENU: MainMenuItem[] = [
   { id: 'customers', label: 'Müşteriler', href: '/customers', status: 'live', section: 'crm' },
   { id: 'leads', label: 'Leadler', href: '/leads', status: 'live', section: 'crm' },
   { id: 'pipeline', label: 'Pipeline', href: '/pipeline', status: 'live', section: 'crm' },
-  { id: 'quotes', label: 'Teklifler', status: 'soon', section: 'crm' },
+  { id: 'quotes', label: 'Teklifler', href: '/quotes', status: 'live', section: 'crm' },
   { id: 'orders', label: 'Siparişler', status: 'soon', section: 'crm' },
-  { id: 'tasks', label: 'Görevler', status: 'soon', section: 'operations' },
+  { id: 'tasks', label: 'Görevler', href: '/tasks', status: 'live', section: 'operations' },
   { id: 'calendar', label: 'Takvim', status: 'soon', section: 'operations' },
   { id: 'inbox', label: 'Gelen Kutusu', status: 'soon', section: 'operations' },
   { id: 'tickets', label: 'Destek', status: 'soon', section: 'operations' },
-  { id: 'reports', label: 'Raporlar', href: '/reports', status: 'soon', section: 'intelligence' },
-  { id: 'ai', label: 'AI Copilot', href: '/ai', status: 'soon', section: 'intelligence' },
+  { id: 'reports', label: 'Raporlar', href: '/reports', status: 'live', section: 'intelligence' },
+  { id: 'ai', label: 'AI Copilot', href: '/ai', status: 'live', section: 'intelligence' },
   { id: 'settings', label: 'Ayarlar', href: '/settings', status: 'soon', section: 'admin' },
 ];
 

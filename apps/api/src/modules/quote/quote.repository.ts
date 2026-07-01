@@ -293,6 +293,180 @@ export class QuoteRepository {
     });
   }
 
+  async sendQuote(
+    context: TenantContext,
+    quoteId: string,
+    input: { recipientEmail?: string },
+  ) {
+    return withTenantContext(this.prisma, context, async (tx) => {
+      const quote = await tx.quote.findFirst({
+        where: { id: quoteId, deletedAt: null },
+        include: quoteDetailInclude,
+      });
+
+      if (!quote) {
+        return null;
+      }
+
+      const approval = await tx.quoteApproval.create({
+        data: {
+          tenantId: context.tenantId,
+          quoteId,
+          status: 'pending',
+          notes: input.recipientEmail
+            ? `Sent to ${input.recipientEmail} for approval.`
+            : 'Awaiting approval.',
+          createdBy: context.userId,
+        },
+      });
+
+      await tx.quoteStatusHistory.create({
+        data: {
+          tenantId: context.tenantId,
+          quoteId,
+          fromStatus: quote.status,
+          toStatus: 'sent',
+          reason: input.recipientEmail
+            ? `Quote sent to ${input.recipientEmail}.`
+            : 'Quote sent for review.',
+          createdBy: context.userId,
+        },
+      });
+
+      const updatedQuote = await tx.quote.update({
+        where: { id: quoteId },
+        data: {
+          status: 'sent',
+          updatedAt: new Date(),
+          updatedBy: context.userId,
+          version: { increment: 1 },
+        },
+        include: quoteDetailInclude,
+      });
+
+      return { quote: updatedQuote, approval };
+    });
+  }
+
+  async findPendingApproval(context: TenantContext, quoteId: string) {
+    return withTenantContext(this.prisma, context, async (tx) =>
+      tx.quoteApproval.findFirst({
+        where: {
+          quoteId,
+          status: 'pending',
+          deletedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
+  }
+
+  async resolveQuoteApproval(
+    context: TenantContext,
+    quoteId: string,
+    input: { decision: 'approved' | 'rejected'; notes?: string },
+  ) {
+    return withTenantContext(this.prisma, context, async (tx) => {
+      const quote = await tx.quote.findFirst({
+        where: { id: quoteId, deletedAt: null },
+      });
+
+      if (!quote) {
+        return null;
+      }
+
+      const approval = await tx.quoteApproval.findFirst({
+        where: {
+          quoteId,
+          status: 'pending',
+          deletedAt: null,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!approval) {
+        return { quote: null, approval: null };
+      }
+
+      const newStatus = input.decision === 'approved' ? 'approved' : 'rejected';
+
+      const updatedApproval = await tx.quoteApproval.update({
+        where: { id: approval.id },
+        data: {
+          status: input.decision,
+          notes: input.notes ?? approval.notes,
+          decidedAt: new Date(),
+          approverUserId: context.userId,
+          updatedAt: new Date(),
+          updatedBy: context.userId,
+          version: { increment: 1 },
+        },
+      });
+
+      await tx.quoteStatusHistory.create({
+        data: {
+          tenantId: context.tenantId,
+          quoteId,
+          fromStatus: quote.status,
+          toStatus: newStatus,
+          reason: input.notes,
+          createdBy: context.userId,
+        },
+      });
+
+      const updatedQuote = await tx.quote.update({
+        where: { id: quoteId },
+        data: {
+          status: newStatus,
+          updatedAt: new Date(),
+          updatedBy: context.userId,
+          version: { increment: 1 },
+        },
+        include: quoteDetailInclude,
+      });
+
+      return { quote: updatedQuote, approval: updatedApproval };
+    });
+  }
+
+  async recordQuotePdfGeneration(
+    context: TenantContext,
+    quoteId: string,
+    input: {
+      fileName: string;
+      storageKey: string;
+      sizeBytes: number;
+      checksum: string;
+    },
+  ) {
+    return withTenantContext(this.prisma, context, async (tx) => {
+      const file = await tx.quoteFile.create({
+        data: {
+          tenantId: context.tenantId,
+          quoteId,
+          fileName: input.fileName,
+          mimeType: 'application/pdf',
+          storageKey: input.storageKey,
+          sizeBytes: BigInt(input.sizeBytes),
+          checksum: input.checksum,
+          createdBy: context.userId,
+        },
+      });
+
+      const viewLog = await tx.quoteViewLog.create({
+        data: {
+          tenantId: context.tenantId,
+          quoteId,
+          viewerUserId: context.userId,
+          source: 'pdf',
+          createdBy: context.userId,
+        },
+      });
+
+      return { file, viewLog };
+    });
+  }
+
   private buildTaxAmounts(
     totals: ReturnType<typeof calculateQuoteTotals>,
     taxes: CreateQuoteTaxDto[],

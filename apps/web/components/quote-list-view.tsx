@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { ApiClientError } from '../lib/api/authenticated-fetch';
 import { listQuotes, type QuoteListItem, type QuoteStatus } from '../lib/api/quotes-client';
@@ -250,7 +251,9 @@ export function QuoteListView() {
                     <input type="checkbox" disabled aria-label="Toplu seçim kapalı" />
                   </td>
                   <td>
-                    <span className="data-table__link">{quote.number}</span>
+                    <Link href={`/quotes/${quote.id}`} className="data-table__link">
+                      {quote.number}
+                    </Link>
                   </td>
                   <td className="data-table__muted">{quote.customerName}</td>
                   <td className="data-table__primary">

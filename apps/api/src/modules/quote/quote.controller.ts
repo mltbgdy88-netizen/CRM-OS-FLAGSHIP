@@ -2,11 +2,13 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  StreamableFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -20,8 +22,10 @@ import {
 } from '../../common/tenant/tenant-context.interceptor';
 import { TenantContextParam } from '../../common/tenant/tenant-context.decorator';
 import type { RequestTenantContext } from '../../common/tenant/tenant-context.types';
+import { ApproveQuoteDto } from './dto/approve-quote.dto';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { ListQuotesQueryDto } from './dto/list-quotes-query.dto';
+import { SendQuoteDto } from './dto/send-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { QuoteService } from './quote.service';
 
@@ -50,6 +54,42 @@ export class QuoteController {
   ) {
     const quote = await this.quoteService.createQuote(context, dto);
     return okEnvelope(quote);
+  }
+
+  @Post(':id/send')
+  @RequirePermissions(PERMISSIONS.QUOTE_SEND)
+  async send(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SendQuoteDto,
+  ) {
+    const quote = await this.quoteService.sendQuote(context, id, dto);
+    return okEnvelope(quote);
+  }
+
+  @Post(':id/approve')
+  @RequirePermissions(PERMISSIONS.QUOTE_APPROVE)
+  async approve(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ApproveQuoteDto,
+  ) {
+    const quote = await this.quoteService.approveQuote(context, id, dto);
+    return okEnvelope(quote);
+  }
+
+  @Get(':id/pdf')
+  @RequirePermissions(PERMISSIONS.QUOTE_PDF_GENERATE)
+  @Header('Content-Type', 'application/pdf')
+  async generatePdf(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<StreamableFile> {
+    const { buffer, fileName } = await this.quoteService.generateQuotePdf(context, id);
+    return new StreamableFile(buffer, {
+      type: 'application/pdf',
+      disposition: `attachment; filename="${fileName}"`,
+    });
   }
 
   @Get(':id')

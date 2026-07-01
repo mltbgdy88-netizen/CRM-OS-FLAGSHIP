@@ -10,6 +10,7 @@ export { seedCrm360Data } from './crm-360';
 export { seedCrmData } from './crm';
 export { seedLeadData } from './lead';
 export { seedQuoteData } from './quote';
+export { seedQuotePdfApprovalData } from './quote-pdf-approval';
 export { seedSalesData } from './sales';
 export {
   SEED_CUSTOMER_360_PERMISSIONS,
@@ -18,6 +19,7 @@ export {
   SEED_LEAD_PERMISSIONS,
   SEED_PERMISSIONS,
   SEED_QUOTE_PERMISSIONS,
+  SEED_QUOTE_PDF_PERMISSIONS,
   SEED_SALES_PERMISSIONS,
 } from './constants';
 

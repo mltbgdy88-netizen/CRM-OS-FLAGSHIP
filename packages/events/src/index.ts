@@ -308,6 +308,11 @@ export function createOpportunityLostEvent(input: {
 
 export const QUOTE_EVENT_TYPES = {
   QUOTE_CREATED: 'QuoteCreated',
+  QUOTE_SENT: 'QuoteSent',
+  QUOTE_VIEWED: 'QuoteViewed',
+  QUOTE_APPROVED: 'QuoteApproved',
+  QUOTE_REJECTED: 'QuoteRejected',
+  QUOTE_EXPIRED: 'QuoteExpired',
 } as const;
 
 export type QuoteEventType = (typeof QUOTE_EVENT_TYPES)[keyof typeof QUOTE_EVENT_TYPES];
@@ -330,6 +335,113 @@ export function createQuoteCreatedEvent(input: {
       number: input.number,
       customerId: input.customerId,
       total: input.total,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createQuoteSentEvent(input: {
+  tenantId: string;
+  actorId: string;
+  quoteId: string;
+  number: string;
+  recipientEmail: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'quote',
+    aggregateId: input.quoteId,
+    eventType: QUOTE_EVENT_TYPES.QUOTE_SENT,
+    payload: {
+      number: input.number,
+      recipientEmail: input.recipientEmail,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createQuoteViewedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  quoteId: string;
+  viewerType: 'authenticated' | 'public';
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'quote',
+    aggregateId: input.quoteId,
+    eventType: QUOTE_EVENT_TYPES.QUOTE_VIEWED,
+    payload: {
+      viewerType: input.viewerType,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createQuoteApprovedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  quoteId: string;
+  approvedBy: string;
+  totalAmount: number;
+  currency: string;
+  approvalRequestId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'quote',
+    aggregateId: input.quoteId,
+    eventType: QUOTE_EVENT_TYPES.QUOTE_APPROVED,
+    payload: {
+      approvedBy: input.approvedBy,
+      totalAmount: input.totalAmount,
+      currency: input.currency,
+      approvalRequestId: input.approvalRequestId,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createQuoteRejectedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  quoteId: string;
+  rejectedBy: string;
+  reason?: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'quote',
+    aggregateId: input.quoteId,
+    eventType: QUOTE_EVENT_TYPES.QUOTE_REJECTED,
+    payload: {
+      rejectedBy: input.rejectedBy,
+      ...(input.reason !== undefined ? { reason: input.reason } : {}),
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createQuoteExpiredEvent(input: {
+  tenantId: string;
+  actorId: string;
+  quoteId: string;
+  number: string;
+  expiresAt: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'quote',
+    aggregateId: input.quoteId,
+    eventType: QUOTE_EVENT_TYPES.QUOTE_EXPIRED,
+    payload: {
+      number: input.number,
+      expiresAt: input.expiresAt,
     },
     createdAt: new Date(),
   };

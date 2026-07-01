@@ -1,14 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { createQuoteCreatedEvent } from '@crm-os/events';
+import { createHash } from 'node:crypto';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  createQuoteApprovedEvent,
+  createQuoteCreatedEvent,
+  createQuoteRejectedEvent,
+  createQuoteSentEvent,
+  createQuoteViewedEvent,
+} from '@crm-os/events';
 import type { RequestTenantContext } from '../../common/tenant/tenant-context.types';
 import { IamRepository } from '../iam/repositories/iam.repository';
 import { DomainEventPublisher } from '../iam/services/audit.service';
+import type { ApproveQuoteDto } from './dto/approve-quote.dto';
 import type { CreateQuoteDto } from './dto/create-quote.dto';
 import type { ListQuotesQueryDto } from './dto/list-quotes-query.dto';
+import type { SendQuoteDto } from './dto/send-quote.dto';
 import type { UpdateQuoteDto } from './dto/update-quote.dto';
 import { mapQuoteDetail, mapQuoteSummary } from './quote.mapper';
+import { generateQuotePdfBuffer } from './quote.pdf-generator';
 import { QuoteRepository, type QuoteChildInput } from './quote.repository';
 import { calculateQuoteTotals } from './quote.totals';
+
+const SENDABLE_QUOTE_STATUSES = new Set(['draft']);
 
 function hasOwn(input: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(input, key);
@@ -175,6 +187,153 @@ export class QuoteService {
     });
 
     return mapQuoteDetail(quote);
+  }
+
+  async sendQuote(context: RequestTenantContext, id: string, dto: SendQuoteDto) {
+    const existing = await this.quoteRepository.findQuoteById(context, id);
+    if (!existing) {
+      throw new NotFoundException('Quote not found');
+    }
+
+    if (!SENDABLE_QUOTE_STATUSES.has(existing.status)) {
+      throw new BadRequestException('Only draft quotes can be sent');
+    }
+
+    const recipientEmail = dto.recipientEmail ?? existing.customer.email ?? '';
+    const result = await this.quoteRepository.sendQuote(context, id, {
+      recipientEmail: dto.recipientEmail,
+    });
+
+    if (!result) {
+      throw new NotFoundException('Quote not found');
+    }
+
+    await this.iamRepository.writeAuditLog(context, {
+      action: 'quote.sent',
+      entityType: 'quote',
+      entityId: result.quote.id,
+      payload: {
+        number: result.quote.number,
+        recipientEmail: recipientEmail || null,
+        status: result.quote.status,
+        approvalId: result.approval.id,
+      },
+    });
+
+    this.eventPublisher.publish(
+      createQuoteSentEvent({
+        tenantId: context.tenantId,
+        actorId: context.userId,
+        quoteId: result.quote.id,
+        number: result.quote.number,
+        recipientEmail,
+      }),
+    );
+
+    return mapQuoteDetail(result.quote);
+  }
+
+  async approveQuote(context: RequestTenantContext, id: string, dto: ApproveQuoteDto) {
+    const existing = await this.quoteRepository.findQuoteById(context, id);
+    if (!existing) {
+      throw new NotFoundException('Quote not found');
+    }
+
+    if (existing.status !== 'sent') {
+      throw new BadRequestException('Only sent quotes can be approved or rejected');
+    }
+
+    const pendingApproval = await this.quoteRepository.findPendingApproval(context, id);
+    if (!pendingApproval) {
+      throw new BadRequestException('No pending approval found for this quote');
+    }
+
+    const result = await this.quoteRepository.resolveQuoteApproval(context, id, {
+      decision: dto.decision,
+      notes: dto.notes,
+    });
+
+    if (!result?.quote || !result.approval) {
+      throw new NotFoundException('Quote not found');
+    }
+
+    const auditAction =
+      dto.decision === 'approved' ? 'quote.approved' : 'quote.rejected';
+
+    await this.iamRepository.writeAuditLog(context, {
+      action: auditAction,
+      entityType: 'quote',
+      entityId: result.quote.id,
+      payload: {
+        number: result.quote.number,
+        decision: dto.decision,
+        notes: dto.notes ?? null,
+        approvalId: result.approval.id,
+        status: result.quote.status,
+      },
+    });
+
+    if (dto.decision === 'approved') {
+      this.eventPublisher.publish(
+        createQuoteApprovedEvent({
+          tenantId: context.tenantId,
+          actorId: context.userId,
+          quoteId: result.quote.id,
+          approvedBy: context.userId,
+          totalAmount: Number(result.quote.total),
+          currency: result.quote.currencyCode,
+          approvalRequestId: result.approval.id,
+        }),
+      );
+    } else {
+      this.eventPublisher.publish(
+        createQuoteRejectedEvent({
+          tenantId: context.tenantId,
+          actorId: context.userId,
+          quoteId: result.quote.id,
+          rejectedBy: context.userId,
+          reason: dto.notes,
+        }),
+      );
+    }
+
+    return mapQuoteDetail(result.quote);
+  }
+
+  async generateQuotePdf(context: RequestTenantContext, id: string) {
+    const quote = await this.quoteRepository.findQuoteDetailById(context, id);
+    if (!quote) {
+      throw new NotFoundException('Quote not found');
+    }
+
+    const buffer = generateQuotePdfBuffer({
+      number: quote.number,
+      customerName: quote.customer.displayName,
+      total: quote.total.toString(),
+      currencyCode: quote.currencyCode,
+    });
+
+    const checksum = createHash('sha256').update(buffer).digest('hex');
+    const fileName = `quote-${quote.number}.pdf`;
+    const storageKey = `tenants/${context.tenantId}/quotes/${quote.number}.pdf`;
+
+    await this.quoteRepository.recordQuotePdfGeneration(context, id, {
+      fileName,
+      storageKey,
+      sizeBytes: buffer.length,
+      checksum: `sha256:${checksum}`,
+    });
+
+    this.eventPublisher.publish(
+      createQuoteViewedEvent({
+        tenantId: context.tenantId,
+        actorId: context.userId,
+        quoteId: quote.id,
+        viewerType: 'authenticated',
+      }),
+    );
+
+    return { buffer, fileName };
   }
 
   private async assertCustomerExists(context: RequestTenantContext, customerId: string) {

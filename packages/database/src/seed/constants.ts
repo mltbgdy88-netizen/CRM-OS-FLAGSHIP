@@ -173,6 +173,20 @@ export const SEED_IDS = {
   productPriceTenantB: '70250000-0000-4000-8000-000000000003',
   productCollectionItemDefault: '70260000-0000-4000-8000-000000000001',
   productCollectionItemTenantB: '70260000-0000-4000-8000-000000000002',
+  permissionInventoryRead: '71100000-0000-4000-8000-000000000001',
+  permissionInventoryAdjust: '71100000-0000-4000-8000-000000000002',
+  warehouseDefault: '71200000-0000-4000-8000-000000000001',
+  warehouseTenantB: '71200000-0000-4000-8000-000000000002',
+  warehouseLocationDefault: '71210000-0000-4000-8000-000000000001',
+  warehouseLocationTenantB: '71210000-0000-4000-8000-000000000002',
+  stockDefault: '71220000-0000-4000-8000-000000000001',
+  stockTenantB: '71220000-0000-4000-8000-000000000002',
+  stockMovementDefault: '71230000-0000-4000-8000-000000000001',
+  stockMovementTenantB: '71230000-0000-4000-8000-000000000002',
+  stockCountDefault: '71240000-0000-4000-8000-000000000001',
+  stockCountTenantB: '71240000-0000-4000-8000-000000000002',
+  stockAdjustmentDefault: '71250000-0000-4000-8000-000000000001',
+  stockAdjustmentTenantB: '71250000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -451,6 +465,21 @@ export const SEED_PRODUCT_PERMISSIONS = [
     code: 'product.update',
     module: 'product',
     description: 'Update products and catalog data',
+  },
+] as const;
+
+export const SEED_INVENTORY_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionInventoryRead,
+    code: 'inventory.read',
+    module: 'inventory',
+    description: 'Read inventory, stocks and movements',
+  },
+  {
+    id: SEED_IDS.permissionInventoryAdjust,
+    code: 'inventory.adjust',
+    module: 'inventory',
+    description: 'Adjust stock levels and record movements',
   },
 ] as const;
 

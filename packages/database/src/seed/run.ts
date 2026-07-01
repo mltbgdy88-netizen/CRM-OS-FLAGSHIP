@@ -2,7 +2,7 @@ import { Pool } from 'pg';
 import { getDatabaseConfigFromEnv } from '../index';
 import { applyAllMigrations } from '../migrate';
 import { cleanupProofSeedOrphans, shouldCleanupProofSeedOrphans } from './cleanup';
-import { seedCrm360Data, seedCrmData, seedDashboardNotificationData, seedIamData, seedLeadData, seedOrderData, seedProductData, seedQuoteData, seedQuotePdfApprovalData, seedSalesData, seedTaskData } from './index';
+import { seedCrm360Data, seedCrmData, seedDashboardNotificationData, seedIamData, seedInventoryData, seedLeadData, seedOrderData, seedProductData, seedQuoteData, seedQuotePdfApprovalData, seedSalesData, seedTaskData } from './index';
 
 async function main(): Promise<void> {
   const { url } = getDatabaseConfigFromEnv();
@@ -30,6 +30,7 @@ async function main(): Promise<void> {
     await seedDashboardNotificationData(client);
     await seedOrderData(client);
     await seedProductData(client);
+    await seedInventoryData(client);
     console.log('Sprint-02 IAM seed completed');
     console.log('Sprint-03 CRM seed completed');
     console.log('Sprint-04 Customer 360 seed completed');
@@ -41,6 +42,7 @@ async function main(): Promise<void> {
     console.log('Sprint-12 Dashboard & Notification seed completed');
     console.log('Sprint-13 Order seed completed');
     console.log('Sprint-15 Product Catalog seed completed');
+    console.log('Sprint-16 Inventory Core seed completed');
   } finally {
     client.release();
     await pool.end();

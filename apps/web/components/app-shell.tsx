@@ -31,6 +31,9 @@ function groupMenuBySection(items: MainMenuItem[]) {
 const SIDEBAR_COLLAPSED_KEY = 'crm-os-sidebar-collapsed';
 
 function pageTitle(pathname: string) {
+  if (pathname.startsWith('/dashboard')) {
+    return 'Gösterge Paneli';
+  }
   if (pathname.startsWith('/customers/new')) {
     return 'Yeni Müşteri';
   }

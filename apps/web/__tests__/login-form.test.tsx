@@ -124,7 +124,7 @@ describe('LoginForm', () => {
     );
   });
 
-  it('redirects to customers and stores access token on success', async () => {
+  it('redirects to dashboard and stores access token on success', async () => {
     vi.mocked(login).mockResolvedValue({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
@@ -147,7 +147,7 @@ describe('LoginForm', () => {
 
     await waitFor(() => {
       expect(storeAccessToken).toHaveBeenCalledWith('access-token');
-      expect(push).toHaveBeenCalledWith('/customers');
+      expect(push).toHaveBeenCalledWith('/dashboard');
     });
   });
 });

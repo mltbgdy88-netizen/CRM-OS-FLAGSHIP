@@ -36,7 +36,7 @@ export function LoginForm() {
       setSuccessEmail(result.user.email);
       setTokenReceived(Boolean(result.accessToken));
       setStatus('success');
-      router.push('/customers');
+      router.push('/dashboard');
     } catch (error) {
       if (error instanceof AuthClientError) {
         setStatus(error.kind === 'network' ? 'network_error' : 'auth_error');

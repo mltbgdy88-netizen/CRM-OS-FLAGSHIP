@@ -9,6 +9,8 @@ describe('DashboardView', () => {
     expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
     expect(screen.getByText('Gösterge Paneli')).toBeInTheDocument();
     expect(screen.getByTestId('dashboard-revenue-chart')).toBeInTheDocument();
+    expect(screen.getByText('Canlı önizleme')).toBeInTheDocument();
+    expect(screen.getByText('₺2.4M')).toBeInTheDocument();
     expect(screen.getByTestId('dashboard-pipeline')).toBeInTheDocument();
     expect(screen.getByText('Son Aktiviteler')).toBeInTheDocument();
     expect(screen.getByText('AI Asistan')).toBeInTheDocument();

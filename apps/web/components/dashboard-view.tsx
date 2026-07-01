@@ -1,43 +1,74 @@
 'use client';
 
+import {
+  formatCurrencyShort,
+  RevenueAreaChart,
+  SparklineChart,
+  useAnimatedMetric,
+  type RevenueMonth,
+} from './dashboard-charts';
+
 const KPI_CARDS = [
   {
     id: 'revenue',
     label: 'Toplam Gelir',
-    value: '₺2.4M',
+    target: 2_400_000,
+    format: 'currency' as const,
     trend: '+12.5%',
     trendUp: true,
     icon: '₺',
-    tone: 'orange',
+    tone: 'orange' as const,
+    spark: [1.52, 1.58, 1.61, 1.72, 1.78, 1.85, 1.92, 2.05, 2.12, 2.28, 2.35, 2.4],
   },
   {
     id: 'opportunities',
     label: 'Açık Fırsatlar',
-    value: '48',
+    target: 48,
+    format: 'number' as const,
     trend: '+8.2%',
     trendUp: true,
     icon: '◆',
-    tone: 'blue',
+    tone: 'blue' as const,
+    spark: [28, 31, 30, 34, 36, 35, 39, 41, 43, 44, 46, 48],
   },
   {
     id: 'winrate',
     label: 'Kazanma Oranı',
-    value: '%34',
+    target: 34,
+    format: 'percent' as const,
     trend: '-2.1%',
     trendUp: false,
     icon: '◎',
-    tone: 'green',
+    tone: 'green' as const,
+    spark: [38, 37, 36, 35, 36, 35, 34, 35, 34, 33, 34, 34],
   },
   {
     id: 'tasks',
     label: 'Bekleyen Görevler',
-    value: '17',
+    target: 17,
+    format: 'number' as const,
     trend: '+3',
     trendUp: true,
     icon: '☑',
-    tone: 'purple',
+    tone: 'purple' as const,
+    spark: [9, 10, 11, 12, 11, 13, 14, 15, 14, 16, 15, 17],
   },
-] as const;
+];
+
+const REVENUE_MONTHLY: RevenueMonth[] = [
+  { month: 'Oca', value: 1.62 },
+  { month: 'Şub', value: 1.74 },
+  { month: 'Mar', value: 1.68 },
+  { month: 'Nis', value: 1.86 },
+  { month: 'May', value: 1.92 },
+  { month: 'Haz', value: 2.05 },
+  { month: 'Tem', value: 1.98 },
+  { month: 'Ağu', value: 2.14 },
+  { month: 'Eyl', value: 2.08 },
+  { month: 'Eki', value: 2.22 },
+  { month: 'Kas', value: 2.31 },
+  { month: 'Ara', value: 2.4 },
+];
 
 const PIPELINE_STAGES = [
   { label: 'Yeni Lead', value: 24, amount: '₺840K', color: '#3b82f6' },
@@ -60,7 +91,47 @@ const UPCOMING_EVENTS = [
   { id: '3', time: '16:00', title: 'Haftalık pipeline', customer: 'Ekip' },
 ];
 
-const REVENUE_POINTS = [42, 58, 45, 72, 68, 85, 78, 92, 88, 95, 82, 100];
+function KpiCard({
+  label,
+  target,
+  format,
+  trend,
+  trendUp,
+  icon,
+  tone,
+  spark,
+}: (typeof KPI_CARDS)[number]) {
+  const animated = useAnimatedMetric(target);
+  const displayValue =
+    format === 'currency'
+      ? formatCurrencyShort(animated)
+      : format === 'percent'
+        ? `%${Math.round(animated)}`
+        : String(Math.round(animated));
+
+  return (
+    <article className={`dashboard-kpi dashboard-kpi--${tone}`}>
+      <div className="dashboard-kpi__main">
+        <div className="dashboard-kpi__top">
+          <span className="dashboard-kpi__icon" aria-hidden>
+            {icon}
+          </span>
+          <span
+            className={
+              trendUp ? 'dashboard-kpi__trend dashboard-kpi__trend--up' : 'dashboard-kpi__trend dashboard-kpi__trend--down'
+            }
+          >
+            {trendUp ? '▲' : '▼'} {trend}
+          </span>
+        </div>
+        <p className="dashboard-kpi__label">{label}</p>
+        <p className="dashboard-kpi__value">{displayValue}</p>
+        <p className="dashboard-kpi__period">Son 30 gün</p>
+      </div>
+      <SparklineChart values={spark} tone={tone} className="dashboard-kpi__spark" />
+    </article>
+  );
+}
 
 export function DashboardView() {
   const maxPipeline = Math.max(...PIPELINE_STAGES.map((s) => s.value));
@@ -71,63 +142,35 @@ export function DashboardView() {
         <div>
           <p className="dashboard-page__greeting">Hoş geldiniz, Ahmet!</p>
           <h1 className="dashboard-page__title">Gösterge Paneli</h1>
-          <p className="dashboard-page__subtitle">Bugünkü özet ve satış performansı</p>
+          <p className="dashboard-page__subtitle">Canlı satış özeti · güncellenme: az önce</p>
         </div>
-        <span className="dashboard-page__mock-badge">MOCK veri</span>
+        <span className="dashboard-page__live-badge">
+          <span className="dashboard-page__live-dot" aria-hidden />
+          Canlı önizleme
+        </span>
       </header>
 
       <div className="dashboard-kpi-grid">
         {KPI_CARDS.map((card) => (
-          <article key={card.id} className={`dashboard-kpi dashboard-kpi--${card.tone}`}>
-            <div className="dashboard-kpi__top">
-              <span className="dashboard-kpi__icon" aria-hidden>
-                {card.icon}
-              </span>
-              <span
-                className={
-                  card.trendUp ? 'dashboard-kpi__trend dashboard-kpi__trend--up' : 'dashboard-kpi__trend dashboard-kpi__trend--down'
-                }
-              >
-                {card.trend}
-              </span>
-            </div>
-            <p className="dashboard-kpi__label">{card.label}</p>
-            <p className="dashboard-kpi__value">{card.value}</p>
-            <div className="dashboard-kpi__spark" aria-hidden>
-              {REVENUE_POINTS.slice(0, 8).map((h, i) => (
-                <span key={i} style={{ height: `${h}%` }} />
-              ))}
-            </div>
-          </article>
+          <KpiCard key={card.id} {...card} />
         ))}
       </div>
 
       <div className="dashboard-grid">
-        <article className="dashboard-card dashboard-card--wide">
+        <article className="dashboard-card dashboard-card--wide dashboard-card--chart">
           <header className="dashboard-card__header">
-            <h2>Gelir Trendi</h2>
-            <span className="dashboard-card__hint">Son 12 ay</span>
+            <div>
+              <h2>Gelir Trendi</h2>
+              <p className="dashboard-card__hint">Aylık kapanan gelir · TRY</p>
+            </div>
+            <div className="dashboard-card__legend">
+              <span className="dashboard-card__legend-item dashboard-card__legend-item--primary">
+                Gelir
+              </span>
+              <span className="dashboard-card__legend-item">Hedef: ₺2.5M</span>
+            </div>
           </header>
-          <div className="dashboard-chart" data-testid="dashboard-revenue-chart">
-            <svg viewBox="0 0 400 120" preserveAspectRatio="none" className="dashboard-chart__svg">
-              <defs>
-                <linearGradient id="revenue-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(168, 85, 247, 0.45)" />
-                  <stop offset="100%" stopColor="rgba(168, 85, 247, 0)" />
-                </linearGradient>
-              </defs>
-              <polygon
-                fill="url(#revenue-fill)"
-                points={`0,120 ${REVENUE_POINTS.map((v, i) => `${(i / (REVENUE_POINTS.length - 1)) * 400},${120 - v}`).join(' ')} 400,120`}
-              />
-              <polyline
-                fill="none"
-                stroke="#a855f7"
-                strokeWidth="2.5"
-                points={REVENUE_POINTS.map((v, i) => `${(i / (REVENUE_POINTS.length - 1)) * 400},${120 - v}`).join(' ')}
-              />
-            </svg>
-          </div>
+          <RevenueAreaChart data={REVENUE_MONTHLY} />
         </article>
 
         <article className="dashboard-card">

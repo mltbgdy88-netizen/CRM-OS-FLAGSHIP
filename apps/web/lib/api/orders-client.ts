@@ -55,6 +55,35 @@ export interface OrderStatusHistoryEntry {
 export interface OrderDetail extends OrderListItem {
   items: OrderItem[];
   statusHistory: OrderStatusHistoryEntry[];
+  shipments: OrderShipment[];
+  deliveries: OrderDelivery[];
+  orderNotes: OrderNote[];
+}
+
+export interface OrderShipment {
+  id: string;
+  carrier: string | null;
+  trackingNumber: string | null;
+  shippedAt: string;
+  notes: string | null;
+  createdAt: string;
+  version: number;
+}
+
+export interface OrderDelivery {
+  id: string;
+  deliveredAt: string;
+  recipientName: string | null;
+  notes: string | null;
+  createdAt: string;
+  version: number;
+}
+
+export interface OrderNote {
+  id: string;
+  body: string;
+  createdAt: string;
+  version: number;
 }
 
 export interface CreateOrderItemInput {
@@ -91,4 +120,46 @@ export async function createOrder(input: CreateOrderInput): Promise<OrderListIte
     body: JSON.stringify(input),
   });
   return parseApiResponse<OrderListItem>(response);
+}
+
+export interface ShipOrderInput {
+  carrier?: string;
+  trackingNumber?: string;
+  notes?: string;
+}
+
+export interface DeliverOrderInput {
+  recipientName?: string;
+  notes?: string;
+}
+
+export interface CancelOrderInput {
+  reason?: string;
+}
+
+export async function shipOrder(id: string, input: ShipOrderInput = {}): Promise<OrderDetail> {
+  const response = await authenticatedFetch(`/api/v1/orders/${id}/ship`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return parseApiResponse<OrderDetail>(response);
+}
+
+export async function deliverOrder(id: string, input: DeliverOrderInput = {}): Promise<OrderDetail> {
+  const response = await authenticatedFetch(`/api/v1/orders/${id}/deliver`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return parseApiResponse<OrderDetail>(response);
+}
+
+export async function cancelOrder(id: string, input: CancelOrderInput = {}): Promise<OrderDetail> {
+  const response = await authenticatedFetch(`/api/v1/orders/${id}/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return parseApiResponse<OrderDetail>(response);
 }

@@ -19,6 +19,18 @@ const orderDetailInclude = {
     where: { deletedAt: null },
     orderBy: { createdAt: 'asc' as const },
   },
+  shipments: {
+    where: { deletedAt: null },
+    orderBy: { shippedAt: 'desc' as const },
+  },
+  deliveries: {
+    where: { deletedAt: null },
+    orderBy: { deliveredAt: 'desc' as const },
+  },
+  orderNotes: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'desc' as const },
+  },
 } as const;
 
 export interface OrderChildInput {
@@ -160,6 +172,141 @@ export class OrderRepository {
       });
 
       return order;
+    });
+  }
+
+  async shipOrder(
+    context: TenantContext,
+    orderId: string,
+    input: { carrier?: string; trackingNumber?: string; notes?: string },
+  ) {
+    return withTenantContext(this.prisma, context, async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id: orderId, deletedAt: null },
+      });
+
+      if (!order) {
+        return null;
+      }
+
+      await tx.orderShipment.create({
+        data: {
+          tenantId: context.tenantId,
+          orderId,
+          carrier: input.carrier,
+          trackingNumber: input.trackingNumber,
+          notes: input.notes,
+          createdBy: context.userId,
+        },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          tenantId: context.tenantId,
+          orderId,
+          fromStatus: order.status,
+          toStatus: 'shipped',
+          reason: input.trackingNumber
+            ? `Shipped via ${input.carrier ?? 'carrier'} — tracking ${input.trackingNumber}.`
+            : 'Order shipped for delivery.',
+          createdBy: context.userId,
+        },
+      });
+
+      return tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'shipped',
+          updatedAt: new Date(),
+          updatedBy: context.userId,
+          version: { increment: 1 },
+        },
+        include: orderDetailInclude,
+      });
+    });
+  }
+
+  async deliverOrder(
+    context: TenantContext,
+    orderId: string,
+    input: { recipientName?: string; notes?: string },
+  ) {
+    return withTenantContext(this.prisma, context, async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id: orderId, deletedAt: null },
+      });
+
+      if (!order) {
+        return null;
+      }
+
+      await tx.orderDelivery.create({
+        data: {
+          tenantId: context.tenantId,
+          orderId,
+          recipientName: input.recipientName,
+          notes: input.notes,
+          createdBy: context.userId,
+        },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          tenantId: context.tenantId,
+          orderId,
+          fromStatus: order.status,
+          toStatus: 'delivered',
+          reason: input.recipientName
+            ? `Delivered to ${input.recipientName}.`
+            : 'Order marked as delivered.',
+          createdBy: context.userId,
+        },
+      });
+
+      return tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'delivered',
+          updatedAt: new Date(),
+          updatedBy: context.userId,
+          version: { increment: 1 },
+        },
+        include: orderDetailInclude,
+      });
+    });
+  }
+
+  async cancelOrder(context: TenantContext, orderId: string, input: { reason?: string }) {
+    return withTenantContext(this.prisma, context, async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id: orderId, deletedAt: null },
+      });
+
+      if (!order) {
+        return null;
+      }
+
+      await tx.orderStatusHistory.create({
+        data: {
+          tenantId: context.tenantId,
+          orderId,
+          fromStatus: order.status,
+          toStatus: 'cancelled',
+          reason: input.reason ?? 'Order cancelled.',
+          createdBy: context.userId,
+        },
+      });
+
+      return tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'cancelled',
+          updatedAt: new Date(),
+          updatedBy: context.userId,
+          version: { increment: 1 },
+        },
+        include: orderDetailInclude,
+      });
     });
   }
 }

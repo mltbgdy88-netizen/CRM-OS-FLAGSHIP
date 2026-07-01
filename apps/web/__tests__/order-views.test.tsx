@@ -7,6 +7,9 @@ import { OrderListView } from '../components/order-list-view';
 vi.mock('../lib/api/orders-client', () => ({
   listOrders: vi.fn(),
   getOrder: vi.fn(),
+  shipOrder: vi.fn(),
+  deliverOrder: vi.fn(),
+  cancelOrder: vi.fn(),
 }));
 
 import { getOrder, listOrders } from '../lib/api/orders-client';
@@ -79,6 +82,16 @@ const mockOrderDetail = {
       version: 1,
     },
   ],
+  shipments: [],
+  deliveries: [],
+  orderNotes: [
+    {
+      id: 'note-1',
+      body: 'Fulfillment team: prepare license keys before shipping.',
+      createdAt: '2026-06-14T10:15:00Z',
+      version: 1,
+    },
+  ],
 };
 
 describe('OrderListView', () => {
@@ -142,5 +155,7 @@ describe('OrderDetailView', () => {
     expect(screen.getByText('CRM OS Enterprise License')).toBeInTheDocument();
     expect(screen.getByTestId('order-detail-timeline')).toBeInTheDocument();
     expect(screen.getByText('Quote accepted and order created.')).toBeInTheDocument();
+    expect(screen.getByTestId('order-action-ship')).toBeInTheDocument();
+    expect(screen.getByTestId('order-detail-notes-list')).toBeInTheDocument();
   });
 });

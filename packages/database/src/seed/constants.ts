@@ -143,6 +143,9 @@ export const SEED_IDS = {
   permissionOrderRead: '69000000-0000-4000-8000-000000000001',
   permissionOrderCreate: '69000000-0000-4000-8000-000000000002',
   permissionOrderUpdate: '69000000-0000-4000-8000-000000000003',
+  permissionOrderShip: '69400000-0000-4000-8000-000000000001',
+  permissionOrderCancel: '69400000-0000-4000-8000-000000000002',
+  permissionOrderReturn: '69400000-0000-4000-8000-000000000003',
   orderDefault: '69100000-0000-4000-8000-000000000001',
   orderTenantB: '69100000-0000-4000-8000-000000000002',
   orderItemDefault: '69200000-0000-4000-8000-000000000001',
@@ -151,6 +154,7 @@ export const SEED_IDS = {
   orderStatusHistoryDefault: '69300000-0000-4000-8000-000000000001',
   orderStatusHistoryDefault2: '69300000-0000-4000-8000-000000000002',
   orderStatusHistoryTenantB: '69300000-0000-4000-8000-000000000003',
+  orderNoteDefault: '69900000-0000-4000-8000-000000000001',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -390,6 +394,24 @@ export const SEED_ORDER_PERMISSIONS = [
     code: 'order.update',
     module: 'order',
     description: 'Update orders and line items',
+  },
+  {
+    id: SEED_IDS.permissionOrderShip,
+    code: 'order.ship',
+    module: 'order',
+    description: 'Ship orders and record fulfillment',
+  },
+  {
+    id: SEED_IDS.permissionOrderCancel,
+    code: 'order.cancel',
+    module: 'order',
+    description: 'Cancel orders before delivery',
+  },
+  {
+    id: SEED_IDS.permissionOrderReturn,
+    code: 'order.return',
+    module: 'order',
+    description: 'Process order returns',
   },
 ] as const;
 

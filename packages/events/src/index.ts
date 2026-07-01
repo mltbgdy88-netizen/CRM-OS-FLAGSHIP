@@ -559,6 +559,10 @@ export function createDashboardViewedEvent(input: {
 export const ORDER_EVENT_TYPES = {
   ORDER_CREATED: 'OrderCreated',
   ORDER_CONFIRMED: 'OrderConfirmed',
+  ORDER_SHIPPED: 'OrderShipped',
+  ORDER_DELIVERED: 'OrderDelivered',
+  ORDER_RETURNED: 'OrderReturned',
+  ORDER_CANCELLED: 'OrderCancelled',
 } as const;
 
 export type OrderEventType = (typeof ORDER_EVENT_TYPES)[keyof typeof ORDER_EVENT_TYPES];
@@ -602,6 +606,90 @@ export function createOrderConfirmedEvent(input: {
     payload: {
       number: input.number,
       total: input.total,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createOrderShippedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  orderId: string;
+  number: string;
+  trackingNumber?: string | null;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'order',
+    aggregateId: input.orderId,
+    eventType: ORDER_EVENT_TYPES.ORDER_SHIPPED,
+    payload: {
+      number: input.number,
+      trackingNumber: input.trackingNumber ?? null,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createOrderDeliveredEvent(input: {
+  tenantId: string;
+  actorId: string;
+  orderId: string;
+  number: string;
+  recipientName?: string | null;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'order',
+    aggregateId: input.orderId,
+    eventType: ORDER_EVENT_TYPES.ORDER_DELIVERED,
+    payload: {
+      number: input.number,
+      recipientName: input.recipientName ?? null,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createOrderCancelledEvent(input: {
+  tenantId: string;
+  actorId: string;
+  orderId: string;
+  number: string;
+  reason?: string | null;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'order',
+    aggregateId: input.orderId,
+    eventType: ORDER_EVENT_TYPES.ORDER_CANCELLED,
+    payload: {
+      number: input.number,
+      reason: input.reason ?? null,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createOrderReturnedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  orderId: string;
+  number: string;
+  reason: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'order',
+    aggregateId: input.orderId,
+    eventType: ORDER_EVENT_TYPES.ORDER_RETURNED,
+    payload: {
+      number: input.number,
+      reason: input.reason,
     },
     createdAt: new Date(),
   };

@@ -19,6 +19,32 @@ export interface OrderStatusHistoryResponseDto {
   version: number;
 }
 
+export interface OrderShipmentResponseDto {
+  id: string;
+  carrier: string | null;
+  trackingNumber: string | null;
+  shippedAt: string;
+  notes: string | null;
+  createdAt: string;
+  version: number;
+}
+
+export interface OrderDeliveryResponseDto {
+  id: string;
+  deliveredAt: string;
+  recipientName: string | null;
+  notes: string | null;
+  createdAt: string;
+  version: number;
+}
+
+export interface OrderNoteResponseDto {
+  id: string;
+  body: string;
+  createdAt: string;
+  version: number;
+}
+
 export interface OrderCustomerSummaryDto {
   id: string;
   displayName: string;
@@ -44,6 +70,9 @@ export interface OrderSummaryResponseDto {
 export interface OrderDetailResponseDto extends OrderSummaryResponseDto {
   items: OrderItemResponseDto[];
   statusHistory: OrderStatusHistoryResponseDto[];
+  shipments: OrderShipmentResponseDto[];
+  deliveries: OrderDeliveryResponseDto[];
+  orderNotes: OrderNoteResponseDto[];
 }
 
 export interface PaginatedOrdersResponseDto {

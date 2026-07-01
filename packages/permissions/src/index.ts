@@ -1,4 +1,4 @@
-/** Sprint-02 IAM + Sprint-03 Customer + Sprint-06 Sales permission registry (global codes). */
+/** Sprint-02 IAM + Sprint-03 Customer + Sprint-06 Sales + Sprint-08 Pipeline permission registry (global codes). */
 export const PERMISSIONS = {
   AUTH_LOGIN: 'auth.login',
   TENANT_MANAGE: 'tenant.manage',
@@ -18,6 +18,8 @@ export const PERMISSIONS = {
   OPPORTUNITY_READ: 'opportunity.read',
   OPPORTUNITY_CREATE: 'opportunity.create',
   OPPORTUNITY_UPDATE: 'opportunity.update',
+  OPPORTUNITY_UPDATE_STAGE: 'opportunity.update.stage',
+  PIPELINE_READ: 'pipeline.read',
   PIPELINE_MANAGE: 'pipeline.manage',
 } as const;
 

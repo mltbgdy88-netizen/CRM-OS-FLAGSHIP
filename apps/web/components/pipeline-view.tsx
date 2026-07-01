@@ -1,8 +1,21 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ApiClientError } from '../lib/api/authenticated-fetch';
 import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { ApiClientError } from '../lib/api/authenticated-fetch';
+import { patchOpportunityStage } from '../lib/api/opportunities-client';
+import {
+  getPipelineBoard,
   listPipelines,
   pickDefaultPipeline,
   type OpportunitySummary,
@@ -44,32 +57,9 @@ function mapOpportunityForCard(opportunity: OpportunitySummary): PipelineCardVie
   };
 }
 
-function OpportunityCard({
-  opportunity,
-  stageColor,
-  selected,
-  onSelect,
-}: {
-  opportunity: PipelineCardView;
-  stageColor: string;
-  selected: boolean;
-  onSelect: () => void;
-}) {
+function OpportunityCardContent({ opportunity }: { opportunity: PipelineCardView }) {
   return (
-    <article
-      className={selected ? 'pipeline-card pipeline-card--selected' : 'pipeline-card'}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onSelect();
-        }
-      }}
-      tabIndex={0}
-      role="button"
-      data-testid={`pipeline-card-${opportunity.id}`}
-      style={{ borderLeftColor: stageColor }}
-    >
+    <>
       <h3 className="pipeline-card__title">{opportunity.title}</h3>
       <p className="pipeline-card__company">{opportunity.company}</p>
       <div className="pipeline-card__meta">
@@ -85,8 +75,169 @@ function OpportunityCard({
           })}
         </time>
       </footer>
+    </>
+  );
+}
+
+function DraggableOpportunityCard({
+  opportunity,
+  stageColor,
+  selected,
+  onSelect,
+}: {
+  opportunity: PipelineCardView;
+  stageColor: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: opportunity.id,
+  });
+
+  const style = {
+    borderLeftColor: stageColor,
+    transform: CSS.Translate.toString(transform),
+  };
+
+  const className = [
+    'pipeline-card',
+    selected ? 'pipeline-card--selected' : '',
+    isDragging ? 'pipeline-card--dragging' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <article
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={className}
+      style={style}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+      data-testid={`pipeline-card-${opportunity.id}`}
+    >
+      <OpportunityCardContent opportunity={opportunity} />
     </article>
   );
+}
+
+function DroppableColumn({
+  stage,
+  stageColor,
+  cards,
+  selectedId,
+  onSelect,
+}: {
+  stage: PipelineStageSummary;
+  stageColor: string;
+  cards: PipelineCardView[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage.id });
+  const total = cards.reduce((sum, opp) => sum + opp.amount, 0);
+
+  return (
+    <div
+      className={isOver ? 'pipeline-column pipeline-column--over' : 'pipeline-column'}
+      data-testid={`pipeline-column-${stage.code}`}
+    >
+      <header className="pipeline-column__header" style={{ borderTopColor: stageColor }}>
+        <div>
+          <h2 className="pipeline-column__title">{stage.name}</h2>
+          <p className="pipeline-column__count">
+            {cards.length} · {formatTryAmount(total)}
+          </p>
+        </div>
+        <span
+          className="pipeline-column__badge"
+          style={{ background: `${stageColor}22`, color: stageColor }}
+        >
+          {cards.length}
+        </span>
+      </header>
+      <div ref={setNodeRef} className="pipeline-column__cards">
+        {cards.map((opp) => (
+          <DraggableOpportunityCard
+            key={opp.id}
+            opportunity={opp}
+            stageColor={stageColor}
+            selected={selectedId === opp.id}
+            onSelect={() => onSelect(opp.id)}
+          />
+        ))}
+        {cards.length === 0 ? (
+          <p className="pipeline-column__empty">Bu aşamada fırsat yok</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function resolveStageDrop(
+  activeId: string | number,
+  overId: string | number | undefined,
+  opportunities: PipelineCardView[],
+): { opportunityId: string; previousStageId: string; targetStageId: string } | null {
+  if (overId === undefined) {
+    return null;
+  }
+
+  const opportunityId = String(activeId);
+  const targetStageId = String(overId);
+  const opportunity = opportunities.find((opp) => opp.id === opportunityId);
+
+  if (!opportunity || opportunity.stageId === targetStageId) {
+    return null;
+  }
+
+  return {
+    opportunityId,
+    previousStageId: opportunity.stageId,
+    targetStageId,
+  };
+}
+
+export async function applyPipelineStageDrop(
+  drop: { opportunityId: string; previousStageId: string; targetStageId: string },
+  setPipeline: Dispatch<SetStateAction<PipelineSummary | null>>,
+): Promise<void> {
+  const { opportunityId, previousStageId, targetStageId } = drop;
+
+  setPipeline((current) => {
+    if (!current) {
+      return current;
+    }
+    return {
+      ...current,
+      opportunities: (current.opportunities ?? []).map((opp) =>
+        opp.id === opportunityId ? { ...opp, stageId: targetStageId } : opp,
+      ),
+    };
+  });
+
+  try {
+    await patchOpportunityStage(opportunityId, { stageId: targetStageId });
+  } catch {
+    setPipeline((current) => {
+      if (!current) {
+        return current;
+      }
+      return {
+        ...current,
+        opportunities: (current.opportunities ?? []).map((opp) =>
+          opp.id === opportunityId ? { ...opp, stageId: previousStageId } : opp,
+        ),
+      };
+    });
+  }
 }
 
 function OpportunityPreview({
@@ -156,6 +307,13 @@ export function PipelineView() {
   const [errorMessage, setErrorMessage] = useState('');
   const [ownerFilter, setOwnerFilter] = useState<string>('Tümü');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -169,13 +327,24 @@ export function PipelineView() {
         }
 
         const activePipeline = pickDefaultPipeline(result.items);
-        if (!activePipeline || activePipeline.stages.length === 0) {
+        if (!activePipeline) {
           setPipeline(null);
           setState('empty');
           return;
         }
 
-        setPipeline(activePipeline);
+        const board = await getPipelineBoard(activePipeline.id);
+        if (cancelled) {
+          return;
+        }
+
+        if (board.stages.length === 0) {
+          setPipeline(null);
+          setState('empty');
+          return;
+        }
+
+        setPipeline(board);
         setState('success');
       } catch (error) {
         if (cancelled) {
@@ -227,6 +396,20 @@ export function PipelineView() {
     return opportunities.filter((opp) => opp.owner === ownerFilter);
   }, [opportunities, ownerFilter]);
 
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveDragId(null);
+
+      const drop = resolveStageDrop(event.active.id, event.over?.id, opportunities);
+      if (!drop || !pipeline) {
+        return;
+      }
+
+      void applyPipelineStageDrop(drop, setPipeline);
+    },
+    [opportunities, pipeline],
+  );
+
   const isClosedStage = (stageId: string) => {
     const code = stageById.get(stageId)?.code;
     return code === 'won' || code === 'lost';
@@ -250,6 +433,13 @@ export function PipelineView() {
   const selectedStage = selectedOpportunity
     ? stageById.get(selectedOpportunity.stageId)
     : undefined;
+  const activeDragOpportunity = activeDragId
+    ? opportunities.find((opp) => opp.id === activeDragId)
+    : undefined;
+  const activeDragStageColor =
+    activeDragOpportunity && stageById.get(activeDragOpportunity.stageId)?.color
+      ? (stageById.get(activeDragOpportunity.stageId)?.color ?? '#ff6a00')
+      : '#ff6a00';
 
   if (state === 'loading') {
     return (
@@ -392,57 +582,48 @@ export function PipelineView() {
           </label>
         </div>
 
-        <div className="pipeline-board" data-testid="pipeline-board">
-          {stages.map((stage) => {
-            const cards = filteredOpportunities.filter((opp) => opp.stageId === stage.id);
-            const total = cards.reduce((sum, opp) => sum + opp.amount, 0);
-            const stageColor = stage.color ?? '#ff6a00';
+        <div data-testid="pipeline-board-dnd">
+          <DndContext
+            sensors={sensors}
+            onDragStart={(event) => setActiveDragId(String(event.active.id))}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="pipeline-board" data-testid="pipeline-board">
+              {stages.map((stage) => {
+                const cards = filteredOpportunities.filter((opp) => opp.stageId === stage.id);
+                const stageColor = stage.color ?? '#ff6a00';
 
-            return (
-              <div
-                key={stage.id}
-                className="pipeline-column"
-                data-testid={`pipeline-column-${stage.code}`}
-              >
-                <header
-                  className="pipeline-column__header"
-                  style={{ borderTopColor: stageColor }}
+                return (
+                  <DroppableColumn
+                    key={stage.id}
+                    stage={stage}
+                    stageColor={stageColor}
+                    cards={cards}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                  />
+                );
+              })}
+            </div>
+            <DragOverlay>
+              {activeDragOpportunity ? (
+                <article
+                  className="pipeline-card pipeline-card--dragging"
+                  style={{ borderLeftColor: activeDragStageColor }}
                 >
-                  <div>
-                    <h2 className="pipeline-column__title">{stage.name}</h2>
-                    <p className="pipeline-column__count">
-                      {cards.length} · {formatTryAmount(total)}
-                    </p>
-                  </div>
-                  <span
-                    className="pipeline-column__badge"
-                    style={{ background: `${stageColor}22`, color: stageColor }}
-                  >
-                    {cards.length}
-                  </span>
-                </header>
-                <div className="pipeline-column__cards">
-                  {cards.map((opp) => (
-                    <OpportunityCard
-                      key={opp.id}
-                      opportunity={opp}
-                      stageColor={stageColor}
-                      selected={selectedId === opp.id}
-                      onSelect={() => setSelectedId(opp.id)}
-                    />
-                  ))}
-                  {cards.length === 0 ? (
-                    <p className="pipeline-column__empty">Bu aşamada fırsat yok</p>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
+                  <OpportunityCardContent
+                    opportunity={activeDragOpportunity}
+                    stageColor={activeDragStageColor}
+                  />
+                </article>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
 
         <footer className="entity-footer">
           <p className="entity-footer__hint" data-testid="pipeline-api-notice">
-            Canlı API — sürükle-bırak Sprint-08 kapsamında.
+            Canlı API — kartları sürükleyerek aşama değiştirebilirsiniz.
           </p>
         </footer>
       </section>

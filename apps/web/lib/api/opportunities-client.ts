@@ -93,3 +93,19 @@ export async function getOpportunity(id: string): Promise<OpportunityDetail> {
   const response = await authenticatedFetch(`/api/v1/opportunities/${id}`);
   return parseApiResponse<OpportunityDetail>(response);
 }
+
+export interface PatchOpportunityStageInput {
+  stageId: string;
+}
+
+export async function patchOpportunityStage(
+  id: string,
+  input: PatchOpportunityStageInput,
+): Promise<OpportunitySummary> {
+  const response = await authenticatedFetch(`/api/v1/opportunities/${id}/stage`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return parseApiResponse<OpportunitySummary>(response);
+}

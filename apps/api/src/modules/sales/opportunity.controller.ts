@@ -23,6 +23,7 @@ import type { RequestTenantContext } from '../../common/tenant/tenant-context.ty
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { ListOpportunitiesQueryDto } from './dto/list-opportunities-query.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import { UpdateOpportunityStageDto } from './dto/update-opportunity-stage.dto';
 import { OpportunityService } from './opportunity.service';
 
 @Controller('opportunities')
@@ -59,6 +60,17 @@ export class OpportunityController {
     @Body() dto: CreateOpportunityDto,
   ) {
     const opportunity = await this.opportunityService.createOpportunity(context, dto);
+    return okEnvelope(opportunity);
+  }
+
+  @Patch(':id/stage')
+  @RequirePermissions(PERMISSIONS.OPPORTUNITY_UPDATE_STAGE)
+  async updateStage(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateOpportunityStageDto,
+  ) {
+    const opportunity = await this.opportunityService.updateOpportunityStage(context, id, dto);
     return okEnvelope(opportunity);
   }
 

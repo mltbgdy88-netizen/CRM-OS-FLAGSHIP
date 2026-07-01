@@ -167,3 +167,9 @@ export async function listPipelines(): Promise<PipelineListResult> {
   const raw = await parseApiResponse<RawPipelineList>(response);
   return { items: normalizePipelineList(raw) };
 }
+
+export async function getPipelineBoard(pipelineId: string): Promise<PipelineSummary> {
+  const response = await authenticatedFetch(`/api/v1/pipelines/${pipelineId}/board`);
+  const raw = await parseApiResponse<unknown>(response);
+  return normalizePipeline(raw);
+}

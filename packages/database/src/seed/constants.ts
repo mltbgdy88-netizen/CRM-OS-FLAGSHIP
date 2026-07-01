@@ -58,6 +58,8 @@ export const SEED_IDS = {
   permissionPipelineManage: '30000000-0000-4000-8000-000000000013',
   permissionOpportunityRead: '30000000-0000-4000-8000-000000000014',
   permissionOpportunityUpdate: '30000000-0000-4000-8000-000000000015',
+  permissionPipelineRead: '30000000-0000-4000-8000-000000000016',
+  permissionOpportunityUpdateStage: '30000000-0000-4000-8000-000000000017',
   pipelineDefault: '60000000-0000-4000-8000-000000000001',
   pipelineTenantB: '60000000-0000-4000-8000-000000000002',
   pipelineStageDefaultNew: '61000000-0000-4000-8000-000000000001',
@@ -210,10 +212,22 @@ export const SEED_SALES_PERMISSIONS = [
     description: 'Update opportunities and related detail data',
   },
   {
+    id: SEED_IDS.permissionPipelineRead,
+    code: 'pipeline.read',
+    module: 'sales',
+    description: 'Read pipelines and stages',
+  },
+  {
     id: SEED_IDS.permissionPipelineManage,
     code: 'pipeline.manage',
     module: 'sales',
     description: 'Manage pipelines and stages',
+  },
+  {
+    id: SEED_IDS.permissionOpportunityUpdateStage,
+    code: 'opportunity.update.stage',
+    module: 'sales',
+    description: 'Move opportunities between pipeline stages',
   },
 ] as const;
 

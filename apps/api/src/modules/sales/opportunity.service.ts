@@ -17,6 +17,7 @@ import type { ConvertLeadDto } from './dto/convert-lead.dto';
 import type { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import type { ListOpportunitiesQueryDto } from './dto/list-opportunities-query.dto';
 import type { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import type { UpdateOpportunityStageDto } from './dto/update-opportunity-stage.dto';
 import { mapOpportunityDetail, mapOpportunitySummary } from './opportunity.mapper';
 import { OpportunityRepository } from './opportunity.repository';
 import { PipelineRepository } from './pipeline.repository';
@@ -61,6 +62,26 @@ export class OpportunityService {
     }
 
     return mapOpportunityDetail(opportunity);
+  }
+
+  async updateOpportunityStage(
+    context: RequestTenantContext,
+    id: string,
+    dto: UpdateOpportunityStageDto,
+  ) {
+    const stage = await this.pipelineRepository.findStageById(context, dto.stageId);
+    if (!stage) {
+      throw new NotFoundException('Pipeline stage not found');
+    }
+
+    const updateDto: UpdateOpportunityDto = { stageId: dto.stageId };
+    if (stage.code === 'won') {
+      updateDto.status = 'won';
+    } else if (stage.code === 'lost') {
+      updateDto.status = 'lost';
+    }
+
+    return this.updateOpportunity(context, id, updateDto);
   }
 
   async updateOpportunity(

@@ -10,6 +10,10 @@ export const PERMISSIONS = {
   CUSTOMER_DELETE: 'customer.delete',
   CUSTOMER_TIMELINE_READ: 'customer.timeline.read',
   CUSTOMER_EXPORT: 'customer.export',
+  LEAD_READ: 'lead.read',
+  LEAD_CREATE: 'lead.create',
+  LEAD_ASSIGN: 'lead.assign',
+  LEAD_UPDATE: 'lead.update',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

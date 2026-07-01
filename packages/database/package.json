@@ -9,7 +9,7 @@
     "lint": "eslint src --max-warnings 0",
     "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:rls": "node ./scripts/require-database-url.mjs && vitest run src/rls.test.ts src/rls-crm.test.ts src/rls-crm-360.test.ts",
+    "test:rls": "node ./scripts/require-database-url.mjs && vitest run src/rls.test.ts src/rls-crm.test.ts src/rls-crm-360.test.ts src/rls-lead.test.ts",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed/run.ts",
     "prisma:generate": "prisma generate",

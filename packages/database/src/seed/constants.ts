@@ -37,6 +37,22 @@ export const SEED_IDS = {
   ltvTenantB: '46000000-0000-4000-8000-000000000002',
   permissionCustomerTimelineRead: '30000000-0000-4000-8000-000000000005',
   permissionCustomerExport: '30000000-0000-4000-8000-000000000006',
+  permissionLeadRead: '30000000-0000-4000-8000-000000000007',
+  permissionLeadCreate: '30000000-0000-4000-8000-000000000008',
+  permissionLeadAssign: '30000000-0000-4000-8000-000000000009',
+  permissionLeadUpdate: '30000000-0000-4000-8000-000000000010',
+  leadSourceDefault: '50000000-0000-4000-8000-000000000001',
+  leadSourceTenantB: '50000000-0000-4000-8000-000000000002',
+  leadDefault: '51000000-0000-4000-8000-000000000001',
+  leadTenantB: '51000000-0000-4000-8000-000000000002',
+  leadTagDefault: '52000000-0000-4000-8000-000000000001',
+  leadTagTenantB: '52000000-0000-4000-8000-000000000002',
+  leadScoreDefault: '53000000-0000-4000-8000-000000000001',
+  leadScoreTenantB: '53000000-0000-4000-8000-000000000002',
+  leadAssignmentDefault: '54000000-0000-4000-8000-000000000001',
+  leadAssignmentTenantB: '54000000-0000-4000-8000-000000000002',
+  leadActivityDefault: '55000000-0000-4000-8000-000000000001',
+  leadActivityTenantB: '55000000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -105,6 +121,33 @@ export const SEED_CUSTOMER_360_PERMISSIONS = [
     code: 'customer.export',
     module: 'customer',
     description: 'Export customer 360 data',
+  },
+] as const;
+
+export const SEED_LEAD_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionLeadRead,
+    code: 'lead.read',
+    module: 'lead',
+    description: 'Read leads',
+  },
+  {
+    id: SEED_IDS.permissionLeadCreate,
+    code: 'lead.create',
+    module: 'lead',
+    description: 'Create leads',
+  },
+  {
+    id: SEED_IDS.permissionLeadAssign,
+    code: 'lead.assign',
+    module: 'lead',
+    description: 'Assign leads to tenant members',
+  },
+  {
+    id: SEED_IDS.permissionLeadUpdate,
+    code: 'lead.update',
+    module: 'lead',
+    description: 'Update leads and status',
   },
 ] as const;
 

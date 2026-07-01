@@ -1,25 +1,22 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ApiClientError } from '../lib/api/authenticated-fetch';
+import { listLeads, type LeadSummary } from '../lib/api/leads-client';
 import {
   leadStatusLabel,
   leadStatusPillClass,
-  MOCK_LEADS,
   scoreTone,
   type LeadStatus,
-  type MockLead,
 } from '../lib/mock/leads-mock';
-import { MockPreviewBadge } from './mock-preview-badge';
+import { TableSkeleton } from './table-skeleton';
 
 type StatusFilter = 'all' | LeadStatus;
-type SourceFilter = 'all' | string;
 
 interface LeadListViewProps {
   onSelectLead?: (id: string) => void;
   selectedLeadId?: string | null;
 }
-
-const SOURCES = ['Web formu', 'LinkedIn', 'Referans', 'Fuar', 'Soğuk arama'] as const;
 
 function ScoreBadge({ score }: { score: number }) {
   const tone = scoreTone(score);
@@ -30,47 +27,95 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
+function ownerLabel(lead: LeadSummary): string {
+  return lead.assignedUserId ? 'Atanmış' : 'Atanmamış';
+}
+
 export function LeadListView({ onSelectLead, selectedLeadId }: LeadListViewProps) {
+  const [state, setState] = useState<'loading' | 'empty' | 'error' | 'forbidden' | 'success'>(
+    'loading',
+  );
+  const [items, setItems] = useState<LeadSummary[]>([]);
+  const [total, setTotal] = useState(0);
+  const [errorMessage, setErrorMessage] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setState('loading');
+      try {
+        const result = await listLeads(1, 50);
+        if (cancelled) {
+          return;
+        }
+        setItems(result.items);
+        setTotal(result.total);
+        setState(result.items.length === 0 ? 'empty' : 'success');
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        if (error instanceof ApiClientError && error.kind === 'forbidden') {
+          setState('forbidden');
+          return;
+        }
+        setErrorMessage(error instanceof Error ? error.message : 'Leadler yüklenemedi');
+        setState('error');
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sources = useMemo(
+    () => [...new Set(items.map((lead) => lead.source.name))].sort(),
+    [items],
+  );
+
   const owners = useMemo(
-    () => [...new Set(MOCK_LEADS.map((lead) => lead.owner))].sort(),
-    [],
+    () => [...new Set(items.map((lead) => ownerLabel(lead)))].sort(),
+    [items],
   );
 
   const filteredItems = useMemo(() => {
-    let result = MOCK_LEADS;
+    let result = items;
     if (statusFilter !== 'all') {
       result = result.filter((lead) => lead.status === statusFilter);
     }
     if (sourceFilter !== 'all') {
-      result = result.filter((lead) => lead.source === sourceFilter);
+      result = result.filter((lead) => lead.source.name === sourceFilter);
     }
     if (ownerFilter !== 'all') {
-      result = result.filter((lead) => lead.owner === ownerFilter);
+      result = result.filter((lead) => ownerLabel(lead) === ownerFilter);
     }
     const query = searchQuery.trim().toLowerCase();
     if (query) {
       result = result.filter(
         (lead) =>
-          lead.displayName.toLowerCase().includes(query) ||
-          lead.company.toLowerCase().includes(query) ||
-          lead.email.toLowerCase().includes(query),
+          lead.fullName.toLowerCase().includes(query) ||
+          lead.companyName.toLowerCase().includes(query) ||
+          (lead.email ?? '').toLowerCase().includes(query),
       );
     }
     return result;
-  }, [ownerFilter, searchQuery, sourceFilter, statusFilter]);
+  }, [items, ownerFilter, searchQuery, sourceFilter, statusFilter]);
 
-  const qualifiedCount = MOCK_LEADS.filter((lead) => lead.status === 'qualified').length;
-  const newCount = MOCK_LEADS.filter((lead) => lead.status === 'new').length;
-  const avgScore = Math.round(
-    MOCK_LEADS.reduce((sum, lead) => sum + lead.score, 0) / MOCK_LEADS.length,
-  );
+  const qualifiedCount = items.filter((lead) => lead.status === 'qualified').length;
+  const newCount = items.filter((lead) => lead.status === 'new').length;
+  const avgScore =
+    items.length === 0
+      ? 0
+      : Math.round(items.reduce((sum, lead) => sum + lead.score, 0) / items.length);
 
-  function handleRowClick(lead: MockLead) {
+  function handleRowClick(lead: LeadSummary) {
     onSelectLead?.(lead.id);
   }
 
@@ -81,16 +126,67 @@ export function LeadListView({ onSelectLead, selectedLeadId }: LeadListViewProps
     setSearchQuery('');
   }
 
+  if (state === 'loading') {
+    return (
+      <section className="workspace-card entity-page" data-testid="lead-list">
+        <header className="entity-page__header">
+          <div className="entity-page__title-block">
+            <h1 className="entity-page__title">Leadler</h1>
+          </div>
+        </header>
+        <TableSkeleton rows={6} data-testid="lead-list-loading" />
+      </section>
+    );
+  }
+
+  if (state === 'forbidden') {
+    return (
+      <section className="workspace-card entity-page" data-testid="lead-list">
+        <p className="state-message state-message--forbidden" data-testid="lead-list-forbidden">
+          Lead listesini görüntüleme yetkiniz yok.
+        </p>
+      </section>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <section className="workspace-card entity-page" data-testid="lead-list">
+        <p className="state-message state-message--error" data-testid="lead-list-error">
+          {errorMessage}
+        </p>
+      </section>
+    );
+  }
+
+  if (state === 'empty') {
+    return (
+      <section className="workspace-card entity-page" data-testid="lead-list">
+        <header className="entity-page__header">
+          <div className="entity-page__title-block">
+            <h1 className="entity-page__title">Leadler</h1>
+            <span className="entity-page__count">0 kayıt</span>
+          </div>
+        </header>
+        <div className="empty-state" data-testid="lead-list-empty">
+          <span className="empty-state__icon" aria-hidden>
+            ◇
+          </span>
+          <p>Henüz lead kaydı yok.</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="workspace-card entity-page" data-testid="lead-list">
       <header className="entity-page__header">
         <div className="entity-page__title-block">
           <h1 className="entity-page__title">Leadler</h1>
-          <span className="entity-page__count">{MOCK_LEADS.length} kayıt</span>
+          <span className="entity-page__count">{total} kayıt</span>
         </div>
         <div className="entity-page__header-actions">
-          <MockPreviewBadge />
-          <button type="button" className="btn-accent-green" disabled title="Sprint-05 ile aktif olacak">
+          <button type="button" className="btn-accent-green" disabled title="Sprint-05 sonrası">
             + Yeni Lead
           </button>
         </div>
@@ -103,7 +199,7 @@ export function LeadListView({ onSelectLead, selectedLeadId }: LeadListViewProps
           </span>
           <div>
             <p className="kpi-card__label">Toplam</p>
-            <p className="kpi-card__value">{MOCK_LEADS.length}</p>
+            <p className="kpi-card__value">{items.length}</p>
           </div>
         </article>
         <article className="kpi-card">
@@ -158,7 +254,7 @@ export function LeadListView({ onSelectLead, selectedLeadId }: LeadListViewProps
             aria-label="Kaynak filtresi"
           >
             <option value="all">Tümü</option>
-            {SOURCES.map((source) => (
+            {sources.map((source) => (
               <option key={source} value={source}>
                 {source}
               </option>
@@ -246,17 +342,17 @@ export function LeadListView({ onSelectLead, selectedLeadId }: LeadListViewProps
                   <td>
                     <div className="data-table__primary">
                       <span className="data-table__avatar" aria-hidden>
-                        {lead.displayName.charAt(0).toUpperCase()}
+                        {lead.fullName.charAt(0).toUpperCase()}
                       </span>
-                      <span className="data-table__link">{lead.displayName}</span>
+                      <span className="data-table__link">{lead.fullName}</span>
                     </div>
                   </td>
-                  <td className="data-table__muted">{lead.company}</td>
-                  <td className="data-table__muted">{lead.source}</td>
-                  <td className="data-table__muted">{lead.owner}</td>
+                  <td className="data-table__muted">{lead.companyName}</td>
+                  <td className="data-table__muted">{lead.source.name}</td>
+                  <td className="data-table__muted">{ownerLabel(lead)}</td>
                   <td>
-                    <span className={leadStatusPillClass(lead.status)}>
-                      {leadStatusLabel(lead.status)}
+                    <span className={leadStatusPillClass(lead.status as LeadStatus)}>
+                      {leadStatusLabel(lead.status as LeadStatus)}
                     </span>
                   </td>
                   <td>
@@ -273,8 +369,8 @@ export function LeadListView({ onSelectLead, selectedLeadId }: LeadListViewProps
       )}
 
       <footer className="entity-footer">
-        <p className="entity-footer__hint" data-testid="lead-mock-notice">
-          Demo veri — gerçek API Sprint-05 ile bağlanacak. Toplu işlem kapalıdır.
+        <p className="entity-footer__hint" data-testid="lead-api-notice">
+          Canlı API — toplu işlem kapalıdır.
         </p>
       </footer>
     </section>

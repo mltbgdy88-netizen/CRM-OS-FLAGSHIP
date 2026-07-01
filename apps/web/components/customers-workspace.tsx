@@ -47,7 +47,7 @@ export function CustomersWorkspace({ selectedCustomerId = null }: CustomersWorks
 
       <SlideOver
         open={Boolean(selectedCustomerId)}
-        title={detailTitle ?? 'Customer'}
+        title={detailTitle ?? 'Müşteri Detayı'}
         onClose={closeCustomer}
         testId="customer-slide-over"
       >
@@ -63,7 +63,7 @@ export function CustomersWorkspace({ selectedCustomerId = null }: CustomersWorks
 
       <GlassModal
         open={createOpen}
-        title="New customer"
+        title="Yeni Müşteri"
         onClose={() => setCreateOpen(false)}
         testId="customer-create-modal"
       >

@@ -43,7 +43,7 @@ CSS variables live in `apps/web/app/globals.css` (`--crm-*`).
 |-------|--------|
 | **v4.0** | Tokens, login split hero, shell, LIVE customer routes |
 | **v4.1** | Mockup fidelity: expanded sidebar, SVG nav, TR copy, entity page layout |
-| **v4.2+** | MOCK screens per inventory (dashboard, leads, pipeline…) |
+| **v4.2** | Customer 360 slide-over hero/metrics/tabs, TR create form, AI dock polish |
 
 ## 5. Out of scope (unchanged)
 

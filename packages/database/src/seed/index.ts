@@ -12,6 +12,7 @@ export { seedLeadData } from './lead';
 export { seedQuoteData } from './quote';
 export { seedQuotePdfApprovalData } from './quote-pdf-approval';
 export { seedSalesData } from './sales';
+export { seedTaskData } from './task';
 export {
   SEED_CUSTOMER_360_PERMISSIONS,
   SEED_CUSTOMER_PERMISSIONS,
@@ -21,6 +22,7 @@ export {
   SEED_QUOTE_PERMISSIONS,
   SEED_QUOTE_PDF_PERMISSIONS,
   SEED_SALES_PERMISSIONS,
+  SEED_TASK_PERMISSIONS,
 } from './constants';
 
 function hashPassword(password: string): string {

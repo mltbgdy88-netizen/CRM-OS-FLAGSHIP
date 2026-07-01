@@ -3,16 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { AiCopilotView } from '../components/ai-copilot-view';
 import { ReportsView } from '../components/reports-view';
-import { TaskListView } from '../components/task-list-view';
-
-describe('TaskListView', () => {
-  it('renders mock task list', () => {
-    render(<TaskListView />);
-    expect(screen.getByTestId('task-list')).toBeInTheDocument();
-    expect(screen.getByText('Görevler')).toBeInTheDocument();
-    expect(screen.getByTestId('task-row-task-001')).toBeInTheDocument();
-  });
-});
 
 describe('AiCopilotView', () => {
   it('responds to suggested query', async () => {

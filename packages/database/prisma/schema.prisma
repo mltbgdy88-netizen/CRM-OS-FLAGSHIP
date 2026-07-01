@@ -969,6 +969,168 @@ model QuoteStatusHistory {
   @@map("quote_status_history")
 }
 
+/// Tenant-owned task aggregate root.
+model Task {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  title          String    @db.VarChar(255)
+  description    String?
+  priority       String    @default("medium") @db.VarChar(30)
+  status         String    @default("pending") @db.VarChar(40)
+  dueAt          DateTime? @map("due_at") @db.Timestamptz(6)
+  relatedType    String?   @map("related_type") @db.VarChar(80)
+  relatedId      String?   @map("related_id") @db.Uuid
+  assignedUserId String?   @map("assigned_user_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedAt      DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy      String?   @map("updated_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+  version        Int       @default(1)
+
+  assignedUser User?          @relation("TaskAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  assignees    TaskAssignee[]
+  comments     TaskComment[]
+  files        TaskFile[]
+  reminders    TaskReminder[]
+  activities   Activity[]
+
+  @@index([tenantId], map: "idx_tasks_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_tasks_tenant_deleted")
+  @@index([assignedUserId], map: "idx_tasks_assigned_user_id")
+  @@index([relatedType, relatedId], map: "idx_tasks_related")
+  @@map("tasks")
+}
+
+/// Tenant-owned task assignee membership.
+model TaskAssignee {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  taskId    String    @map("task_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  isPrimary Boolean   @default(false) @map("is_primary")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy String?   @map("deleted_by") @db.Uuid
+  version   Int       @default(1)
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation("TaskAssigneeUser", fields: [userId], references: [id])
+
+  @@index([tenantId], map: "idx_task_assignees_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_task_assignees_tenant_deleted")
+  @@index([taskId], map: "idx_task_assignees_task_id")
+  @@index([userId], map: "idx_task_assignees_user_id")
+  @@map("task_assignees")
+}
+
+/// Tenant-owned task comment.
+model TaskComment {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  taskId       String    @map("task_id") @db.Uuid
+  body         String
+  authorUserId String?   @map("author_user_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy    String?   @map("created_by") @db.Uuid
+  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy    String?   @map("updated_by") @db.Uuid
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy    String?   @map("deleted_by") @db.Uuid
+  version      Int       @default(1)
+
+  task       Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorUser User? @relation("TaskCommentAuthor", fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId], map: "idx_task_comments_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_task_comments_tenant_deleted")
+  @@index([taskId], map: "idx_task_comments_task_id")
+  @@map("task_comments")
+}
+
+/// Tenant-owned task file metadata.
+model TaskFile {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  taskId     String    @map("task_id") @db.Uuid
+  fileName   String    @map("file_name") @db.VarChar(255)
+  mimeType   String    @map("mime_type") @db.VarChar(100)
+  storageKey String    @map("storage_key") @db.VarChar(500)
+  sizeBytes  BigInt    @default(0) @map("size_bytes")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_task_files_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_task_files_tenant_deleted")
+  @@index([taskId], map: "idx_task_files_task_id")
+  @@map("task_files")
+}
+
+/// Tenant-owned task reminder schedule.
+model TaskReminder {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  taskId    String    @map("task_id") @db.Uuid
+  remindAt  DateTime  @map("remind_at") @db.Timestamptz(6)
+  channel   String    @default("email") @db.VarChar(40)
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy String?   @map("deleted_by") @db.Uuid
+  version   Int       @default(1)
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_task_reminders_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_task_reminders_tenant_deleted")
+  @@index([taskId], map: "idx_task_reminders_task_id")
+  @@index([remindAt], map: "idx_task_reminders_remind_at")
+  @@map("task_reminders")
+}
+
+/// Tenant-owned CRM activity log entry.
+model Activity {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  activityType String    @map("activity_type") @db.VarChar(80)
+  title        String    @db.VarChar(255)
+  body         String?
+  relatedType  String?   @map("related_type") @db.VarChar(80)
+  relatedId    String?   @map("related_id") @db.Uuid
+  taskId       String?   @map("task_id") @db.Uuid
+  dueAt        DateTime? @map("due_at") @db.Timestamptz(6)
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy    String?   @map("created_by") @db.Uuid
+  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy    String?   @map("updated_by") @db.Uuid
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy    String?   @map("deleted_by") @db.Uuid
+  version      Int       @default(1)
+
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId], map: "idx_activities_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_activities_tenant_deleted")
+  @@index([taskId], map: "idx_activities_task_id")
+  @@index([relatedType, relatedId], map: "idx_activities_related")
+  @@map("activities")
+}
+
 /// Global identity — not tenant-scoped.
 model User {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -991,6 +1153,9 @@ model User {
   assignedLeads Lead[]        @relation("LeadAssignedUser")
   leadAssignments LeadAssignment[] @relation("LeadAssignmentUser")
   assignedOpportunities Opportunity[] @relation("OpportunityAssignedUser")
+  assignedTasks Task[]          @relation("TaskAssignedUser")
+  taskAssignees TaskAssignee[]  @relation("TaskAssigneeUser")
+  taskComments  TaskComment[]   @relation("TaskCommentAuthor")
 
   @@map("users")
 }

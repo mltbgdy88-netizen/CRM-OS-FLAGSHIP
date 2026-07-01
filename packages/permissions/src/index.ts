@@ -1,4 +1,4 @@
-/** Sprint-02 IAM + Sprint-03 Customer permission registry (global codes). */
+/** Sprint-02 IAM + Sprint-03 Customer + Sprint-06 Sales permission registry (global codes). */
 export const PERMISSIONS = {
   AUTH_LOGIN: 'auth.login',
   TENANT_MANAGE: 'tenant.manage',
@@ -14,6 +14,9 @@ export const PERMISSIONS = {
   LEAD_CREATE: 'lead.create',
   LEAD_ASSIGN: 'lead.assign',
   LEAD_UPDATE: 'lead.update',
+  LEAD_CONVERT: 'lead.convert',
+  OPPORTUNITY_CREATE: 'opportunity.create',
+  PIPELINE_MANAGE: 'pipeline.manage',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

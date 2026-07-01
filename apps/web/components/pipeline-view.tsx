@@ -1,18 +1,48 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ApiClientError } from '../lib/api/authenticated-fetch';
 import {
-  formatTryAmount,
-  getMockOpportunity,
-  MOCK_OPPORTUNITIES,
-  MOCK_PIPELINE_STAGES,
-  stageTotalAmount,
-  type MockOpportunity,
-} from '../lib/mock/pipeline-mock';
-import { MockPreviewBadge } from './mock-preview-badge';
+  listPipelines,
+  pickDefaultPipeline,
+  type OpportunitySummary,
+  type PipelineStageSummary,
+  type PipelineSummary,
+} from '../lib/api/pipelines-client';
+import { formatTryAmount } from '../lib/mock/pipeline-mock';
 import { SlideOver } from './slide-over';
+import { TableSkeleton } from './table-skeleton';
 
-const OWNERS = ['Tümü', 'Ahmet Yılmaz', 'Selin Yılmaz', 'Mehmet Ak'] as const;
+interface PipelineCardView {
+  id: string;
+  title: string;
+  company: string;
+  amount: number;
+  probability: number;
+  owner: string;
+  stageId: string;
+  nextActivityAt: string;
+  nextActivityLabel: string;
+}
+
+function ownerLabel(opportunity: OpportunitySummary): string {
+  return opportunity.assignedUserId ? 'Atanmış' : 'Atanmamış';
+}
+
+function mapOpportunityForCard(opportunity: OpportunitySummary): PipelineCardView {
+  return {
+    id: opportunity.id,
+    title: opportunity.title,
+    company: opportunity.companyName,
+    amount: opportunity.amount,
+    probability: opportunity.probability,
+    owner: ownerLabel(opportunity),
+    stageId: opportunity.stageId,
+    nextActivityAt:
+      opportunity.nextActivityAt ?? opportunity.updatedAt ?? opportunity.createdAt,
+    nextActivityLabel: opportunity.nextActivityLabel ?? opportunity.status,
+  };
+}
 
 function OpportunityCard({
   opportunity,
@@ -20,7 +50,7 @@ function OpportunityCard({
   selected,
   onSelect,
 }: {
-  opportunity: MockOpportunity;
+  opportunity: PipelineCardView;
   stageColor: string;
   selected: boolean;
   onSelect: () => void;
@@ -59,18 +89,24 @@ function OpportunityCard({
   );
 }
 
-function OpportunityPreview({ opportunity, onClose }: { opportunity: MockOpportunity; onClose: () => void }) {
-  const stage = MOCK_PIPELINE_STAGES.find((s) => s.id === opportunity.stageId);
-
+function OpportunityPreview({
+  opportunity,
+  stage,
+  onClose,
+}: {
+  opportunity: PipelineCardView;
+  stage: PipelineStageSummary | undefined;
+  onClose: () => void;
+}) {
   return (
     <div className="pipeline-preview" data-testid="pipeline-opportunity-preview">
       <header className="pipeline-preview__header">
         <h3>{opportunity.title}</h3>
         <span
           className="pipeline-preview__stage"
-          style={{ background: `${stage?.color ?? '#ff6a00'}22`, color: stage?.color }}
+          style={{ background: `${stage?.color ?? '#ff6a00'}22`, color: stage?.color ?? '#ff6a00' }}
         >
-          {stage?.name}
+          {stage?.name ?? '—'}
         </span>
       </header>
       <dl className="detail-info-grid">
@@ -113,18 +149,93 @@ function OpportunityPreview({ opportunity, onClose }: { opportunity: MockOpportu
 }
 
 export function PipelineView() {
+  const [state, setState] = useState<'loading' | 'empty' | 'error' | 'forbidden' | 'success'>(
+    'loading',
+  );
+  const [pipeline, setPipeline] = useState<PipelineSummary | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
   const [ownerFilter, setOwnerFilter] = useState<string>('Tümü');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setState('loading');
+      try {
+        const result = await listPipelines();
+        if (cancelled) {
+          return;
+        }
+
+        const activePipeline = pickDefaultPipeline(result.items);
+        if (!activePipeline || activePipeline.stages.length === 0) {
+          setPipeline(null);
+          setState('empty');
+          return;
+        }
+
+        setPipeline(activePipeline);
+        setState('success');
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        if (error instanceof ApiClientError && error.kind === 'forbidden') {
+          setState('forbidden');
+          return;
+        }
+        setErrorMessage(error instanceof Error ? error.message : 'Pipeline yüklenemedi');
+        setState('error');
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const stages = pipeline?.stages ?? [];
+  const opportunities = useMemo(
+    () => (pipeline?.opportunities ?? []).map(mapOpportunityForCard),
+    [pipeline],
+  );
+
+  const stageById = useMemo(
+    () => new Map(stages.map((stage) => [stage.id, stage])),
+    [stages],
+  );
+
+  const owners = useMemo(
+    () => ['Tümü', ...new Set(opportunities.map((opp) => opp.owner))].sort((a, b) => {
+      if (a === 'Tümü') {
+        return -1;
+      }
+      if (b === 'Tümü') {
+        return 1;
+      }
+      return a.localeCompare(b, 'tr');
+    }),
+    [opportunities],
+  );
+
   const filteredOpportunities = useMemo(() => {
     if (ownerFilter === 'Tümü') {
-      return MOCK_OPPORTUNITIES;
+      return opportunities;
     }
-    return MOCK_OPPORTUNITIES.filter((opp) => opp.owner === ownerFilter);
-  }, [ownerFilter]);
+    return opportunities.filter((opp) => opp.owner === ownerFilter);
+  }, [opportunities, ownerFilter]);
+
+  const isClosedStage = (stageId: string) => {
+    const code = stageById.get(stageId)?.code;
+    return code === 'won' || code === 'lost';
+  };
+
+  const isWonStage = (stageId: string) => stageById.get(stageId)?.code === 'won';
 
   const openPipelineValue = filteredOpportunities
-    .filter((opp) => opp.stageId !== 'won' && opp.stageId !== 'lost')
+    .filter((opp) => !isClosedStage(opp.stageId))
     .reduce((sum, opp) => sum + opp.amount, 0);
 
   const avgProbability = Math.round(
@@ -132,8 +243,65 @@ export function PipelineView() {
       Math.max(1, filteredOpportunities.length),
   );
 
-  const wonThisMonth = filteredOpportunities.filter((opp) => opp.stageId === 'won').length;
-  const selectedOpportunity = selectedId ? getMockOpportunity(selectedId) : undefined;
+  const wonCount = filteredOpportunities.filter((opp) => isWonStage(opp.stageId)).length;
+  const selectedOpportunity = selectedId
+    ? opportunities.find((opp) => opp.id === selectedId)
+    : undefined;
+  const selectedStage = selectedOpportunity
+    ? stageById.get(selectedOpportunity.stageId)
+    : undefined;
+
+  if (state === 'loading') {
+    return (
+      <section className="workspace-card entity-page pipeline-page" data-testid="pipeline-page">
+        <header className="entity-page__header">
+          <div className="entity-page__title-block">
+            <h1 className="entity-page__title">Satış Pipeline</h1>
+          </div>
+        </header>
+        <TableSkeleton rows={4} columns={3} testId="pipeline-loading" />
+      </section>
+    );
+  }
+
+  if (state === 'forbidden') {
+    return (
+      <section className="workspace-card entity-page pipeline-page" data-testid="pipeline-page">
+        <p className="state-message state-message--forbidden" data-testid="pipeline-forbidden">
+          Pipeline görüntüleme yetkiniz yok.
+        </p>
+      </section>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <section className="workspace-card entity-page pipeline-page" data-testid="pipeline-page">
+        <p className="state-message state-message--error" data-testid="pipeline-error">
+          {errorMessage}
+        </p>
+      </section>
+    );
+  }
+
+  if (state === 'empty') {
+    return (
+      <section className="workspace-card entity-page pipeline-page" data-testid="pipeline-page">
+        <header className="entity-page__header">
+          <div className="entity-page__title-block">
+            <h1 className="entity-page__title">Satış Pipeline</h1>
+            <span className="entity-page__count">0 pipeline</span>
+          </div>
+        </header>
+        <div className="empty-state" data-testid="pipeline-empty">
+          <span className="empty-state__icon" aria-hidden>
+            ◇
+          </span>
+          <p>Henüz pipeline tanımı yok.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>
@@ -144,7 +312,6 @@ export function PipelineView() {
             <span className="entity-page__count">{filteredOpportunities.length} fırsat</span>
           </div>
           <div className="entity-page__header-actions">
-            <MockPreviewBadge />
             <button type="button" className="btn-accent-green" disabled title="Sprint-06 ile aktif olacak">
               + Yeni Fırsat
             </button>
@@ -185,7 +352,7 @@ export function PipelineView() {
             </span>
             <div>
               <p className="kpi-card__label">Kazanılan</p>
-              <p className="kpi-card__value">{wonThisMonth}</p>
+              <p className="kpi-card__value">{wonCount}</p>
             </div>
           </article>
         </div>
@@ -193,8 +360,12 @@ export function PipelineView() {
         <div className="entity-page__filters">
           <label className="entity-page__filter">
             <span className="entity-page__filter-label">Pipeline</span>
-            <select defaultValue="default" aria-label="Pipeline seçimi" disabled>
-              <option value="default">Ana Satış Pipeline</option>
+            <select
+              value={pipeline?.id ?? 'default'}
+              aria-label="Pipeline seçimi"
+              disabled
+            >
+              <option value={pipeline?.id ?? 'default'}>{pipeline?.name ?? 'Pipeline'}</option>
             </select>
           </label>
           <label className="entity-page__filter">
@@ -204,7 +375,7 @@ export function PipelineView() {
               onChange={(event) => setOwnerFilter(event.target.value)}
               aria-label="Sahip filtresi"
             >
-              {OWNERS.map((owner) => (
+              {owners.map((owner) => (
                 <option key={owner} value={owner}>
                   {owner}
                 </option>
@@ -213,7 +384,7 @@ export function PipelineView() {
           </label>
           <label className="entity-page__filter">
             <span className="entity-page__filter-label">Dönem</span>
-            <select defaultValue="quarter" aria-label="Dönem filtresi">
+            <select defaultValue="quarter" aria-label="Dönem filtresi" disabled>
               <option value="month">Bu ay</option>
               <option value="quarter">Bu çeyrek</option>
               <option value="year">Bu yıl</option>
@@ -222,15 +393,20 @@ export function PipelineView() {
         </div>
 
         <div className="pipeline-board" data-testid="pipeline-board">
-          {MOCK_PIPELINE_STAGES.map((stage) => {
+          {stages.map((stage) => {
             const cards = filteredOpportunities.filter((opp) => opp.stageId === stage.id);
-            const total = stageTotalAmount(stage.id);
+            const total = cards.reduce((sum, opp) => sum + opp.amount, 0);
+            const stageColor = stage.color ?? '#ff6a00';
 
             return (
-              <div key={stage.id} className="pipeline-column" data-testid={`pipeline-column-${stage.id}`}>
+              <div
+                key={stage.id}
+                className="pipeline-column"
+                data-testid={`pipeline-column-${stage.code}`}
+              >
                 <header
                   className="pipeline-column__header"
-                  style={{ borderTopColor: stage.color }}
+                  style={{ borderTopColor: stageColor }}
                 >
                   <div>
                     <h2 className="pipeline-column__title">{stage.name}</h2>
@@ -238,7 +414,10 @@ export function PipelineView() {
                       {cards.length} · {formatTryAmount(total)}
                     </p>
                   </div>
-                  <span className="pipeline-column__badge" style={{ background: `${stage.color}22`, color: stage.color }}>
+                  <span
+                    className="pipeline-column__badge"
+                    style={{ background: `${stageColor}22`, color: stageColor }}
+                  >
                     {cards.length}
                   </span>
                 </header>
@@ -247,7 +426,7 @@ export function PipelineView() {
                     <OpportunityCard
                       key={opp.id}
                       opportunity={opp}
-                      stageColor={stage.color}
+                      stageColor={stageColor}
                       selected={selectedId === opp.id}
                       onSelect={() => setSelectedId(opp.id)}
                     />
@@ -262,8 +441,8 @@ export function PipelineView() {
         </div>
 
         <footer className="entity-footer">
-          <p className="entity-footer__hint" data-testid="pipeline-mock-notice">
-            Demo kanban — gerçek API Sprint-06 ile bağlanacak. Sürükle-bırak Sprint-06 kapsamında.
+          <p className="entity-footer__hint" data-testid="pipeline-api-notice">
+            Canlı API — sürükle-bırak Sprint-08 kapsamında.
           </p>
         </footer>
       </section>
@@ -277,6 +456,7 @@ export function PipelineView() {
         {selectedOpportunity ? (
           <OpportunityPreview
             opportunity={selectedOpportunity}
+            stage={selectedStage}
             onClose={() => setSelectedId(null)}
           />
         ) : null}

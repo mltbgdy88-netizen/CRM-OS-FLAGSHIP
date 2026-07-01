@@ -12,6 +12,8 @@ import { DomainEventPublisher } from '../iam/services/audit.service';
 import { PermissionService } from '../iam/services/permission.service';
 import { mapLeadSummary } from './lead.mapper';
 import { LeadRepository } from './lead.repository';
+import type { ConvertLeadDto } from '../sales/dto/convert-lead.dto';
+import { OpportunityService } from '../sales/opportunity.service';
 import type { CreateLeadDto } from './dto/create-lead.dto';
 import type { ListLeadsQueryDto } from './dto/list-leads-query.dto';
 import type { UpdateLeadDto } from './dto/update-lead.dto';
@@ -27,6 +29,7 @@ export class LeadService {
     private readonly iamRepository: IamRepository,
     private readonly permissionService: PermissionService,
     private readonly eventPublisher: DomainEventPublisher,
+    private readonly opportunityService: OpportunityService,
   ) {}
 
   async listLeads(context: RequestTenantContext, query: ListLeadsQueryDto) {
@@ -232,6 +235,10 @@ export class LeadService {
     }
 
     return mapLeadSummary(lead);
+  }
+
+  async convertLead(context: RequestTenantContext, id: string, dto: ConvertLeadDto) {
+    return this.opportunityService.convertLead(context, id, dto);
   }
 
   private async assertSourceExists(context: RequestTenantContext, sourceId: string) {

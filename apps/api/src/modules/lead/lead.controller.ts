@@ -20,6 +20,7 @@ import {
 } from '../../common/tenant/tenant-context.interceptor';
 import { TenantContextParam } from '../../common/tenant/tenant-context.decorator';
 import type { RequestTenantContext } from '../../common/tenant/tenant-context.types';
+import { ConvertLeadDto } from '../sales/dto/convert-lead.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { ListLeadsQueryDto } from './dto/list-leads-query.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -61,5 +62,16 @@ export class LeadController {
   ) {
     const lead = await this.leadService.updateLead(context, id, dto);
     return okEnvelope(lead);
+  }
+
+  @Post(':id/convert')
+  @RequirePermissions(PERMISSIONS.LEAD_CONVERT)
+  async convert(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConvertLeadDto,
+  ) {
+    const opportunity = await this.leadService.convertLead(context, id, dto);
+    return okEnvelope(opportunity);
   }
 }

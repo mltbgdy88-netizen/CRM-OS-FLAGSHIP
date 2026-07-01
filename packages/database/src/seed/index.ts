@@ -9,12 +9,14 @@ import {
 export { seedCrm360Data } from './crm-360';
 export { seedCrmData } from './crm';
 export { seedLeadData } from './lead';
+export { seedSalesData } from './sales';
 export {
   SEED_CUSTOMER_360_PERMISSIONS,
   SEED_CUSTOMER_PERMISSIONS,
   SEED_IDS,
   SEED_LEAD_PERMISSIONS,
   SEED_PERMISSIONS,
+  SEED_SALES_PERMISSIONS,
 } from './constants';
 
 function hashPassword(password: string): string {

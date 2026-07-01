@@ -3,25 +3,22 @@ import Link from 'next/link';
 
 export default function HomePage() {
   return (
-    <main>
-      <h1>CRM OS</h1>
-      <p>Sprint-01 repository bootstrap web skeleton.</p>
-      <div className="card">
-        <p>
-          Service: <strong>{CRM_OS_SERVICE_NAME}</strong>
-        </p>
-        <p>
-          Version: <strong>{CRM_OS_VERSION}</strong>
-        </p>
-        <p>
-          <Link href="/health">View health/status placeholder</Link>
-        </p>
-        <p>
-          <Link href="/login">Sign in (Sprint-02 Slice A)</Link>
-        </p>
-        <p>
-          <Link href="/customers">Customer list (Sprint-03)</Link>
-        </p>
+    <main className="public-page">
+      <div className="public-page__card">
+        <p className="login-page__brand">CRM OS</p>
+        <h1>Akıllı CRM İşletim Sistemi</h1>
+        <p className="login-page__panel-sub">Yerel geliştirme giriş noktası</p>
+        <div className="public-page__links">
+          <p>
+            Servis: <strong>{CRM_OS_SERVICE_NAME}</strong> · v{CRM_OS_VERSION}
+          </p>
+          <Link href="/login" className="btn-primary btn-primary--full">
+            Giriş Yap →
+          </Link>
+          <Link href="/dashboard">Gösterge Paneli (oturum gerekir)</Link>
+          <Link href="/customers">Müşteriler (oturum gerekir)</Link>
+          <Link href="/health">Sistem durumu</Link>
+        </div>
       </div>
     </main>
   );

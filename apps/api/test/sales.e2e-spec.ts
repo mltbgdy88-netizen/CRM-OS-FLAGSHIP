@@ -21,6 +21,13 @@ const LIMITED_USER = {
   email: 'sales-read-only@default.local',
 };
 
+const TENANT_B_PIPELINE_USER = {
+  id: '57000000-0000-4000-8000-000000000011',
+  memberId: '57000000-0000-4000-8000-000000000012',
+  roleId: '57000000-0000-4000-8000-000000000013',
+  email: 'pipeline-only@tenant-b.local',
+};
+
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const describeSales = hasDatabase ? describe : describe.skip;
 
@@ -151,6 +158,90 @@ describeSales('Sales (e2e)', () => {
       },
     });
 
+    await prisma.user.upsert({
+      where: { id: TENANT_B_PIPELINE_USER.id },
+      update: {
+        email: TENANT_B_PIPELINE_USER.email,
+        passwordHash,
+        firstName: 'Pipeline',
+        lastName: 'Only',
+        status: 'active',
+      },
+      create: {
+        id: TENANT_B_PIPELINE_USER.id,
+        email: TENANT_B_PIPELINE_USER.email,
+        passwordHash,
+        firstName: 'Pipeline',
+        lastName: 'Only',
+        status: 'active',
+      },
+    });
+
+    const tenantBPipelineMembership = await prisma.tenantMember.upsert({
+      where: {
+        tenantId_userId: {
+          tenantId: SEED_IDS.tenantB,
+          userId: TENANT_B_PIPELINE_USER.id,
+        },
+      },
+      update: { status: 'active' },
+      create: {
+        id: TENANT_B_PIPELINE_USER.memberId,
+        tenantId: SEED_IDS.tenantB,
+        userId: TENANT_B_PIPELINE_USER.id,
+        status: 'active',
+        joinedAt: new Date(),
+      },
+    });
+
+    const tenantBPipelineRole = await prisma.role.upsert({
+      where: {
+        tenantId_code: {
+          tenantId: SEED_IDS.tenantB,
+          code: 'pipeline_manage_only',
+        },
+      },
+      update: { name: 'Pipeline Manage Only', deletedAt: null, deletedBy: null },
+      create: {
+        id: TENANT_B_PIPELINE_USER.roleId,
+        tenantId: SEED_IDS.tenantB,
+        code: 'pipeline_manage_only',
+        name: 'Pipeline Manage Only',
+        isSystem: false,
+        createdBy: SEED_IDS.userMemberB,
+      },
+    });
+
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: {
+          roleId: tenantBPipelineRole.id,
+          permissionId: SEED_IDS.permissionPipelineManage,
+        },
+      },
+      update: { tenantId: SEED_IDS.tenantB },
+      create: {
+        tenantId: SEED_IDS.tenantB,
+        roleId: tenantBPipelineRole.id,
+        permissionId: SEED_IDS.permissionPipelineManage,
+      },
+    });
+
+    await prisma.memberRole.upsert({
+      where: {
+        tenantMemberId_roleId: {
+          tenantMemberId: tenantBPipelineMembership.id,
+          roleId: tenantBPipelineRole.id,
+        },
+      },
+      update: { tenantId: SEED_IDS.tenantB },
+      create: {
+        tenantId: SEED_IDS.tenantB,
+        tenantMemberId: tenantBPipelineMembership.id,
+        roleId: tenantBPipelineRole.id,
+      },
+    });
+
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -231,26 +322,10 @@ describeSales('Sales (e2e)', () => {
   });
 
   it('GET /api/v1/pipelines enforces tenant isolation', async () => {
-    const prisma = getPrismaClient();
-    await prisma.memberRole.upsert({
-      where: {
-        tenantMemberId_roleId: {
-          tenantMemberId: SEED_IDS.memberB,
-          roleId: SEED_IDS.roleTenantB,
-        },
-      },
-      update: { tenantId: SEED_IDS.tenantB },
-      create: {
-        tenantId: SEED_IDS.tenantB,
-        tenantMemberId: SEED_IDS.memberB,
-        roleId: SEED_IDS.roleTenantB,
-      },
-    });
-
     const loginResponse = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({
-        email: 'member@tenant-b.local',
+        email: TENANT_B_PIPELINE_USER.email,
         password: SEED_ADMIN_PASSWORD,
         tenantSlug: 'tenant-b',
       })

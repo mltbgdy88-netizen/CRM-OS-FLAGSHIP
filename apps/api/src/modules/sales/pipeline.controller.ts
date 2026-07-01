@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { PERMISSIONS } from '@crm-os/permissions';
 import { JwtAuthGuard, PermissionGuard } from '../../common/auth/auth.guards';
 import { RequirePermissions } from '../../common/auth/require-permissions.decorator';

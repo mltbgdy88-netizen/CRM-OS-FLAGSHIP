@@ -194,17 +194,50 @@ async function loginAs(
   return loginResponse.body.data.accessToken;
 }
 
-async function createDraftQuote(app: INestApplication, accessToken: string) {
-  const response = await request(app.getHttpServer())
-    .post('/api/v1/quotes')
-    .set('Authorization', `Bearer ${accessToken}`)
-    .send({
-      customerId: SEED_IDS.customerDefault,
-      items: [{ name: 'Workflow test line', quantity: 1, unitPrice: 2500 }],
-    })
-    .expect(201);
+async function createDraftQuote(
+  _app: INestApplication,
+  _accessToken: string,
+): Promise<{ id: string; number: string; status: string }> {
+  const prisma = getPrismaClient();
+  const number = `Q-E2E-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-  return response.body.data as { id: string; number: string; status: string };
+  const quote = await prisma.quote.create({
+    data: {
+      tenantId: SEED_IDS.tenantDefault,
+      number,
+      customerId: SEED_IDS.customerDefault,
+      status: 'draft',
+      subtotal: 2500,
+      discountTotal: 0,
+      taxTotal: 0,
+      total: 2500,
+      marginPercent: 0,
+      currencyCode: 'TRY',
+      createdBy: SEED_IDS.userAdmin,
+      items: {
+        create: {
+          tenantId: SEED_IDS.tenantDefault,
+          name: 'Workflow test line',
+          quantity: 1,
+          unitPrice: 2500,
+          lineTotal: 2500,
+          sortOrder: 1,
+          createdBy: SEED_IDS.userAdmin,
+        },
+      },
+      versions: {
+        create: {
+          tenantId: SEED_IDS.tenantDefault,
+          versionNumber: 1,
+          label: 'Initial',
+          isCurrent: true,
+          createdBy: SEED_IDS.userAdmin,
+        },
+      },
+    },
+  });
+
+  return { id: quote.id, number: quote.number, status: quote.status };
 }
 
 describeQuotePdfApproval('Quotes PDF + Approval (e2e)', () => {

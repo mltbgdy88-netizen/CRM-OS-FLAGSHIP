@@ -278,12 +278,23 @@ describeQuotes('Quotes (e2e)', () => {
   it('POST /api/v1/quotes creates quote with calculated totals, audit, and event', async () => {
     eventPublisher.clear();
 
+    const opportunityResponse = await request(app.getHttpServer())
+      .post('/api/v1/opportunities')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        pipelineId: SEED_IDS.pipelineDefault,
+        customerId: SEED_IDS.customerDefault,
+        title: `Quote Opportunity ${Date.now()}`,
+        companyName: 'Quote Opportunity Co',
+      })
+      .expect(201);
+
     const response = await request(app.getHttpServer())
       .post('/api/v1/quotes')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         customerId: SEED_IDS.customerDefault,
-        opportunityId: SEED_IDS.opportunityDefault,
+        opportunityId: opportunityResponse.body.data.id,
         items: [
           {
             name: 'Implementation Package',

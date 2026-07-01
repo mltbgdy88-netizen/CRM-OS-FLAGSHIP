@@ -1,4 +1,4 @@
-import { ProductDetailView } from '../../../components/product-detail-view';
+import { ProductDetailView } from '../../../../components/product-detail-view';
 
 interface ProductDetailPageProps {
   params: Promise<{ id: string }>;

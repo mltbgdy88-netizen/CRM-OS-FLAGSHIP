@@ -64,6 +64,21 @@ function pageTitle(pathname: string) {
   if (pathname.startsWith('/ai')) {
     return 'AI Copilot';
   }
+  if (pathname.startsWith('/orders')) {
+    return 'Siparişler';
+  }
+  if (pathname.startsWith('/calendar')) {
+    return 'Takvim';
+  }
+  if (pathname.startsWith('/inbox')) {
+    return 'Gelen Kutusu';
+  }
+  if (pathname.startsWith('/tickets')) {
+    return 'Destek';
+  }
+  if (pathname.startsWith('/settings')) {
+    return 'Ayarlar';
+  }
   return 'CRM OS';
 }
 

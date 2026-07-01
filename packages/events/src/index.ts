@@ -107,3 +107,84 @@ export function createCustomerUpdatedEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const LEAD_EVENT_TYPES = {
+  LEAD_CREATED: 'LeadCreated',
+  LEAD_ASSIGNED: 'LeadAssigned',
+  LEAD_QUALIFIED: 'LeadQualified',
+  LEAD_LOST: 'LeadLost',
+} as const;
+
+export type LeadEventType = (typeof LEAD_EVENT_TYPES)[keyof typeof LEAD_EVENT_TYPES];
+
+export function createLeadCreatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  leadId: string;
+  fullName: string;
+  companyName: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'lead',
+    aggregateId: input.leadId,
+    eventType: LEAD_EVENT_TYPES.LEAD_CREATED,
+    payload: {
+      fullName: input.fullName,
+      companyName: input.companyName,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createLeadAssignedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  leadId: string;
+  assignedUserId: string | null;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'lead',
+    aggregateId: input.leadId,
+    eventType: LEAD_EVENT_TYPES.LEAD_ASSIGNED,
+    payload: {
+      assignedUserId: input.assignedUserId,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createLeadQualifiedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  leadId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'lead',
+    aggregateId: input.leadId,
+    eventType: LEAD_EVENT_TYPES.LEAD_QUALIFIED,
+    payload: {},
+    createdAt: new Date(),
+  };
+}
+
+export function createLeadLostEvent(input: {
+  tenantId: string;
+  actorId: string;
+  leadId: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'lead',
+    aggregateId: input.leadId,
+    eventType: LEAD_EVENT_TYPES.LEAD_LOST,
+    payload: {},
+    createdAt: new Date(),
+  };
+}

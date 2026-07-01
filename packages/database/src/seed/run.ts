@@ -2,7 +2,7 @@ import { Pool } from 'pg';
 import { getDatabaseConfigFromEnv } from '../index';
 import { applyAllMigrations } from '../migrate';
 import { cleanupProofSeedOrphans, shouldCleanupProofSeedOrphans } from './cleanup';
-import { seedCrm360Data, seedCrmData, seedIamData } from './index';
+import { seedCrm360Data, seedCrmData, seedIamData, seedLeadData } from './index';
 
 async function main(): Promise<void> {
   const { url } = getDatabaseConfigFromEnv();
@@ -22,9 +22,11 @@ async function main(): Promise<void> {
     await seedIamData(client);
     await seedCrmData(client);
     await seedCrm360Data(client);
+    await seedLeadData(client);
     console.log('Sprint-02 IAM seed completed');
     console.log('Sprint-03 CRM seed completed');
     console.log('Sprint-04 Customer 360 seed completed');
+    console.log('Sprint-05 Lead seed completed');
   } finally {
     client.release();
     await pool.end();

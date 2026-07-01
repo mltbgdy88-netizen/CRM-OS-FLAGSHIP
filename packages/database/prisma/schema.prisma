@@ -26,6 +26,8 @@ model Tenant {
   sessions         Session[]
   devices          Device[]
   customers        Customer[]
+  leadSources      LeadSource[]
+  leads            Lead[]
 
   @@map("tenants")
 }
@@ -56,6 +58,7 @@ model Customer {
   scores    CustomerScore[]
   riskScores CustomerRiskScore[]
   lifetimeValues CustomerLifetimeValue[]
+  convertedLeads Lead[] @relation("LeadCustomer")
 
   @@index([tenantId], map: "idx_customers_tenant_id")
   @@index([tenantId, deletedAt], map: "idx_customers_tenant_deleted")
@@ -285,6 +288,159 @@ model CustomerLifetimeValue {
   @@map("customer_lifetime_values")
 }
 
+/// Tenant-owned lead source lookup.
+model LeadSource {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  name      String    @db.VarChar(120)
+  code      String    @db.VarChar(80)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy String?   @map("deleted_by") @db.Uuid
+  version   Int       @default(1)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  leads  Lead[]
+
+  @@unique([tenantId, code], map: "uq_lead_sources_tenant_code")
+  @@index([tenantId], map: "idx_lead_sources_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_lead_sources_tenant_deleted")
+  @@map("lead_sources")
+}
+
+/// Tenant-owned lead aggregate root.
+model Lead {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  fullName       String    @map("full_name") @db.VarChar(255)
+  companyName    String    @map("company_name") @db.VarChar(255)
+  email          String?   @db.VarChar(255)
+  phone          String?   @db.VarChar(50)
+  sourceId       String    @map("source_id") @db.Uuid
+  status         String    @default("new") @db.VarChar(30)
+  score          Int       @default(0)
+  assignedUserId String?   @map("assigned_user_id") @db.Uuid
+  customerId     String?   @map("customer_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedAt      DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy      String?   @map("updated_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+  version        Int       @default(1)
+
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  source       LeadSource  @relation(fields: [sourceId], references: [id])
+  assignedUser User?       @relation("LeadAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  customer     Customer?   @relation("LeadCustomer", fields: [customerId], references: [id], onDelete: SetNull)
+  tags         LeadTag[]
+  scores       LeadScore[]
+  assignments  LeadAssignment[]
+  activities   LeadActivity[]
+
+  @@index([tenantId], map: "idx_leads_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_leads_tenant_deleted")
+  @@index([sourceId], map: "idx_leads_source_id")
+  @@index([assignedUserId], map: "idx_leads_assigned_user_id")
+  @@index([customerId], map: "idx_leads_customer_id")
+  @@map("leads")
+}
+
+/// Tenant-owned lead tag.
+model LeadTag {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  leadId    String    @map("lead_id") @db.Uuid
+  name      String    @db.VarChar(80)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy String?   @map("deleted_by") @db.Uuid
+  version   Int       @default(1)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_lead_tags_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_lead_tags_tenant_deleted")
+  @@index([leadId], map: "idx_lead_tags_lead_id")
+  @@map("lead_tags")
+}
+
+/// Tenant-owned lead score history.
+model LeadScore {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  leadId     String    @map("lead_id") @db.Uuid
+  scoreValue Int       @map("score_value")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_lead_scores_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_lead_scores_tenant_deleted")
+  @@index([leadId], map: "idx_lead_scores_lead_id")
+  @@map("lead_scores")
+}
+
+/// Tenant-owned lead assignment history.
+model LeadAssignment {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  leadId         String    @map("lead_id") @db.Uuid
+  assignedUserId String?   @map("assigned_user_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedAt      DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy      String?   @map("updated_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+  version        Int       @default(1)
+
+  lead         Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignedUser User? @relation("LeadAssignmentUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId], map: "idx_lead_assignments_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_lead_assignments_tenant_deleted")
+  @@index([leadId], map: "idx_lead_assignments_lead_id")
+  @@index([assignedUserId], map: "idx_lead_assignments_assigned_user_id")
+  @@map("lead_assignments")
+}
+
+/// Tenant-owned lead activity feed row.
+model LeadActivity {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  leadId       String    @map("lead_id") @db.Uuid
+  activityType String    @map("activity_type") @db.VarChar(80)
+  title        String    @db.VarChar(255)
+  body         String?
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy    String?   @map("created_by") @db.Uuid
+  updatedAt    DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy    String?   @map("updated_by") @db.Uuid
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy    String?   @map("deleted_by") @db.Uuid
+  version      Int       @default(1)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_lead_activities_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_lead_activities_tenant_deleted")
+  @@index([leadId], map: "idx_lead_activities_lead_id")
+  @@map("lead_activities")
+}
+
 /// Global identity — not tenant-scoped.
 model User {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -304,6 +460,8 @@ model User {
   auditLogs    AuditLog[]     @relation("AuditActor")
   sessions     Session[]
   devices      Device[]
+  assignedLeads Lead[]        @relation("LeadAssignedUser")
+  leadAssignments LeadAssignment[] @relation("LeadAssignmentUser")
 
   @@map("users")
 }

@@ -19,6 +19,7 @@ export const MIGRATION_BANDS = [
   '012_product_catalog',
   '013_inventory_core',
   '014_stock_reservation',
+  '015_finance_lite',
 ] as const;
 export type MigrationBand = (typeof MIGRATION_BANDS)[number];
 
@@ -71,7 +72,7 @@ export async function applyAllMigrations(pool: Pool): Promise<boolean> {
   return anyApplied;
 }
 
-/** Applies all migration bands in order (002_iam … 014_stock_reservation). */
+/** Applies all migration bands in order (002_iam … 015_finance_lite). */
 export async function applyMigration(pool: Pool): Promise<boolean> {
   return applyAllMigrations(pool);
 }

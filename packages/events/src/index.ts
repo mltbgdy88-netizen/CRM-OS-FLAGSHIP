@@ -855,3 +855,55 @@ export function createStockReleasedEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const FINANCE_EVENT_TYPES = {
+  INVOICE_CREATED: 'InvoiceCreated',
+  BALANCE_UPDATED: 'BalanceUpdated',
+} as const;
+
+export type FinanceEventType =
+  (typeof FINANCE_EVENT_TYPES)[keyof typeof FINANCE_EVENT_TYPES];
+
+export function createInvoiceCreatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  invoiceId: string;
+  accountId: string;
+  totalAmount: number;
+  currency: string;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'invoice',
+    aggregateId: input.invoiceId,
+    eventType: FINANCE_EVENT_TYPES.INVOICE_CREATED,
+    payload: {
+      accountId: input.accountId,
+      totalAmount: input.totalAmount,
+      currency: input.currency,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createBalanceUpdatedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  accountId: string;
+  balanceBefore: number;
+  balanceAfter: number;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'account',
+    aggregateId: input.accountId,
+    eventType: FINANCE_EVENT_TYPES.BALANCE_UPDATED,
+    payload: {
+      balanceBefore: input.balanceBefore,
+      balanceAfter: input.balanceAfter,
+    },
+    createdAt: new Date(),
+  };
+}

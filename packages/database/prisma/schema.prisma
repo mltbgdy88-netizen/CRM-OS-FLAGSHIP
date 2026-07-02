@@ -64,6 +64,7 @@ model Customer {
   conversionLogs LeadConversionLog[]
   quotes        Quote[]
   orders        Order[]
+  accounts      Account[]
 
   @@index([tenantId], map: "idx_customers_tenant_id")
   @@index([tenantId, deletedAt], map: "idx_customers_tenant_deleted")
@@ -1866,6 +1867,168 @@ model StockReservation {
   @@index([warehouseId], map: "idx_stock_reservations_warehouse_id")
   @@index([productVariantId], map: "idx_stock_reservations_product_variant_id")
   @@map("stock_reservations")
+}
+
+/// Tenant-owned customer account (cari).
+model Account {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  customerId String?   @map("customer_id") @db.Uuid
+  name       String    @db.VarChar(255)
+  code       String    @db.VarChar(50)
+  balance    Decimal   @default(0) @db.Decimal(18, 2)
+  currency   String    @default("TRY") @db.VarChar(3)
+  status     String    @default("active") @db.VarChar(30)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  customer     Customer?            @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  transactions AccountTransaction[]
+  creditLimit  CreditLimit?
+  riskLimit    RiskLimit?
+  invoices     Invoice[]
+
+  @@unique([tenantId, code], map: "uq_accounts_tenant_code")
+  @@index([tenantId], map: "idx_accounts_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_accounts_tenant_deleted")
+  @@index([customerId], map: "idx_accounts_customer_id")
+  @@map("accounts")
+}
+
+/// Tenant-owned account ledger entry.
+model AccountTransaction {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  accountId       String    @map("account_id") @db.Uuid
+  transactionType String    @map("transaction_type") @db.VarChar(30)
+  amount          Decimal   @db.Decimal(18, 2)
+  balanceAfter    Decimal   @map("balance_after") @db.Decimal(18, 2)
+  referenceType   String?   @map("reference_type") @db.VarChar(50)
+  referenceId     String?   @map("reference_id") @db.Uuid
+  description     String?
+  transactionAt   DateTime  @default(now()) @map("transaction_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy       String?   @map("created_by") @db.Uuid
+  updatedAt       DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy       String?   @map("updated_by") @db.Uuid
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy       String?   @map("deleted_by") @db.Uuid
+  version         Int       @default(1)
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_account_transactions_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_account_transactions_tenant_deleted")
+  @@index([accountId], map: "idx_account_transactions_account_id")
+  @@index([transactionAt], map: "idx_account_transactions_transaction_at")
+  @@map("account_transactions")
+}
+
+/// Tenant-owned credit limit per account.
+model CreditLimit {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  accountId   String    @unique @map("account_id") @db.Uuid
+  limitAmount Decimal   @map("limit_amount") @db.Decimal(18, 2)
+  currency    String    @default("TRY") @db.VarChar(3)
+  status      String    @default("active") @db.VarChar(30)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_credit_limits_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_credit_limits_tenant_deleted")
+  @@map("credit_limits")
+}
+
+/// Tenant-owned risk limit per account.
+model RiskLimit {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  accountId   String    @unique @map("account_id") @db.Uuid
+  riskScore   Decimal   @default(0) @map("risk_score") @db.Decimal(5, 2)
+  limitAmount Decimal   @map("limit_amount") @db.Decimal(18, 2)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_risk_limits_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_risk_limits_tenant_deleted")
+  @@map("risk_limits")
+}
+
+/// Tenant-owned invoice.
+model Invoice {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  accountId     String    @map("account_id") @db.Uuid
+  invoiceNumber String    @map("invoice_number") @db.VarChar(50)
+  status        String    @default("draft") @db.VarChar(30)
+  subtotal      Decimal   @default(0) @db.Decimal(18, 2)
+  taxAmount     Decimal   @default(0) @map("tax_amount") @db.Decimal(18, 2)
+  totalAmount   Decimal   @default(0) @map("total_amount") @db.Decimal(18, 2)
+  currency      String    @default("TRY") @db.VarChar(3)
+  dueDate       DateTime? @map("due_date") @db.Date
+  issuedAt      DateTime? @map("issued_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  version       Int       @default(1)
+
+  account Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  items   InvoiceItem[]
+
+  @@unique([tenantId, invoiceNumber], map: "uq_invoices_tenant_number")
+  @@index([tenantId], map: "idx_invoices_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_invoices_tenant_deleted")
+  @@index([accountId], map: "idx_invoices_account_id")
+  @@map("invoices")
+}
+
+/// Tenant-owned invoice line item.
+model InvoiceItem {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  invoiceId   String    @map("invoice_id") @db.Uuid
+  description String    @db.VarChar(500)
+  quantity    Decimal   @default(1) @db.Decimal(18, 3)
+  unitPrice   Decimal   @map("unit_price") @db.Decimal(18, 2)
+  lineTotal   Decimal   @map("line_total") @db.Decimal(18, 2)
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy   String?   @map("created_by") @db.Uuid
+  updatedAt   DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  version     Int       @default(1)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_invoice_items_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_invoice_items_tenant_deleted")
+  @@index([invoiceId], map: "idx_invoice_items_invoice_id")
+  @@map("invoice_items")
 }
 
 /// Tenant-owned product collection junction.

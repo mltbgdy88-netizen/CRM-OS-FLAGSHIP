@@ -193,6 +193,21 @@ export const SEED_IDS = {
   orderReservationTenantB: '71300000-0000-4000-8000-000000000002',
   stockReservationDefault: '71310000-0000-4000-8000-000000000001',
   stockReservationTenantB: '71310000-0000-4000-8000-000000000002',
+  permissionFinanceRead: '72100000-0000-4000-8000-000000000001',
+  permissionAccountRead: '72100000-0000-4000-8000-000000000002',
+  permissionInvoiceCreate: '72100000-0000-4000-8000-000000000003',
+  accountDefault: '71400000-0000-4000-8000-000000000001',
+  accountTenantB: '71400000-0000-4000-8000-000000000002',
+  accountTransactionDefault: '71410000-0000-4000-8000-000000000001',
+  accountTransactionTenantB: '71410000-0000-4000-8000-000000000002',
+  creditLimitDefault: '71420000-0000-4000-8000-000000000001',
+  creditLimitTenantB: '71420000-0000-4000-8000-000000000002',
+  riskLimitDefault: '71430000-0000-4000-8000-000000000001',
+  riskLimitTenantB: '71430000-0000-4000-8000-000000000002',
+  invoiceDefault: '71440000-0000-4000-8000-000000000001',
+  invoiceTenantB: '71440000-0000-4000-8000-000000000002',
+  invoiceItemDefault: '71450000-0000-4000-8000-000000000001',
+  invoiceItemTenantB: '71450000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -498,6 +513,27 @@ export const SEED_INVENTORY_PERMISSIONS = [
     code: 'inventory.release',
     module: 'inventory',
     description: 'Release reserved stock',
+  },
+] as const;
+
+export const SEED_FINANCE_PERMISSIONS = [
+  {
+    id: SEED_IDS.permissionFinanceRead,
+    code: 'finance.read',
+    module: 'finance',
+    description: 'Read finance overview and summaries',
+  },
+  {
+    id: SEED_IDS.permissionAccountRead,
+    code: 'account.read',
+    module: 'finance',
+    description: 'Read accounts and account transactions',
+  },
+  {
+    id: SEED_IDS.permissionInvoiceCreate,
+    code: 'invoice.create',
+    module: 'finance',
+    description: 'Create invoices and update account balances',
   },
 ] as const;
 

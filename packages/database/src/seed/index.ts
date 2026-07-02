@@ -18,6 +18,7 @@ export { seedOrderData } from './order';
 export { seedProductData } from './product';
 export { seedInventoryData } from './inventory';
 export { seedStockReservationData } from './stock-reservation';
+export { seedFinanceData } from './finance';
 export {
   SEED_CUSTOMER_360_PERMISSIONS,
   SEED_CUSTOMER_PERMISSIONS,
@@ -32,6 +33,7 @@ export {
   SEED_ORDER_PERMISSIONS,
   SEED_PRODUCT_PERMISSIONS,
   SEED_INVENTORY_PERMISSIONS,
+  SEED_FINANCE_PERMISSIONS,
 } from './constants';
 
 function hashPassword(password: string): string {

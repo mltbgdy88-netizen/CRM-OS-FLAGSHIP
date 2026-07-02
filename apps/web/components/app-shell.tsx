@@ -86,6 +86,9 @@ function pageTitle(pathname: string) {
   if (pathname.startsWith('/inventory')) {
     return 'Envanter';
   }
+  if (pathname.startsWith('/finance')) {
+    return 'Finans';
+  }
   if (pathname.startsWith('/calendar')) {
     return 'Takvim';
   }

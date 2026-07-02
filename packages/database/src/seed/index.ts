@@ -17,6 +17,7 @@ export { seedDashboardNotificationData } from './dashboard-notification';
 export { seedOrderData } from './order';
 export { seedProductData } from './product';
 export { seedInventoryData } from './inventory';
+export { seedStockReservationData } from './stock-reservation';
 export {
   SEED_CUSTOMER_360_PERMISSIONS,
   SEED_CUSTOMER_PERMISSIONS,

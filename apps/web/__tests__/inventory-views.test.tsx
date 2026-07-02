@@ -8,9 +8,10 @@ import { StockLedgerView } from '../components/stock-ledger-view';
 vi.mock('../lib/api/inventory-client', () => ({
   getInventoryOverview: vi.fn(),
   listStocks: vi.fn(),
+  listStockReservations: vi.fn(),
 }));
 
-import { getInventoryOverview, listStocks } from '../lib/api/inventory-client';
+import { getInventoryOverview, listStockReservations, listStocks } from '../lib/api/inventory-client';
 
 const mockOverview = {
   totalSkus: 1,
@@ -138,10 +139,45 @@ describe('StockLedgerView', () => {
 });
 
 describe('ReservationPanel', () => {
-  it('renders mock reservation rows', () => {
+  const mockReservations = [
+    {
+      id: 'res-001',
+      orderId: 'order-001',
+      orderNumber: 'ORD-2026-0142',
+      stockId: 'stock-001',
+      warehouseId: 'wh-001',
+      productVariantId: 'var-001',
+      quantity: 5,
+      status: 'active',
+      releasedAt: null,
+      createdAt: '2026-06-01T10:00:00Z',
+      warehouse: { id: 'wh-001', name: 'Ana Depo', code: 'main' },
+      productVariant: {
+        id: 'var-001',
+        sku: 'CRM-ENT-001-STD',
+        name: 'Standard Edition',
+        product: { id: 'prod-001', sku: 'CRM-ENT-001', name: 'CRM OS Enterprise License' },
+      },
+    },
+  ];
+
+  beforeEach(() => {
+    vi.mocked(listStockReservations).mockReset();
+    vi.mocked(listStockReservations).mockResolvedValue({
+      items: mockReservations,
+      total: 1,
+      page: 1,
+      pageSize: 50,
+    });
+  });
+
+  it('renders reservation rows from API', async () => {
     render(<ReservationPanel />);
 
-    expect(screen.getByTestId('reservation-panel-items')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('reservation-panel-items')).toBeInTheDocument();
+    });
+
     expect(screen.getByTestId('reservation-row-res-001')).toBeInTheDocument();
     expect(screen.getByText('ORD-2026-0142')).toBeInTheDocument();
   });

@@ -175,6 +175,8 @@ export const SEED_IDS = {
   productCollectionItemTenantB: '70260000-0000-4000-8000-000000000002',
   permissionInventoryRead: '71100000-0000-4000-8000-000000000001',
   permissionInventoryAdjust: '71100000-0000-4000-8000-000000000002',
+  permissionInventoryReserve: '71100000-0000-4000-8000-000000000003',
+  permissionInventoryRelease: '71100000-0000-4000-8000-000000000004',
   warehouseDefault: '71200000-0000-4000-8000-000000000001',
   warehouseTenantB: '71200000-0000-4000-8000-000000000002',
   warehouseLocationDefault: '71210000-0000-4000-8000-000000000001',
@@ -187,6 +189,10 @@ export const SEED_IDS = {
   stockCountTenantB: '71240000-0000-4000-8000-000000000002',
   stockAdjustmentDefault: '71250000-0000-4000-8000-000000000001',
   stockAdjustmentTenantB: '71250000-0000-4000-8000-000000000002',
+  orderReservationDefault: '71300000-0000-4000-8000-000000000001',
+  orderReservationTenantB: '71300000-0000-4000-8000-000000000002',
+  stockReservationDefault: '71310000-0000-4000-8000-000000000001',
+  stockReservationTenantB: '71310000-0000-4000-8000-000000000002',
 } as const;
 
 export const SEED_PERMISSIONS = [
@@ -480,6 +486,18 @@ export const SEED_INVENTORY_PERMISSIONS = [
     code: 'inventory.adjust',
     module: 'inventory',
     description: 'Adjust stock levels and record movements',
+  },
+  {
+    id: SEED_IDS.permissionInventoryReserve,
+    code: 'inventory.reserve',
+    module: 'inventory',
+    description: 'Reserve stock against orders',
+  },
+  {
+    id: SEED_IDS.permissionInventoryRelease,
+    code: 'inventory.release',
+    module: 'inventory',
+    description: 'Release reserved stock',
   },
 ] as const;
 

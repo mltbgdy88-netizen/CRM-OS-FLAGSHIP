@@ -1287,6 +1287,8 @@ model Order {
   returns       OrderReturn[]
   files         OrderFile[]
   orderNotes    OrderNote[]
+  orderReservations OrderReservation[]
+  stockReservations StockReservation[]
 
   @@unique([tenantId, number], map: "uq_orders_tenant_number")
   @@index([tenantId], map: "idx_orders_tenant_id")
@@ -1590,6 +1592,7 @@ model ProductVariant {
   stocks  Stock[]
   stockMovements StockMovement[]
   stockAdjustments StockAdjustment[]
+  stockReservations StockReservation[]
 
   @@unique([tenantId, sku], map: "uq_product_variants_tenant_sku")
   @@index([tenantId], map: "idx_product_variants_tenant_id")
@@ -1645,6 +1648,7 @@ model Warehouse {
   stockMovements StockMovement[]
   stockCounts   StockCount[]
   stockAdjustments StockAdjustment[]
+  stockReservations StockReservation[]
 
   @@unique([tenantId, code], map: "uq_warehouses_tenant_code")
   @@index([tenantId], map: "idx_warehouses_tenant_id")
@@ -1698,6 +1702,7 @@ model Stock {
   productVariant ProductVariant  @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
   stockMovements StockMovement[]
   stockAdjustments StockAdjustment[]
+  stockReservations StockReservation[]
 
   @@unique([tenantId, warehouseId, productVariantId], map: "uq_stocks_tenant_warehouse_variant")
   @@index([tenantId], map: "idx_stocks_tenant_id")
@@ -1799,6 +1804,68 @@ model StockAdjustment {
   @@index([productVariantId], map: "idx_stock_adjustments_product_variant_id")
   @@index([stockCountId], map: "idx_stock_adjustments_stock_count_id")
   @@map("stock_adjustments")
+}
+
+/// Tenant-owned order stock reservation header.
+model OrderReservation {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  orderId    String    @map("order_id") @db.Uuid
+  status     String    @default("active") @db.VarChar(30)
+  reservedAt DateTime  @default(now()) @map("reserved_at") @db.Timestamptz(6)
+  releasedAt DateTime? @map("released_at") @db.Timestamptz(6)
+  notes      String?
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy  String?   @map("created_by") @db.Uuid
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  version    Int       @default(1)
+
+  order             Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stockReservations StockReservation[]
+
+  @@index([tenantId], map: "idx_order_reservations_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_order_reservations_tenant_deleted")
+  @@index([orderId], map: "idx_order_reservations_order_id")
+  @@map("order_reservations")
+}
+
+/// Tenant-owned stock reservation line.
+model StockReservation {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  orderId            String    @map("order_id") @db.Uuid
+  orderReservationId String    @map("order_reservation_id") @db.Uuid
+  stockId            String    @map("stock_id") @db.Uuid
+  warehouseId        String    @map("warehouse_id") @db.Uuid
+  productVariantId   String    @map("product_variant_id") @db.Uuid
+  quantity           Decimal   @db.Decimal(18, 3)
+  status             String    @default("active") @db.VarChar(30)
+  releasedAt         DateTime? @map("released_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy          String?   @map("created_by") @db.Uuid
+  updatedAt          DateTime? @map("updated_at") @db.Timestamptz(6)
+  updatedBy          String?   @map("updated_by") @db.Uuid
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedBy          String?   @map("deleted_by") @db.Uuid
+  version            Int       @default(1)
+
+  order            Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderReservation OrderReservation @relation(fields: [orderReservationId], references: [id], onDelete: Cascade)
+  stock            Stock            @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  warehouse        Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  productVariant   ProductVariant   @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "idx_stock_reservations_tenant_id")
+  @@index([tenantId, deletedAt], map: "idx_stock_reservations_tenant_deleted")
+  @@index([orderId], map: "idx_stock_reservations_order_id")
+  @@index([orderReservationId], map: "idx_stock_reservations_order_reservation_id")
+  @@index([stockId], map: "idx_stock_reservations_stock_id")
+  @@index([warehouseId], map: "idx_stock_reservations_warehouse_id")
+  @@index([productVariantId], map: "idx_stock_reservations_product_variant_id")
+  @@map("stock_reservations")
 }
 
 /// Tenant-owned product collection junction.

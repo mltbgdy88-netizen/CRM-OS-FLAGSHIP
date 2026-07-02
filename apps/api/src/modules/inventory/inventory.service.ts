@@ -6,15 +6,19 @@ import {
 import {
   createCriticalStockReachedEvent,
   createStockChangedEvent,
+  createStockReleasedEvent,
+  createStockReservedEvent,
 } from '@crm-os/events';
 import type { RequestTenantContext } from '../../common/tenant/tenant-context.types';
 import { IamRepository } from '../iam/repositories/iam.repository';
 import { DomainEventPublisher } from '../iam/services/audit.service';
 import type { CreateStockMovementDto } from './dto/create-stock-movement.dto';
 import type { ListStocksQueryDto } from './dto/list-stocks-query.dto';
+import type { ListStockReservationsQueryDto, ReserveStockDto } from './dto/reserve-stock.dto';
 import {
   mapInventoryOverview,
   mapStockMovement,
+  mapStockReservation,
   mapStockSummary,
 } from './inventory.mapper';
 import { InventoryRepository } from './inventory.repository';
@@ -217,5 +221,143 @@ export class InventoryService {
     }
 
     return mapStockMovement(movement);
+  }
+
+  async listStockReservations(
+    context: RequestTenantContext,
+    query: ListStockReservationsQueryDto,
+  ) {
+    const skip = (query.page - 1) * query.pageSize;
+    const [total, reservations] = await Promise.all([
+      this.inventoryRepository.countStockReservations(context),
+      this.inventoryRepository.listStockReservations(context, {
+        skip,
+        take: query.pageSize,
+      }),
+    ]);
+
+    return {
+      items: reservations.map(mapStockReservation),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
+  async reserveStockForOrder(
+    context: RequestTenantContext,
+    orderId: string,
+    dto: ReserveStockDto,
+  ) {
+    const order = await this.inventoryRepository.findOrderById(context, orderId);
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    for (const item of dto.items) {
+      const warehouse = await this.inventoryRepository.findWarehouseById(
+        context,
+        item.warehouseId,
+      );
+      if (!warehouse) {
+        throw new NotFoundException('Warehouse not found');
+      }
+
+      const variant = await this.inventoryRepository.findProductVariantById(
+        context,
+        item.productVariantId,
+      );
+      if (!variant) {
+        throw new NotFoundException('Product variant not found');
+      }
+    }
+
+    let result;
+    try {
+      result = await this.inventoryRepository.createOrderReservation(context, {
+        orderId,
+        notes: dto.notes,
+        items: dto.items,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'STOCK_NOT_FOUND') {
+          throw new NotFoundException('Stock record not found for reservation');
+        }
+        if (error.message === 'INSUFFICIENT_STOCK') {
+          throw new BadRequestException('Insufficient available stock for reservation');
+        }
+      }
+      throw error;
+    }
+
+    await this.iamRepository.writeAuditLog(context, {
+      action: 'stock.reservation.created',
+      entityType: 'order_reservation',
+      entityId: result.orderReservation.id,
+      payload: {
+        orderId,
+        itemCount: dto.items.length,
+      },
+    });
+
+    for (const reservation of result.stockReservations) {
+      this.eventPublisher.publish(
+        createStockReservedEvent({
+          tenantId: context.tenantId,
+          actorId: context.userId,
+          stockReservationId: reservation.id,
+          orderId,
+          stockId: reservation.stockId,
+          quantity: toNumber(reservation.quantity),
+        }),
+      );
+    }
+
+    return {
+      orderReservationId: result.orderReservation.id,
+      orderId,
+      status: result.orderReservation.status,
+      reservations: result.stockReservations.map(mapStockReservation),
+    };
+  }
+
+  async releaseStockReservation(context: RequestTenantContext, id: string) {
+    let released;
+    try {
+      released = await this.inventoryRepository.releaseStockReservation(context, id);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'INVALID_RESERVATION') {
+        throw new BadRequestException('Invalid reservation state for release');
+      }
+      throw error;
+    }
+
+    if (!released) {
+      throw new NotFoundException('Stock reservation not found');
+    }
+
+    await this.iamRepository.writeAuditLog(context, {
+      action: 'stock.reservation.released',
+      entityType: 'stock_reservation',
+      entityId: released.id,
+      payload: {
+        orderId: released.orderId,
+        quantity: toNumber(released.quantity),
+      },
+    });
+
+    this.eventPublisher.publish(
+      createStockReleasedEvent({
+        tenantId: context.tenantId,
+        actorId: context.userId,
+        stockReservationId: released.id,
+        orderId: released.orderId,
+        stockId: released.stockId,
+        quantity: toNumber(released.quantity),
+      }),
+    );
+
+    return mapStockReservation(released);
   }
 }

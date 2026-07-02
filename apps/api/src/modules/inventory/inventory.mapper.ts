@@ -120,3 +120,51 @@ export function mapInventoryOverview(input: {
 }) {
   return input;
 }
+
+export function mapStockReservation(reservation: {
+  id: string;
+  orderId: string;
+  stockId: string;
+  warehouseId: string;
+  productVariantId: string;
+  quantity: Decimal;
+  status: string;
+  releasedAt: Date | null;
+  createdAt: Date;
+  warehouse: { id: string; name: string; code: string };
+  productVariant: {
+    id: string;
+    sku: string;
+    name: string;
+    product: { id: string; sku: string; name: string };
+  };
+  order: { id: string; number: string };
+}) {
+  return {
+    id: reservation.id,
+    orderId: reservation.orderId,
+    orderNumber: reservation.order.number,
+    stockId: reservation.stockId,
+    warehouseId: reservation.warehouseId,
+    productVariantId: reservation.productVariantId,
+    quantity: decimalToNumber(reservation.quantity),
+    status: reservation.status,
+    releasedAt: reservation.releasedAt?.toISOString() ?? null,
+    createdAt: reservation.createdAt.toISOString(),
+    warehouse: {
+      id: reservation.warehouse.id,
+      name: reservation.warehouse.name,
+      code: reservation.warehouse.code,
+    },
+    productVariant: {
+      id: reservation.productVariant.id,
+      sku: reservation.productVariant.sku,
+      name: reservation.productVariant.name,
+      product: {
+        id: reservation.productVariant.product.id,
+        sku: reservation.productVariant.product.sku,
+        name: reservation.productVariant.product.name,
+      },
+    },
+  };
+}

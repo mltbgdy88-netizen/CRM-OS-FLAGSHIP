@@ -801,3 +801,57 @@ export function createCriticalStockReachedEvent(input: {
     createdAt: new Date(),
   };
 }
+
+export const STOCK_RESERVATION_EVENT_TYPES = {
+  STOCK_RESERVED: 'StockReserved',
+  STOCK_RELEASED: 'StockReleased',
+} as const;
+
+export type StockReservationEventType =
+  (typeof STOCK_RESERVATION_EVENT_TYPES)[keyof typeof STOCK_RESERVATION_EVENT_TYPES];
+
+export function createStockReservedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  stockReservationId: string;
+  orderId: string;
+  stockId: string;
+  quantity: number;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'stock_reservation',
+    aggregateId: input.stockReservationId,
+    eventType: STOCK_RESERVATION_EVENT_TYPES.STOCK_RESERVED,
+    payload: {
+      orderId: input.orderId,
+      stockId: input.stockId,
+      quantity: input.quantity,
+    },
+    createdAt: new Date(),
+  };
+}
+
+export function createStockReleasedEvent(input: {
+  tenantId: string;
+  actorId: string;
+  stockReservationId: string;
+  orderId: string;
+  stockId: string;
+  quantity: number;
+}): DomainEventEnvelope {
+  return {
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    aggregateType: 'stock_reservation',
+    aggregateId: input.stockReservationId,
+    eventType: STOCK_RESERVATION_EVENT_TYPES.STOCK_RELEASED,
+    payload: {
+      orderId: input.orderId,
+      stockId: input.stockId,
+      quantity: input.quantity,
+    },
+    createdAt: new Date(),
+  };
+}

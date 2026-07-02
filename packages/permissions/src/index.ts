@@ -43,6 +43,8 @@ export const PERMISSIONS = {
   PRODUCT_UPDATE: 'product.update',
   INVENTORY_READ: 'inventory.read',
   INVENTORY_ADJUST: 'inventory.adjust',
+  INVENTORY_RESERVE: 'inventory.reserve',
+  INVENTORY_RELEASE: 'inventory.release',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

@@ -69,6 +69,28 @@ export interface StockListResult {
   pageSize: number;
 }
 
+export interface StockReservationItem {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  stockId: string;
+  warehouseId: string;
+  productVariantId: string;
+  quantity: number;
+  status: string;
+  releasedAt: string | null;
+  createdAt: string;
+  warehouse: StockWarehouseRef;
+  productVariant: StockVariantRef;
+}
+
+export interface StockReservationListResult {
+  items: StockReservationItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export async function getInventoryOverview(): Promise<InventoryOverview> {
   const response = await authenticatedFetch('/api/v1/inventory');
   return parseApiResponse<InventoryOverview>(response);
@@ -99,4 +121,21 @@ export async function createStockMovement(input: {
     body: JSON.stringify(input),
   });
   return parseApiResponse<StockMovementItem>(response);
+}
+
+export async function listStockReservations(
+  page = 1,
+  pageSize = 50,
+): Promise<StockReservationListResult> {
+  const response = await authenticatedFetch(
+    `/api/v1/stock-reservations?page=${page}&pageSize=${pageSize}`,
+  );
+  return parseApiResponse<StockReservationListResult>(response);
+}
+
+export async function releaseStockReservation(id: string): Promise<StockReservationItem> {
+  const response = await authenticatedFetch(`/api/v1/stock-reservations/${id}/release`, {
+    method: 'POST',
+  });
+  return parseApiResponse<StockReservationItem>(response);
 }

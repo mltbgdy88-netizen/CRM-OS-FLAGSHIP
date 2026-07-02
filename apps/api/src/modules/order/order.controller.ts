@@ -24,6 +24,8 @@ import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { DeliverOrderDto } from './dto/deliver-order.dto';
 import { ShipOrderDto } from './dto/ship-order.dto';
+import { InventoryService } from '../inventory/inventory.service';
+import { ReserveStockDto } from '../inventory/dto/reserve-stock.dto';
 import { OrderService } from './order.service';
 
 @Controller('orders')
@@ -31,7 +33,10 @@ import { OrderService } from './order.service';
 @UseInterceptors(TenantContextInterceptor)
 @RequireTenantContext()
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(
+    private readonly orderService: OrderService,
+    private readonly inventoryService: InventoryService,
+  ) {}
 
   @Get()
   @RequirePermissions(PERMISSIONS.ORDER_READ)
@@ -84,6 +89,17 @@ export class OrderController {
   ) {
     const order = await this.orderService.cancelOrder(context, id, dto);
     return okEnvelope(order);
+  }
+
+  @Post(':id/reserve-stock')
+  @RequirePermissions(PERMISSIONS.INVENTORY_RESERVE)
+  async reserveStock(
+    @TenantContextParam() context: RequestTenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReserveStockDto,
+  ) {
+    const result = await this.inventoryService.reserveStockForOrder(context, id, dto);
+    return okEnvelope(result);
   }
 
   @Get(':id')
